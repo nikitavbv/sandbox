@@ -1,7 +1,8 @@
 use {
     tracing::info,
     tch::{
-        nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig}, 
+        nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig},
+        data::Iter2,
         Device,
     },
 };
