@@ -45,7 +45,7 @@ impl SimpleMnistModel {
         for epoch in 0..100 {
             info!("running epoch {}", epoch);
 
-            let mut iter = Iter2::new(&x_train, &y_train, 1024);
+            // let mut iter = Iter2::new(&x_train, &y_train, 1024);
         }
     }
 }
