@@ -3,6 +3,8 @@ use {
     tch::{
         nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig},
         data::Iter2,
+        Kind::Float,
+        Tensor,
         Device,
     },
 };
@@ -32,6 +34,15 @@ impl SimpleMnistModel {
             conv1,
             linear1,
         }
+    }
+
+    fn forward(&self, xs: &Tensor, train: bool) -> Tensor {
+        xs
+            .apply(&self.conv1)
+            //.apply_t(&self.conv1_batchnorm, train)
+            .relu()
+            .apply(&self.linear1)
+            .softmax(0, Float)  
     }
 
     pub fn run(&self) {
