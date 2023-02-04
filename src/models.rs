@@ -1,4 +1,5 @@
 use {
+    std::{fs::File, io::BufReader},
     tracing::info,
     tch::{
         nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig},
@@ -7,6 +8,7 @@ use {
         Tensor,
         Device,
     },
+    npyz::npz::NpzArchive,
 };
 
 pub struct SimpleMnistModel {
@@ -51,12 +53,26 @@ impl SimpleMnistModel {
 
     pub fn train(&self) {
         let mut npz = npyz::npz::NpzArchive::open("./mnist.npz").unwrap();
+        let x_train = self.xs_dataset_from_npz(&mut npz, "x_train");
+        let y_train = self.ys_dataset_from_npz(&mut npz, "y_train");
+
+        let x_test = self.xs_dataset_from_npz(&mut npz, "x_test");
+        let y_test = self.ys_dataset_from_npz(&mut npz, "y_test");
+        
         let mut opt = nn::Adam::default().build(&self.vs, 1e-4).unwrap();
    
         for epoch in 0..100 {
             info!("running epoch {}", epoch);
 
-            // let mut iter = Iter2::new(&x_train, &y_train, 1024);
+            let mut iter = Iter2::new(&x_train, &y_train, 1024);
         }
+    }
+
+    fn xs_dataset_from_npz(&self, npz: &mut NpzArchive<BufReader<File>>, name: &str) -> Tensor {
+        unimplemented!()
+    }
+
+    fn ys_dataset_from_npz(&self, npz: &mut NpzArchive<BufReader<File>>, name: &str) -> Tensor {
+        unimplemented!()
     }
 }
