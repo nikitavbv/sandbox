@@ -13,3 +13,4 @@ hyper = { version = "0.14.23", features = ["full"] }
 tch = "0.10.1"
 npyz = { version = "0.7.3", features = ["npz"] }
 futures-util = "0.3.26"
+async-trait = "0.1.64"
