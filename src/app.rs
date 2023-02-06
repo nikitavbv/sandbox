@@ -1,4 +1,7 @@
-use actix_web::{web::{self, ServiceConfig}, HttpRequest, Responder};
+use {
+    actix_web::{web::{self, ServiceConfig}},
+    crate::runner::runner,
+};
 
 pub struct AiLabApp {
 }
@@ -11,12 +14,8 @@ impl AiLabApp {
 
     pub fn init(&self, app: &mut ServiceConfig) {
         app.service(
-            web::resource("/")
-                .route(web::get().to(handler))
+            web::scope("/api/v1")
+                .route("/models/{model_id}/inference", web::get().to(runner))
         );
     }
-}
-
-async fn handler(req: HttpRequest) -> impl Responder {
-    "hello from actix handler!"
 }
