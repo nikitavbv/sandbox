@@ -11,6 +11,12 @@ use {
     npyz::npz::NpzArchive,
 };
 
+pub struct SimpleMnistModelInput {
+}
+
+pub struct SimpleMnistModelOutput {
+}
+
 pub struct SimpleMnistModel {
     vs: VarStore,
 
