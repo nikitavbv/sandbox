@@ -9,12 +9,15 @@ use {
         Device,
     },
     npyz::npz::NpzArchive,
+    image::RgbImage,
 };
 
 pub struct SimpleMnistModelInput {
+    image: RgbImage,
 }
 
 pub struct SimpleMnistModelOutput {
+    digit: u8,
 }
 
 pub struct SimpleMnistModel {
