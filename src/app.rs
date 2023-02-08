@@ -3,7 +3,7 @@ use {
     actix_web::web::{self, ServiceConfig},
     tokio::sync::Mutex,
     crate::{
-        runner::simple_mnist_runner,
+        runner::{simple_mnist_runner, simple_mnist_trainer},
         models::SimpleMnistModel,
     },
 };
@@ -23,6 +23,7 @@ impl AiLabApp {
         app.service(
             web::scope("/api/v1")
                 .app_data(self.model_simple_mnist.clone())
+                .route("/models/simple-mnist/train", web::get().to(simple_mnist_trainer))
                 .route("/models/simple-mnist/inference", web::get().to(simple_mnist_runner))
         );
     }
