@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package lab;
+
+service ModelsService {
+    rpc RunSimpleModel(RunSimpleModelRequest) returns (RunSimpleModelResponse) {}
+}
+
+message RunSimpleModelRequest {
+}
+
+message RunSimpleModelResponse {
+}
