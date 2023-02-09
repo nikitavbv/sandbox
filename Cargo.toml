@@ -1,19 +1,6 @@
-[package]
-name = "ai-lab"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-tokio = { version = "1.25.0", features = ["full"] }
-tracing = "0.1.37"
-tracing-subscriber = "0.3.16"
-hyper = { version = "0.14.23", features = ["full"] }
-tch = "0.10.1"
-npyz = { version = "0.7.3", features = ["npz"] }
-futures-util = "0.3.26"
-async-trait = "0.1.64"
-actix-web = "4.3.0"
-image = "0.24.5"
-rpc = { path = "./rpc", features = ["server"] }
+members = [
+    "rpc",
+    "server"
+]
