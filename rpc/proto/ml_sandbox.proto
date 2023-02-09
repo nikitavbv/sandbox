@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package lab;
+package ml_sandbox;
 
-service ModelsService {
+service MLSandboxService {
     rpc RunSimpleModel(RunSimpleModelRequest) returns (RunSimpleModelResponse) {}
 }
 
