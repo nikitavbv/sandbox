@@ -1,3 +1,5 @@
+use image::GenericImageView;
+
 use {
     std::{fs::File, io::BufReader},
     tracing::info,
@@ -123,7 +125,9 @@ impl SimpleMnistModel {
         let mut data = vec![0.0; 28 * 28];
         for y in 0..28 {
             for x in 0..28 {
-                unimplemented!()
+                let pixel = grayscale.get_pixel(x, y);
+                info!("pixel is: {:?}", pixel);
+                // data.push(pixel);
             }
         }
 
