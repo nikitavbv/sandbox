@@ -9,16 +9,8 @@ use {
         Device,
     },
     npyz::npz::NpzArchive,
-    image::RgbImage,
+    image::{DynamicImage, imageops::FilterType},
 };
-
-pub struct SimpleMnistModelInput {
-    image: RgbImage,
-}
-
-pub struct SimpleMnistModelOutput {
-    digit: u8,
-}
 
 pub struct SimpleMnistModel {
     vs: VarStore,
@@ -30,7 +22,9 @@ pub struct SimpleMnistModel {
 
 impl SimpleMnistModel {
     pub fn new() -> Self {
-        let vs = VarStore::new(Device::cuda_if_available());
+        let mut vs = VarStore::new(Device::cuda_if_available());
+        // vs.load("./server/data/model.pt").unwrap();
+
         let root = vs.root();
 
         let conv1 = nn::conv2d(&root, 1, 16, 3, Default::default());
@@ -57,12 +51,12 @@ impl SimpleMnistModel {
             .apply(&self.linear1)
     }
 
-    pub fn run(&self) {
-        // TODO
+    pub fn run(&self, image: &DynamicImage) {
+        let tensor = self.image_to_tensor(image);
     }
 
     pub fn train(&self) {
-        let mut npz = npyz::npz::NpzArchive::open("./data/mnist.npz").unwrap();
+        let mut npz = npyz::npz::NpzArchive::open("./server/data/mnist.npz").unwrap();
         let x_train = self.xs_dataset_from_npz(&mut npz, "x_train");
         let y_train = self.ys_dataset_from_npz(&mut npz, "y_train");
 
@@ -71,7 +65,7 @@ impl SimpleMnistModel {
         
         let mut opt = nn::Adam::default().build(&self.vs, 1e-4).unwrap();
    
-        for epoch in 0..1 {
+        for epoch in 0..100 {
             info!("running epoch {}", epoch);
 
             let mut iter = Iter2::new(&x_train, &y_train, 1024);
@@ -83,17 +77,17 @@ impl SimpleMnistModel {
                     .forward(&xs, true)
                     .cross_entropy_for_logits(&ys);
 
-                //opt.backward_step(&loss);
+                opt.backward_step(&loss);
             }
 
-            /*let test_acc = self
+            let test_acc = self
                 .forward(&x_test, false)
                 .accuracy_for_logits(&y_test);
 
-            info!("epoch {}, test accuracy: {}", epoch, f32::from(test_acc));*/
+            info!("epoch {}, test accuracy: {}", epoch, f32::from(test_acc));
         }
 
-        self.vs.save("./data/model.pt").unwrap();
+        self.vs.save("./server/data/model.pt").unwrap();
     }
 
     fn xs_dataset_from_npz(&self, npz: &mut NpzArchive<BufReader<File>>, name: &str) -> Tensor {
@@ -120,5 +114,19 @@ impl SimpleMnistModel {
         Tensor::of_slice(&data)
             .reshape(&shape)
             .to_device(self.vs.device())
+    }
+
+    fn image_to_tensor(&self, image: &DynamicImage) -> Tensor {
+        let resized = image.resize(28, 28, FilterType::Lanczos3);
+        let grayscale = resized.grayscale();
+
+        let mut data = vec![0.0; 28 * 28];
+        for y in 0..28 {
+            for x in 0..28 {
+                unimplemented!()
+            }
+        }
+
+        unimplemented!()
     }
 }
