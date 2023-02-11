@@ -1,5 +1,3 @@
-use image::GenericImageView;
-
 use {
     std::{fs::File, io::BufReader},
     tracing::info,
@@ -11,7 +9,7 @@ use {
         Device,
     },
     npyz::npz::NpzArchive,
-    image::{DynamicImage, imageops::FilterType},
+    image::{DynamicImage, imageops::FilterType, GenericImageView},
 };
 
 pub struct SimpleMnistModel {
@@ -25,7 +23,6 @@ pub struct SimpleMnistModel {
 impl SimpleMnistModel {
     pub fn new() -> Self {
         let mut vs = VarStore::new(Device::cuda_if_available());
-        // vs.load("./server/data/model.pt").unwrap();
 
         let root = vs.root();
 
@@ -33,6 +30,8 @@ impl SimpleMnistModel {
         let conv2 = nn::conv2d(&root, 16, 2, 3, Default::default());
         
         let linear1 = nn::linear(&root, 2 * 24 * 24, 10, Default::default());
+
+        vs.load("./server/data/model.model").unwrap();
 
         Self {
             vs,
@@ -89,7 +88,7 @@ impl SimpleMnistModel {
             info!("epoch {}, test accuracy: {}", epoch, f32::from(test_acc));
         }
 
-        self.vs.save("./server/data/model.pt").unwrap();
+        self.vs.save("./server/data/model.model").unwrap();
     }
 
     fn xs_dataset_from_npz(&self, npz: &mut NpzArchive<BufReader<File>>, name: &str) -> Tensor {
@@ -119,18 +118,28 @@ impl SimpleMnistModel {
     }
 
     fn image_to_tensor(&self, image: &DynamicImage) -> Tensor {
-        let resized = image.resize(28, 28, FilterType::Lanczos3);
+        let resized = image.resize_exact(28, 28, FilterType::Lanczos3);
+        
         let grayscale = resized.grayscale();
 
         let mut data = vec![0.0; 28 * 28];
         for y in 0..28 {
             for x in 0..28 {
-                let pixel = grayscale.get_pixel(x, y);
-                info!("pixel is: {:?}", pixel);
-                // data.push(pixel);
+                let pixel = grayscale.get_pixel(x, y).0;
+                let pixel = 1.0 - (pixel[0] as f32 + pixel[1] as f32 + pixel[2] as f32) / (3.0 * 255.0);
+                data[(y * 28 + x) as usize] = pixel;
             }
         }
 
-        unimplemented!()
+        Tensor::of_slice(&data).view([-1, 1, 28, 28])
     }
+}
+
+pub fn run_simple_model_inference() {
+    let model = SimpleMnistModel::new();
+    let image = image::io::Reader::open("./server/data/seven.jpeg").unwrap().decode().unwrap();
+    let input_tensor = model.image_to_tensor(&image);
+    info!("size of tensor is: {:?}", input_tensor.size());
+    let result = model.forward(&input_tensor, false);
+    result.print();
 }
