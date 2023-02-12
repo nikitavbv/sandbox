@@ -5,7 +5,7 @@ use {
     crate::{
         utils::init_logging,
         server::run_server,
-        models::run_simple_model_inference,
+        models::{run_simple_model_inference, image_generation::run_simple_image_generation},
     },
 };
 
@@ -17,8 +17,9 @@ pub mod utils;
 async fn main() -> std::io::Result<()> {
     init_logging();
 
-    run_server().await;
+    // run_server().await;
     // run_simple_model_inference();
+    run_simple_image_generation();
 
     info!("done");
     Ok(())

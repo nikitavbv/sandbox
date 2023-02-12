@@ -12,6 +12,8 @@ use {
     image::{DynamicImage, imageops::FilterType, GenericImageView},
 };
 
+pub mod image_generation;
+
 pub struct SimpleMnistModel {
     vs: VarStore,
 
