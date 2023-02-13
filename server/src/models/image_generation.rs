@@ -5,15 +5,12 @@ use {
 };
 
 pub struct StableDiffusionImageGenerationModel {
-    vocab_file: String,
-    clip_weights: String,
-    vae_weights: String,
-    unet_weights: String,
-
     device: Device,
     sd_config: stable_diffusion::StableDiffusionConfig,
     tokenizer: clip::Tokenizer,
     text_model: clip::ClipTextTransformer,
+    vae: diffusers::models::vae::AutoEncoderKL,
+    unet: diffusers::models::unet_2d::UNet2DConditionModel,
 }
 
 impl StableDiffusionImageGenerationModel {
@@ -21,23 +18,24 @@ impl StableDiffusionImageGenerationModel {
         let data_path = "./server/data/stable-diffusion/";
         let vocab_file = format!("{}{}", data_path, "bpe_simple_vocab_16e6.txt");
         let clip_weights = format!("{}{}", data_path, "clip_v2.1.ot");
+        let vae_weights = format!("{}{}", data_path, "vae.ot");
+        let unet_weights = format!("{}{}", data_path, "unet.ot");
 
         let device = Device::cuda_if_available();
 
         let sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
         let tokenizer = clip::Tokenizer::create(&vocab_file, &sd_config.clip).unwrap();
         let text_model = sd_config.build_clip_transformer(&clip_weights, device).unwrap();
+        let vae = sd_config.build_vae(&vae_weights, device).unwrap();
+        let unet = sd_config.build_unet(&unet_weights, device, 4).unwrap();
 
         Self {
-            vocab_file,
-            clip_weights,
-            vae_weights: format!("{}{}", data_path, "vae.ot"),
-            unet_weights: format!("{}{}", data_path, "unet.ot"),
-
             device,
             sd_config,
             tokenizer,
             text_model,
+            vae,
+            unet,
         }
     }
 
@@ -65,10 +63,6 @@ impl StableDiffusionImageGenerationModel {
         let text_embeddings = self.text_model.forward(&tokens);
         let uncond_embeddings = self.text_model.forward(&uncond_tokens);
         let text_embeddings = Tensor::cat(&[uncond_embeddings, text_embeddings], 0).to(self.device);
-
-        let vae = &self.sd_config.build_vae(&self.vae_weights, self.device).unwrap();
-
-        let unet = &self.sd_config.build_unet(&self.unet_weights, self.device, 4).unwrap();
     
         let bsize = 1;
         for idx in 0..num_samples {
@@ -86,7 +80,7 @@ impl StableDiffusionImageGenerationModel {
                 let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
 
                 let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep);
-                let noise_pred = unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
+                let noise_pred = self.unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
                 let noise_pred = noise_pred.chunk(2, 0);
                 let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
                 let noise_pred =
@@ -95,7 +89,7 @@ impl StableDiffusionImageGenerationModel {
             }
 
             let latents = latents.to(self.device);
-            let image = vae.decode(&(&latents / 0.18215));
+            let image = self.vae.decode(&(&latents / 0.18215));
             let image = (image / 2 + 0.5).clamp(0.0, 1.0).to_device(Device::Cpu);
             let image = (image * 255.0).to_kind(Kind::Uint8);
             tch::vision::image::save(&image, format!("./output-{}.png", idx)).unwrap();
