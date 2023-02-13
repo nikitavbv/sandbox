@@ -1,7 +1,7 @@
 use {
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
-    tch::{Tensor, Device, nn::Module},
+    tch::{Tensor, Device, nn::Module, Kind},
 };
 
 pub struct StableDiffusionImageGenerationModel {
@@ -44,6 +44,11 @@ impl StableDiffusionImageGenerationModel {
     pub fn run(&self) {
         let prompt = "Orange cat looking into window";
         let uncond_prompt = "";
+        let num_samples = 1;
+        let seed = 32;
+        let n_steps = 30;
+
+        let scheduler = self.sd_config.build_scheduler(n_steps);
 
         let tokens = self.tokenizer.encode(&prompt).unwrap();
         let tokens: Vec<i64> = tokens.into_iter().map(|x| x as i64).collect();
@@ -61,6 +66,19 @@ impl StableDiffusionImageGenerationModel {
         let vae = &self.sd_config.build_vae(&self.vae_weights, self.device).unwrap();
 
         let unet = &self.sd_config.build_unet(&self.unet_weights, self.device, 4).unwrap();
+    
+        let bsize = 1;
+        for idx in 0..num_samples {
+            tch::manual_seed(seed + idx);
+            let mut latents = Tensor::randn(
+                &[bsize, self.sd_config.height / 8, self.sd_config.width / 8],
+                (Kind::Float, self.device)
+            );
+
+            latents *= scheduler.init_noise_sigma();
+
+            // TODO: complete this
+        }
     }
 }
 
