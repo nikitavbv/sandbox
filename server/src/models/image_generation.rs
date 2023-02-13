@@ -42,11 +42,14 @@ impl StableDiffusionImageGenerationModel {
     }
 
     pub fn run(&self) {
+        info!("using device: {:?}", self.device);
+
         let prompt = "Orange cat looking into window";
         let uncond_prompt = "";
         let num_samples = 1;
         let seed = 32;
         let n_steps = 30;
+        let guidance_scale = 7.5;
 
         let scheduler = self.sd_config.build_scheduler(n_steps);
 
@@ -71,13 +74,31 @@ impl StableDiffusionImageGenerationModel {
         for idx in 0..num_samples {
             tch::manual_seed(seed + idx);
             let mut latents = Tensor::randn(
-                &[bsize, self.sd_config.height / 8, self.sd_config.width / 8],
+                &[bsize, 4, self.sd_config.height / 8, self.sd_config.width / 8],
                 (Kind::Float, self.device)
             );
 
             latents *= scheduler.init_noise_sigma();
 
-            // TODO: complete this
+            for (timestep_index, &timestep) in scheduler.timesteps().iter().enumerate() {
+                info!("running timestep index: {}", timestep_index);
+
+                let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
+
+                let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep);
+                let noise_pred = unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
+                let noise_pred = noise_pred.chunk(2, 0);
+                let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
+                let noise_pred =
+                    noise_pred_uncond + (noise_pred_text - noise_pred_uncond) * guidance_scale;
+                latents = scheduler.step(&noise_pred, timestep, &latents);
+            }
+
+            let latents = latents.to(self.device);
+            let image = vae.decode(&(&latents / 0.18215));
+            let image = (image / 2 + 0.5).clamp(0.0, 1.0).to_device(Device::Cpu);
+            let image = (image * 255.0).to_kind(Kind::Uint8);
+            tch::vision::image::save(&image, format!("./output-{}.png", idx)).unwrap();
         }
     }
 }
