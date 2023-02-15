@@ -9,6 +9,7 @@ use {
     },
 };
 
+pub mod data;
 pub mod models;
 pub mod server;
 pub mod utils;
@@ -19,7 +20,7 @@ async fn main() -> std::io::Result<()> {
 
     // run_server().await;
     // run_simple_model_inference();
-    run_simple_image_generation();
+    run_simple_image_generation().await;
 
     info!("done");
     Ok(())
