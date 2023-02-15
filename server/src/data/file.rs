@@ -1,6 +1,7 @@
 use {
     std::path::Path,
     tokio::fs,
+    async_trait::async_trait,
     super::resolver::DataResolver,
 };
 
@@ -21,13 +22,13 @@ impl FileDataResolver {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl DataResolver for FileDataResolver {
-    async fn resolve(&self, key: &str) -> Vec<u8> {
-        fs::read(&self.path_for_key(key)).await.unwrap()
+    async fn resolve(&self, key: &str) -> Option<Vec<u8>> {
+        Some(fs::read(&self.path_for_key(key)).await.unwrap())
     }
 
-    async fn resolve_to_fs_path(&self, key: &str) -> String {
-        self.path_for_key(key)
+    async fn resolve_to_fs_path(&self, key: &str) -> Option<String> {
+        Some(self.path_for_key(key))
     }
 }

@@ -2,6 +2,7 @@ use {
     awsregion::Region,
     s3::{Bucket, creds::Credentials},
     config::Config,
+    async_trait::async_trait,
     super::resolver::DataResolver,
 };
 
@@ -37,13 +38,13 @@ impl ObjectStorageDataResolver {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl DataResolver for ObjectStorageDataResolver {
-    async fn resolve(&self, key: &str) -> Vec<u8> {
+    async fn resolve(&self, key: &str) -> Option<Vec<u8>> {
         unimplemented!()
     }
 
-    async fn resolve_to_fs_path(&self, key: &str) -> String {
+    async fn resolve_to_fs_path(&self, key: &str) -> Option<String> {
         unimplemented!()
     }
 }

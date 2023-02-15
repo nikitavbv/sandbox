@@ -25,10 +25,10 @@ impl StableDiffusionImageGenerationModel {
     }
 
     async fn init<T: DataResolver>(data_resolver: T) -> Self {
-        let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await;
-        let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await;
-        let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await;
-        let unet_weights = data_resolver.resolve_to_fs_path("unet.ot").await;
+        let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await.unwrap();
+        let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await.unwrap();
+        let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await.unwrap();
+        let unet_weights = data_resolver.resolve_to_fs_path("unet.ot").await.unwrap();
 
         let device = Device::cuda_if_available();
 
