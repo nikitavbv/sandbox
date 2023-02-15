@@ -2,8 +2,10 @@ use {
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
+    config::Config,
     crate::data::{
         file::FileDataResolver,
+        object_storage::ObjectStorageDataResolver,
         resolver::DataResolver,
     },
 };
@@ -18,8 +20,8 @@ pub struct StableDiffusionImageGenerationModel {
 }
 
 impl StableDiffusionImageGenerationModel {
-    pub async fn new() -> Self {
-        Self::init(FileDataResolver::new("./server/data/stable-diffusion".to_owned())).await
+    pub async fn new<T: DataResolver>(data_resolver: T) -> Self {
+        Self::init(data_resolver).await
     }
 
     async fn init<T: DataResolver>(data_resolver: T) -> Self {
@@ -104,9 +106,16 @@ impl StableDiffusionImageGenerationModel {
     }
 }
 
-pub async fn run_simple_image_generation() {
+pub async fn run_simple_image_generation(config: &Config) {
     tch::maybe_init_cuda();
 
-    let model = StableDiffusionImageGenerationModel::new().await;
+    let data_resolver = ObjectStorageDataResolver::new_with_config(
+        "nikitavbv-sandbox".to_owned(), 
+        "data/models/stable-diffusion".to_owned(), 
+        config
+    );
+
+    let data_resolver = FileDataResolver::new("./server/data/stable-diffusion".to_owned());
+    let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
     model.run();
 }

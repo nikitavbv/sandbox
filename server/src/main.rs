@@ -2,6 +2,7 @@
 
 use {
     tracing::info,
+    config::Config,
     crate::{
         utils::init_logging,
         server::run_server,
@@ -18,9 +19,15 @@ pub mod utils;
 async fn main() -> std::io::Result<()> {
     init_logging();
 
+    let config = Config::builder()
+        .add_source(config::File::with_name("./config.toml"))
+        .add_source(config::Environment::with_prefix("SANDBOX"))
+        .build()
+        .unwrap();
+
     // run_server().await;
     // run_simple_model_inference();
-    run_simple_image_generation().await;
+    run_simple_image_generation(&config).await;
 
     info!("done");
     Ok(())
