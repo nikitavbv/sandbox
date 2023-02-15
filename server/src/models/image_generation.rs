@@ -6,6 +6,7 @@ use {
     crate::data::{
         file::FileDataResolver,
         object_storage::ObjectStorageDataResolver,
+        cached_resolver::CachedResolver,
         resolver::DataResolver,
     },
 };
@@ -109,13 +110,15 @@ impl StableDiffusionImageGenerationModel {
 pub async fn run_simple_image_generation(config: &Config) {
     tch::maybe_init_cuda();
 
-    let data_resolver = ObjectStorageDataResolver::new_with_config(
+    let object_storage_resolver = ObjectStorageDataResolver::new_with_config(
         "nikitavbv-sandbox".to_owned(), 
         "data/models/stable-diffusion".to_owned(), 
         config
     );
 
-    let data_resolver = FileDataResolver::new("./server/data/stable-diffusion".to_owned());
+    let file_resolver = FileDataResolver::new("./data-cache".to_owned());
+    let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
+
     let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
     model.run();
 }

@@ -29,6 +29,15 @@ impl DataResolver for FileDataResolver {
     }
 
     async fn resolve_to_fs_path(&self, key: &str) -> Option<String> {
-        Some(self.path_for_key(key))
+        let path = self.path_for_key(key);
+        if !Path::new(&path).exists() {
+            return None;
+        }
+
+        Some(path)
+    }
+
+    async fn put(&self, key: &str, data: Vec<u8>) {
+        fs::write(self.path_for_key(key), &data).await.unwrap();
     }
 }

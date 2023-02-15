@@ -1,4 +1,5 @@
 use {
+    tracing::info,
     awsregion::Region,
     s3::{Bucket, creds::Credentials},
     config::Config,
@@ -41,10 +42,11 @@ impl ObjectStorageDataResolver {
 #[async_trait]
 impl DataResolver for ObjectStorageDataResolver {
     async fn resolve(&self, key: &str) -> Option<Vec<u8>> {
-        unimplemented!()
+        let path = format!("{}/{}", self.prefix, key);
+        Some(self.bucket.get_object(path).await.unwrap().to_vec())
     }
 
     async fn resolve_to_fs_path(&self, key: &str) -> Option<String> {
-        unimplemented!()
+        None
     }
 }
