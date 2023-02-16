@@ -1,4 +1,5 @@
 use {
+    std::time::Duration,
     tracing::info,
     awsregion::Region,
     s3::{Bucket, creds::Credentials},
@@ -33,7 +34,9 @@ impl ObjectStorageDataResolver {
                     endpoint,
                 },
                 Credentials::new(Some(&access_key), Some(&secret_key), None, None, None).unwrap()
-            ).unwrap().with_path_style(),
+            ).unwrap()
+                .with_path_style()
+                .with_request_timeout(Duration::from_secs(60 * 10)),
             prefix,
         }
     }
