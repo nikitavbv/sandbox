@@ -116,7 +116,7 @@ pub async fn run_simple_image_generation(config: &Config) {
         config
     );
 
-    let file_resolver = FileDataResolver::new("./data-cache".to_owned());
+    let file_resolver = FileDataResolver::new("./data".to_owned());
     let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
 
     let model = StableDiffusionImageGenerationModel::new(data_resolver).await;

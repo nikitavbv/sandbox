@@ -36,7 +36,7 @@ impl ObjectStorageDataResolver {
                 Credentials::new(Some(&access_key), Some(&secret_key), None, None, None).unwrap()
             ).unwrap()
                 .with_path_style()
-                .with_request_timeout(Duration::from_secs(60 * 10)),
+                .with_request_timeout(Duration::from_secs(60 * 20)),
             prefix,
         }
     }
