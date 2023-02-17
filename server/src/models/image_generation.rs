@@ -1,4 +1,5 @@
 use {
+    std::time::Instant,
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
@@ -116,9 +117,12 @@ pub async fn run_simple_image_generation(config: &Config) {
         config
     );
 
-    let file_resolver = FileDataResolver::new("./data".to_owned());
+    let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
     let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
 
     let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
+    
+    let started_at = Instant::now();
     model.run();
+    info!("image generated in {} seconds", (Instant::now() - started_at).as_secs());
 }
