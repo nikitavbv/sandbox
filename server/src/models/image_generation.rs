@@ -34,7 +34,10 @@ impl StableDiffusionImageGenerationModel {
 
         let device = Device::cuda_if_available();
 
-        let sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
+        let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
+        sd_config.width = 512;
+        sd_config.height = 512;
+
         let tokenizer = clip::Tokenizer::create(&vocab_file, &sd_config.clip).unwrap();
         let text_model = sd_config.build_clip_transformer(&clip_weights, device).unwrap();
         let vae = sd_config.build_vae(&vae_weights, device).unwrap();
