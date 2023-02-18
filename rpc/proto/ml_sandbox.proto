@@ -5,6 +5,8 @@ package ml_sandbox;
 service MLSandboxService {
     rpc RunSimpleModel(RunSimpleModelRequest) returns (RunSimpleModelResponse) {}
     rpc TrainSimpleModel(TrainSimpleModelRequest) returns (TrainSimpleModelResponse) {}
+
+    rpc RunImageGenerationModel(RunImageGenerationModelRequest) returns (RunImageGenerationModelResponse) {}
 }
 
 message RunSimpleModelRequest {
@@ -18,4 +20,12 @@ message TrainSimpleModelRequest {
 }
 
 message TrainSimpleModelResponse {
+}
+
+message RunImageGenerationModelRequest {
+    string prompt = 1;
+}
+
+message RunImageGenerationModelResponse {
+    bytes image = 1;
 }

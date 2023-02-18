@@ -1,9 +1,10 @@
 use {
-    std::time::Instant,
+    std::{time::Instant, fs},
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
     config::Config,
+    tempfile::tempdir,
     crate::data::{
         file::FileDataResolver,
         object_storage::ObjectStorageDataResolver,
@@ -53,10 +54,9 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    pub fn run(&self) {
+    pub fn run(&self, prompt: &str) -> Vec<u8> {
         info!("using device: {:?}", self.device);
 
-        let prompt = "Orange cat looking into window";
         let uncond_prompt = "";
         let num_samples = 1;
         let seed = 40;
@@ -78,36 +78,40 @@ impl StableDiffusionImageGenerationModel {
         let uncond_embeddings = self.text_model.forward(&uncond_tokens);
         let text_embeddings = Tensor::cat(&[uncond_embeddings, text_embeddings], 0).to(self.device);
     
+        let output_dir = tempdir().unwrap(); 
+
         let bsize = 1;
-        for idx in 0..num_samples {
-            tch::manual_seed(seed + idx);
-            let mut latents = Tensor::randn(
-                &[bsize, 4, self.sd_config.height / 8, self.sd_config.width / 8],
-                (Kind::Float, self.device)
-            );
+        tch::manual_seed(seed + 0);
+        let mut latents = Tensor::randn(
+            &[bsize, 4, self.sd_config.height / 8, self.sd_config.width / 8],
+            (Kind::Float, self.device)
+        );
 
-            latents *= scheduler.init_noise_sigma();
+        latents *= scheduler.init_noise_sigma();
 
-            for (timestep_index, &timestep) in scheduler.timesteps().iter().enumerate() {
-                info!("running timestep index: {}", timestep_index);
+        for (timestep_index, &timestep) in scheduler.timesteps().iter().enumerate() {
+            info!("running timestep index: {}", timestep_index);
 
-                let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
+            let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
 
-                let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep);
-                let noise_pred = self.unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
-                let noise_pred = noise_pred.chunk(2, 0);
-                let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
-                let noise_pred =
-                    noise_pred_uncond + (noise_pred_text - noise_pred_uncond) * guidance_scale;
-                latents = scheduler.step(&noise_pred, timestep, &latents);
-            }
-
-            let latents = latents.to(self.device);
-            let image = self.vae.decode(&(&latents / 0.18215));
-            let image = (image / 2 + 0.5).clamp(0.0, 1.0).to_device(Device::Cpu);
-            let image = (image * 255.0).to_kind(Kind::Uint8);
-            tch::vision::image::save(&image, format!("./output-{}.png", idx)).unwrap();
+            let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep);
+            let noise_pred = self.unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
+            let noise_pred = noise_pred.chunk(2, 0);
+            let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
+            let noise_pred =
+                noise_pred_uncond + (noise_pred_text - noise_pred_uncond) * guidance_scale;
+            latents = scheduler.step(&noise_pred, timestep, &latents);
         }
+
+        let latents = latents.to(self.device);
+        let image = self.vae.decode(&(&latents / 0.18215));
+        let image = (image / 2 + 0.5).clamp(0.0, 1.0).to_device(Device::Cpu);
+        let image = (image * 255.0).to_kind(Kind::Uint8);
+
+        let output_file = output_dir.path().join("output.png");
+        tch::vision::image::save(&image, &output_file).unwrap();
+
+        fs::read(output_file).unwrap()
     }
 }
 
@@ -126,6 +130,6 @@ pub async fn run_simple_image_generation(config: &Config) {
     let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
     
     let started_at = Instant::now();
-    model.run();
+    model.run("orange cat looking into a window");
     info!("image generated in {} seconds", (Instant::now() - started_at).as_secs());
 }

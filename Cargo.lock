@@ -1942,6 +1942,7 @@ dependencies = [
  "rpc",
  "rust-s3",
  "tch",
+ "tempfile",
  "tokio",
  "tonic",
  "tonic-reflection",

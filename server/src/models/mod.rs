@@ -33,7 +33,7 @@ impl SimpleMnistModel {
         
         let linear1 = nn::linear(&root, 2 * 24 * 24, 10, Default::default());
 
-        vs.load("./server/data/model.model").unwrap();
+        vs.load("./data/model.model").unwrap();
 
         Self {
             vs,

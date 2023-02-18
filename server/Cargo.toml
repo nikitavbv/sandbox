@@ -19,4 +19,5 @@ diffusers = { git = "https://github.com/LaurentMazare/diffusers-rs" } # the vers
 rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains significant changes compared to the version from crates.io
 aws-region = "0.25.1"
 config = "0.13.3"
+tempfile = "3.3.0"
 rpc = { path = "../rpc", features = ["server"] }
