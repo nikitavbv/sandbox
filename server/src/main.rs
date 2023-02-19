@@ -25,9 +25,9 @@ async fn main() -> std::io::Result<()> {
         .build()
         .unwrap();
 
-    run_server(&config).await;
+    // run_server(&config).await;
     // run_simple_model_inference();
-    // run_simple_image_generation(&config).await;
+    run_simple_image_generation(&config).await;
 
     info!("done");
     Ok(())

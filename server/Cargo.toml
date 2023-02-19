@@ -7,7 +7,7 @@ edition = "2021"
 tokio = { version = "1.25.0", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
-tch = "0.10.1"
+tch = "0.10.2"
 npyz = { version = "0.7.3", features = ["npz"] }
 futures-util = "0.3.26"
 async-trait = "0.1.64"
@@ -20,4 +20,5 @@ rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains signifi
 aws-region = "0.25.1"
 config = "0.13.3"
 tempfile = "3.3.0"
+rust-bert = "0.20.0"
 rpc = { path = "../rpc", features = ["server"] }
