@@ -6,7 +6,11 @@ use {
     crate::{
         utils::init_logging,
         server::run_server,
-        models::{run_simple_model_inference, image_generation::run_simple_image_generation},
+        models::{
+            run_simple_model_inference, 
+            image_generation::run_simple_image_generation,
+            text_generation::run_simple_text_generation,
+        },
     },
 };
 
@@ -27,7 +31,8 @@ async fn main() -> std::io::Result<()> {
 
     // run_server(&config).await;
     // run_simple_model_inference();
-    run_simple_image_generation(&config).await;
+    // run_simple_image_generation(&config).await;
+    run_simple_text_generation().await;
 
     info!("done");
     Ok(())
