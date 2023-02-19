@@ -7,11 +7,15 @@
 
 stable diffusion image generation model requires 10GB vram (however, there is space for optimizations).
 
+rust-bert default model (gpt2-medium) requires around of 4-5gb of vram.
+
 ## Vultr MLDev image
 
 It seems that the key to make things work is to avoid installing any updates. Otherwise, cuda exceptions start to appear.
 
 Stable diffusion model works quite well on 1/7 A100 ($250/month or $0.372/h) - which seems to be ideal for demo purposes.
+
+gpt2-medium works well on 1/10 A100.
 
 ## MPS
 
