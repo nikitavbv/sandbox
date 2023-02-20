@@ -28,11 +28,11 @@ pub struct StableDiffusionImageGenerationModel {
 }
 
 impl StableDiffusionImageGenerationModel {
-    pub async fn new<T: DataResolver>(data_resolver: T) -> Self {
+    pub async fn new<T: DataResolver>(data_resolver: &T) -> Self {
         Self::init(data_resolver).await
     }
 
-    async fn init<T: DataResolver>(data_resolver: T) -> Self {
+    async fn init<T: DataResolver>(data_resolver: &T) -> Self {
         let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await.unwrap();
         let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await.unwrap();
         let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await.unwrap();
@@ -134,7 +134,7 @@ pub async fn run_simple_image_generation(config: &Config) {
     let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
     let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
 
-    let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
+    let model = StableDiffusionImageGenerationModel::new(&data_resolver).await;
     
     let started_at = Instant::now();
     let input = ModelInput::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());

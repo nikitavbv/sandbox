@@ -43,8 +43,10 @@ pub async fn run_server(config: &Config) {
 }
 
 struct MlSandboxServiceHandler {
-    model: Mutex<SimpleMnistModel>,
-    stable_diffusion: Mutex<StableDiffusionImageGenerationModel>,
+    model: Mutex<Option<SimpleMnistModel>>,
+    stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
+
+    stable_diffusion_data_resolver: CachedResolver<ObjectStorageDataResolver, FileDataResolver>,
 }
 
 impl MlSandboxServiceHandler {
@@ -59,8 +61,10 @@ impl MlSandboxServiceHandler {
         let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
 
         Self {
-            model: Mutex::new(SimpleMnistModel::new()),
-            stable_diffusion: Mutex::new(StableDiffusionImageGenerationModel::new(data_resolver).await),
+            model: Mutex::new(None),
+            stable_diffusion: Mutex::new(None),
+
+            stable_diffusion_data_resolver: data_resolver,
         }
     }
 }
@@ -77,19 +81,26 @@ impl MlSandboxService for MlSandboxServiceHandler {
     }
 
     async fn train_simple_model(&self, req: Request<TrainSimpleModelRequest>) -> Result<Response<TrainSimpleModelResponse>, Status> {
-        let model = self.model.lock().await;
+        let mut model = self.model.lock().await;
+        if model.is_none() {
+            *model = Some(SimpleMnistModel::new());
+        }
 
-        model.train();
+        model.as_ref().unwrap().train();
         
         Ok(Response::new(TrainSimpleModelResponse {}))
     }
 
     async fn run_image_generation_model(&self, req: Request<RunImageGenerationModelRequest>) -> Result<Response<RunImageGenerationModelResponse>, Status> {
-        let model = self.stable_diffusion.lock().await;
+        let mut model = self.stable_diffusion.lock().await;
+        if model.is_none() {    
+            *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
+        }
+        
         let prompt = req.into_inner().prompt.clone();
 
         let input = ModelInput::new().with_text("prompt".to_owned(), prompt.to_owned());
-        let image = model.run(&input);
+        let image = model.as_ref().unwrap().run(&input);
         
         Ok(Response::new(RunImageGenerationModelResponse {
             image,
