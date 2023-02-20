@@ -20,6 +20,7 @@ use {
             cached_resolver::CachedResolver,
         },
         models::{
+            io::ModelInput,
             SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
         },
@@ -87,7 +88,8 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let model = self.stable_diffusion.lock().await;
         let prompt = req.into_inner().prompt.clone();
 
-        let image = model.run(&prompt);
+        let input = ModelInput::new().with_text("prompt".to_owned(), prompt.to_owned());
+        let image = model.run(&input);
         
         Ok(Response::new(RunImageGenerationModelResponse {
             image,

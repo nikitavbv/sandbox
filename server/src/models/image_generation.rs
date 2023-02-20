@@ -5,13 +5,18 @@ use {
     tch::{Tensor, Device, nn::Module, Kind},
     config::Config,
     tempfile::tempdir,
-    crate::data::{
-        file::FileDataResolver,
-        object_storage::ObjectStorageDataResolver,
-        cached_resolver::CachedResolver,
-        resolver::DataResolver,
+    crate::{
+        models::io::{ModelInput, ModelOutput},
+        data::{
+            file::FileDataResolver,
+            object_storage::ObjectStorageDataResolver,
+            cached_resolver::CachedResolver,
+            resolver::DataResolver,
+        },
     },
 };
+
+const INPUT_PARAMETER_PROMPT: &str = "prompt";
 
 pub struct StableDiffusionImageGenerationModel {
     device: Device,
@@ -54,8 +59,10 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    pub fn run(&self, prompt: &str) -> Vec<u8> {
+    pub fn run(&self, input: &ModelInput) -> Vec<u8> {
         info!("using device: {:?}", self.device);
+
+        let prompt = input.get_text(INPUT_PARAMETER_PROMPT);
 
         let uncond_prompt = "";
         let num_samples = 1;
@@ -130,6 +137,7 @@ pub async fn run_simple_image_generation(config: &Config) {
     let model = StableDiffusionImageGenerationModel::new(data_resolver).await;
     
     let started_at = Instant::now();
-    model.run("orange cat looking into a window");
+    let input = ModelInput::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());
+    model.run(&input);
     info!("image generated in {} seconds", (Instant::now() - started_at).as_secs());
 }
