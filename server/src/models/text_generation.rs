@@ -16,10 +16,10 @@ impl TextGenerationModel {
         }
     }
 
-    pub fn run(&self, input: &ModelInput) {
+    pub fn run(&self, input: &ModelInput) -> String {
         let prompt = input.get_text("prompt");
         let output = self.model.generate(&[prompt], None);
-        info!("output is {:?}", output);
+        output.get(0).unwrap().to_owned()
     }
 }
 

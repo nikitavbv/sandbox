@@ -12,6 +12,8 @@ use {
         TrainSimpleModelResponse,
         RunImageGenerationModelRequest,
         RunImageGenerationModelResponse,
+        InferenceRequest,
+        RunTextGenerationModelResponse,
     },
     crate::{
         data::{
@@ -23,6 +25,7 @@ use {
             io::ModelInput,
             SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
+            text_generation::TextGenerationModel,
         },
     },
 };
@@ -45,6 +48,7 @@ pub async fn run_server(config: &Config) {
 struct MlSandboxServiceHandler {
     model: Mutex<Option<SimpleMnistModel>>,
     stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
+    text_generation_model: Mutex<Option<TextGenerationModel>>,
 
     stable_diffusion_data_resolver: CachedResolver<ObjectStorageDataResolver, FileDataResolver>,
 }
@@ -63,6 +67,7 @@ impl MlSandboxServiceHandler {
         Self {
             model: Mutex::new(None),
             stable_diffusion: Mutex::new(None),
+            text_generation_model: Mutex::new(None),
 
             stable_diffusion_data_resolver: data_resolver,
         }
@@ -104,6 +109,20 @@ impl MlSandboxService for MlSandboxServiceHandler {
         
         Ok(Response::new(RunImageGenerationModelResponse {
             image,
+        }))
+    }
+
+    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<RunTextGenerationModelResponse>, Status> {
+        let mut model = self.text_generation_model.lock().await;
+        if model.is_none() {
+            *model = Some(TextGenerationModel::new());
+        }
+
+        let input = ModelInput::from(req.into_inner());
+        let text = model.as_ref().unwrap().run(&input);
+
+        Ok(Response::new(RunTextGenerationModelResponse {
+            text,
         }))
     }
 }

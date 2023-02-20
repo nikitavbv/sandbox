@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use {
+    std::collections::HashMap,
+    rpc::InferenceRequest,
+};
 
 pub struct ModelInput {
     data: HashMap<String, DataEntry>,
@@ -40,7 +43,25 @@ impl ModelInput {
     pub fn get_text(&self, key: &str) -> &str {
         match self.get_parameter(key) {
             DataEntry::Text(text) => text,
-            other => panic!("parameter \"{}\" is not of type text", key),
+            _ => panic!("parameter \"{}\" is not of type text", key),
+        }
+    }
+}
+
+impl From<InferenceRequest> for ModelInput {
+    fn from(value: InferenceRequest) -> Self {
+        Self {
+            data: value.entries.into_iter()
+                .map(|v| (v.key, DataEntry::from(v.value.unwrap())))
+                .collect(),
+        }
+    }
+}
+
+impl From<rpc::data_entry::Value> for DataEntry {
+    fn from(value: rpc::data_entry::Value) -> Self {
+        match value {
+            rpc::data_entry::Value::Text(text) => Self::Text(text),
         }
     }
 }
