@@ -19,7 +19,6 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: check
-  
   build:
     name: Build
     runs-on: ubuntu-latest
