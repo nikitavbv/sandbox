@@ -19,6 +19,7 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: check
+    - uses: Swatinem/rust-cache@v2
 
   build:
     name: Build
@@ -41,3 +42,4 @@ jobs:
       with:
         name: release-build
         path: target/release/server
+    - uses: Swatinem/rust-cache@v2
