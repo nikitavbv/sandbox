@@ -37,3 +37,7 @@ jobs:
       with:
         command: build
         args: --release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-build
+        path: target/release/server
