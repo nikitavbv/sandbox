@@ -1,7 +1,5 @@
-#![feature(async_closure)]
-
 use {
-    tracing::info,
+    tracing::{info, error},
     config::Config,
     crate::{
         utils::init_logging,
@@ -29,10 +27,13 @@ async fn main() -> std::io::Result<()> {
         .build()
         .unwrap();
 
-    run_server(&config).await;
-    // run_simple_model_inference();
-    // run_simple_image_generation(&config).await;
-    // run_simple_text_generation().await;
+    match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
+        "server" => run_server(&config).await,
+        "simple_model" => run_simple_model_inference(),
+        "simple_image_generation" => run_simple_image_generation(&config).await,
+        "simple_text_generation" => run_simple_text_generation().await,
+        other => error!("Unexpected action: {}", other),
+    };
 
     info!("done");
     Ok(())
