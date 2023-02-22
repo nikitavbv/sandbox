@@ -57,6 +57,7 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
+        target: wasm32-unknown-unknown
     - run: cargo install trunk
     - run: trunk build --release
       working-directory: ui
