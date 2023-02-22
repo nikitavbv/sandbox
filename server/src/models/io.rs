@@ -3,11 +3,7 @@ use {
     rpc::InferenceRequest,
 };
 
-pub struct ModelInput {
-    data: HashMap<String, DataEntry>,
-}
-
-pub struct ModelOutput {
+pub struct ModelData {
     data: HashMap<String, DataEntry>,
 }
 
@@ -15,7 +11,7 @@ pub enum DataEntry {
     Text(String),
 }
 
-impl ModelInput {
+impl ModelData {
     pub fn new() -> Self {
         Self {
             data: HashMap::new(),
@@ -48,7 +44,7 @@ impl ModelInput {
     }
 }
 
-impl From<InferenceRequest> for ModelInput {
+impl From<InferenceRequest> for ModelData {
     fn from(value: InferenceRequest) -> Self {
         Self {
             data: value.entries.into_iter()

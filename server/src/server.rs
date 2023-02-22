@@ -22,7 +22,7 @@ use {
             cached_resolver::CachedResolver,
         },
         models::{
-            io::ModelInput,
+            io::ModelData,
             SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
             text_generation::TextGenerationModel,
@@ -104,7 +104,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         
         let prompt = req.into_inner().prompt.clone();
 
-        let input = ModelInput::new().with_text("prompt".to_owned(), prompt.to_owned());
+        let input = ModelData::new().with_text("prompt".to_owned(), prompt.to_owned());
         let image = model.as_ref().unwrap().run(&input);
         
         Ok(Response::new(RunImageGenerationModelResponse {
@@ -118,7 +118,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
             *model = Some(TextGenerationModel::new());
         }
 
-        let input = ModelInput::from(req.into_inner());
+        let input = ModelData::from(req.into_inner());
         let text = model.as_ref().unwrap().run(&input);
 
         Ok(Response::new(RunTextGenerationModelResponse {

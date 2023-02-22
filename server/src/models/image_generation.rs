@@ -6,7 +6,7 @@ use {
     config::Config,
     tempfile::tempdir,
     crate::{
-        models::io::{ModelInput, ModelOutput},
+        models::io::ModelData,
         data::{
             file::FileDataResolver,
             object_storage::ObjectStorageDataResolver,
@@ -59,7 +59,7 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    pub fn run(&self, input: &ModelInput) -> Vec<u8> {
+    pub fn run(&self, input: &ModelData) -> Vec<u8> {
         info!("using device: {:?}", self.device);
 
         let prompt = input.get_text(INPUT_PARAMETER_PROMPT);
@@ -137,7 +137,7 @@ pub async fn run_simple_image_generation(config: &Config) {
     let model = StableDiffusionImageGenerationModel::new(&data_resolver).await;
     
     let started_at = Instant::now();
-    let input = ModelInput::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());
+    let input = ModelData::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());
     model.run(&input);
     info!("image generated in {} seconds", (Instant::now() - started_at).as_secs());
 }
