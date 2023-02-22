@@ -3,7 +3,7 @@ on: [push]
 name: Continuous integration
 
 jobs:
-  server build:
+  server-build:
     name: Server Build
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,7 @@ jobs:
         name: release-build
         path: target/release/server
 
-  ui build:
+  ui-build:
     name: UI Build
     runs-on: ubuntu-latest
     steps:
