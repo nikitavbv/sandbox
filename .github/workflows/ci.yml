@@ -59,6 +59,7 @@ jobs:
         override: true
     - run: cargo install trunk
     - run: trunk build --release
+      working-directory: ui
     - uses: actions/upload-artifact@v3
       with:
         name: ui-dist
