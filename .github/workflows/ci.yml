@@ -52,6 +52,9 @@ jobs:
           ui/target/
         key: ${{ runner.os }}-cargo-ui-build-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-ui-build-
+    - uses: arduino/setup-protoc@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
