@@ -85,7 +85,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         Ok(Response::new(RunSimpleModelResponse {}))
     }
 
-    async fn train_simple_model(&self, req: Request<TrainSimpleModelRequest>) -> Result<Response<TrainSimpleModelResponse>, Status> {
+    async fn train_simple_model(&self, _req: Request<TrainSimpleModelRequest>) -> Result<Response<TrainSimpleModelResponse>, Status> {
         let mut model = self.model.lock().await;
         if model.is_none() {
             *model = Some(SimpleMnistModel::new());
