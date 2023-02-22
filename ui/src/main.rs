@@ -1,4 +1,5 @@
 use {
+    std::sync::Arc,
     tracing::info,
     yew::prelude::*,
     yew_router::prelude::*,
@@ -30,7 +31,7 @@ fn app() -> Html {
 
     html!(
         <div>
-            {"Hello ML Sandbox!"}
+            {"ML Sandbox"}
             <BrowserRouter>
                 <Switch<Route> render={router_switch} />
             </BrowserRouter>
@@ -49,13 +50,21 @@ fn router_switch(route: Route) -> Html {
 
 #[function_component(Home)]
 fn home() -> Html {
-    let navigator = use_navigator().unwrap();
+    let navigator = Arc::new(use_navigator().unwrap());
+
+    let image_generation_btn_handler = {
+        let navigator = navigator.clone();
+
+        Callback::from(move |_| navigator.push(&Route::ImageGenerationModel))
+    };
+
+    let text_generation_btn_handler = Callback::from(move |_| navigator.push(&Route::TextGenerationModel));
 
     html!(
         <div>
             {"Home"}
-            <button>{"image generation model"}</button>
-            <button>{"text generation model"}</button>
+            <button onclick={image_generation_btn_handler}>{"image generation model"}</button>
+            <button onclick={text_generation_btn_handler}>{"text generation model"}</button>
         </div>
     )
 }
@@ -80,12 +89,34 @@ fn image_classification_model() -> Html {
 
 #[function_component(ImageGenerationModel)]
 fn run_image_generation_model() -> Html {
-    html!(<div>{"image generation model"}</div>)
+    let navigator = use_navigator().unwrap();
+
+    let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
+
+    html!(
+        <div>
+            <button onclick={go_home_btn_handler}>{"home"}</button>
+            <h1>{"image generation model"}</h1>
+            <input placeholder={"prompt"}/>
+            <button>{"run model"}</button>
+        </div>
+    )
 }
 
 #[function_component(TextGenerationModel)]
 fn text_generation_model() -> Html {
-    html!(<div>{"text generation model"}</div>)
+    let navigator = use_navigator().unwrap();
+    
+    let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
+
+    html!(
+        <div>
+            <button onclick={go_home_btn_handler}>{"home"}</button>
+            <h1>{"text generation model"}</h1>
+            <input placeholder={"prompt"}/>
+            <button>{"run model"}</button>
+        </div>
+    )
 }
 
 fn main() {
