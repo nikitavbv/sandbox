@@ -80,7 +80,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let image = req.into_inner().image;
         let image = image::io::Reader::new(Cursor::new(&image)).with_guessed_format().unwrap().decode().unwrap();
 
-        let model = self.model.lock().await;
+        let _model = self.model.lock().await;
         
         Ok(Response::new(RunSimpleModelResponse {}))
     }
