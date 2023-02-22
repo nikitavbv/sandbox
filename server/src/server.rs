@@ -31,6 +31,8 @@ use {
 };
 
 pub async fn run_server(config: &Config) {
+    let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
+
     Server::builder()
         .accept_http1(true)
         .add_service(
@@ -40,7 +42,7 @@ pub async fn run_server(config: &Config) {
                 .unwrap()
         )
         .add_service(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)))
-        .serve("0.0.0.0:8080".parse().unwrap())
+        .serve(format!("{}:8080", host).parse().unwrap())
         .await
         .unwrap();
 }
