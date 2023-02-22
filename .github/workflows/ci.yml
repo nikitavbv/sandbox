@@ -61,7 +61,11 @@ jobs:
         toolchain: stable
         override: true
         target: wasm32-unknown-unknown
-    - run: cargo install trunk
+    - run: |
+        if ! command -v trunk &> /dev/null
+        then
+          cargo install trunk
+        fi
     - run: trunk build --release
       working-directory: ui
     - uses: actions/upload-artifact@v3
