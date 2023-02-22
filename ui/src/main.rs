@@ -64,7 +64,7 @@ fn home() -> Html {
 fn image_classification_model() -> Html {
     let on_file_change = {
 
-        Callback::from(move |e: InputEvent| {
+        Callback::from(move |_e: InputEvent| {
             info!("callback is called");
 
             // TODO: implement reading file here
