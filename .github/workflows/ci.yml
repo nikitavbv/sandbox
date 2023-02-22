@@ -3,47 +3,11 @@ on: [push]
 name: Continuous integration
 
 jobs:
-  check:
-    name: Check
+  server build:
+    name: Server Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: arduino/setup-protoc@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    - uses: actions/cache@v3
-      continue-on-error: false
-      with:
-        path: |
-          ~/.cargo/bin
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-cargo-check-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: check
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: arduino/setup-protoc@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
     - uses: actions/cache@v3
       continue-on-error: false
       with:
@@ -55,6 +19,14 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-build-
+    - uses: arduino/setup-protoc@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
     - uses: actions-rs/cargo@v1
       with:
         command: build
@@ -63,3 +35,31 @@ jobs:
       with:
         name: release-build
         path: target/release/server
+
+  ui build:
+    name: UI Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v3
+      continue-on-error: false
+      with:
+        path: |
+          ~/.cargo/bin
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          ui/target/
+        key: ${{ runner.os }}-cargo-ui-build-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-ui-build-
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - run: cargo install trunk
+    - run: trunk build --release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ui-dist
+        path: ui/dist
