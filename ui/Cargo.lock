@@ -1255,7 +1255,9 @@ dependencies = [
  "tonic-web-wasm-client",
  "tracing",
  "tracing-wasm",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
+ "web-sys",
  "yew",
  "yew-router",
 ]

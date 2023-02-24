@@ -7,6 +7,8 @@ use {
     tonic::{Request, Status},
     wasm_bindgen_futures::spawn_local,
     tracing_wasm::WASMLayerConfigBuilder,
+    web_sys::{EventTarget, HtmlInputElement},
+    wasm_bindgen::JsCast,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
         RunSimpleModelRequest,
@@ -90,14 +92,26 @@ fn image_classification_model() -> Html {
 #[function_component(ImageGenerationModel)]
 fn run_image_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
+    let prompt = use_state(|| "".to_owned());
 
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
+    let on_prompt_change = {
+        let prompt = prompt.clone();
+
+        Callback::from(move |e: Event| {
+            let target: Option<EventTarget> = e.target();
+            let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
+            if let Some(input) = input {
+                prompt.set(input.value());
+            }
+        })
+    };
 
     html!(
         <div>
             <button onclick={go_home_btn_handler}>{"home"}</button>
             <h1>{"image generation model"}</h1>
-            <input placeholder={"prompt"}/>
+            <input onchange={on_prompt_change} value={(*prompt).clone()} placeholder={"prompt"}/>
             <button>{"run model"}</button>
         </div>
     )
@@ -106,14 +120,26 @@ fn run_image_generation_model() -> Html {
 #[function_component(TextGenerationModel)]
 fn text_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
+    let prompt = use_state(|| "".to_owned());
     
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
+    let on_prompt_change = {
+        let prompt = prompt.clone();
+
+        Callback::from(move |e: Event| {
+            let target: Option<EventTarget> = e.target();
+            let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
+            if let Some(input) = input {
+                prompt.set(input.value());
+            }
+        })
+    };
 
     html!(
         <div>
             <button onclick={go_home_btn_handler}>{"home"}</button>
             <h1>{"text generation model"}</h1>
-            <input placeholder={"prompt"}/>
+            <input onchange={on_prompt_change} value={(*prompt).clone()} placeholder={"prompt"}/>
             <button>{"run model"}</button>
         </div>
     )
