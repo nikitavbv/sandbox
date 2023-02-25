@@ -77,7 +77,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
         AWS_S3_BUCKET: ${{ secrets.S3_BUCKET }}
         SOURCE_DIR: 'ui/dist'
-        DEST_DIR: '/'
+        DEST_DIR: ''
     - uses: actions/upload-artifact@v3
       with:
         name: ui-dist
