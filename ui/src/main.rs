@@ -152,7 +152,7 @@ fn image_classification_model() -> Html {
 #[function_component(ImageGenerationModel)]
 fn run_image_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
-    let client = Arc::new(Mutex::new(MlSandboxServiceClient::new(Client::new("http://localhost:8081".to_owned()))));
+    let client = Arc::new(Mutex::new(client()));
     let state = use_reducer(ModelState::default);
 
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
@@ -219,7 +219,7 @@ fn run_image_generation_model() -> Html {
 #[function_component(TextGenerationModel)]
 fn text_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
-    let client = Arc::new(Mutex::new(MlSandboxServiceClient::new(Client::new("http://localhost:8081".to_owned()))));
+    let client = Arc::new(Mutex::new(client()));
     let state = use_reducer(ModelState::default);
 
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
@@ -294,6 +294,10 @@ fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
         InferenceResult::Text(text) => html!(<div><b>{"Result: "}</b>{ text }</div>),
         InferenceResult::Image(image) => html!(<img src={format!("data:image/png;base64, {}", base64::encode(image))} style={"display: block;"} />),
     }
+}
+
+fn client() -> MlSandboxServiceClient<Client> {
+    MlSandboxServiceClient::new(Client::new("https://sandbox.nikitavbv.com".to_owned()))
 }
 
 fn main() {
