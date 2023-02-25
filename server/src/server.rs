@@ -10,7 +10,6 @@ use {
         RunSimpleModelResponse,
         TrainSimpleModelRequest,
         TrainSimpleModelResponse,
-        RunImageGenerationModelRequest,
         RunImageGenerationModelResponse,
         InferenceRequest,
         RunTextGenerationModelResponse,
