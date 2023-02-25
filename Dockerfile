@@ -3,7 +3,8 @@ FROM ubuntu:22.04
 RUN mkdir /opt/sandbox
 WORKDIR /opt/sandbox
 
-COPY ./libtorch /opt/sandbox/libtorch
+COPY ./linux-gpu-env.sh /opt/sandbox/linux-gpu-env.sh
+RUN /opt/sandbox/linux-gpu-env.sh
 
 RUN apt update && apt install libgomp1
 

@@ -46,6 +46,8 @@ jobs:
         tags: |
           ghcr.io/nikitavbv/sandbox/sandbox:latest
           ghcr.io/nikitavbv/sandbox/sandbox:0.1.${{ github.run_number }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - uses: actions/upload-artifact@v3
       with:
         name: release-build
