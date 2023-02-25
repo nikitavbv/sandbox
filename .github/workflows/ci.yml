@@ -17,8 +17,10 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
+          libtorch/
         key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-build-
+    - run: ./linux-gpu-env.sh
     - uses: arduino/setup-protoc@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
