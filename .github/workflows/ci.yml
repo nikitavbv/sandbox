@@ -35,6 +35,7 @@ jobs:
     - uses: docker/build-push-action@v4
       with:
         push: false
+        context: '.'
     - uses: actions/upload-artifact@v3
       with:
         name: release-build
