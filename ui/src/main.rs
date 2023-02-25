@@ -140,26 +140,50 @@ fn image_classification_model() -> Html {
 #[function_component(ImageGenerationModel)]
 fn run_image_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
-    let prompt = use_state(|| "".to_owned());
+    let client = Arc::new(Mutex::new(MlSandboxServiceClient::new(Client::new("http://localhost:8081".to_owned()))));
+    let state = use_reducer(ModelState::default);
 
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
     let on_prompt_change = {
-        let prompt = prompt.clone();
+        let state = state.clone();
 
         Callback::from(move |e: Event| {
             let target: Option<EventTarget> = e.target();
             let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
             if let Some(input) = input {
-                prompt.set(input.value());
+                state.dispatch(ModelAction::UpdatePrompt(input.value()));
             }
         })
+    };
+
+    let run_inference = {
+        let state = state.clone();
+        let client = client.clone();
+
+        let prompt = state.prompt.clone();
+
+        {
+            let state = state.clone();
+
+            spawn_local(async move {
+                let mut client = client.lock().unwrap();
+                let res = client.run_image_generation_model(InferenceRequest {
+                    entries: vec![DataEntry {
+                        key: "prompt".to_owned(),
+                        value: Some(data_entry::Value::Text(prompt.clone())),
+                    }]
+                }).await.unwrap().into_inner().image;
+
+                // TODO: continue
+            })
+        }
     };
 
     html!(
         <div>
             <button onclick={go_home_btn_handler}>{"home"}</button>
             <h1>{"image generation model"}</h1>
-            <input onchange={on_prompt_change} value={(*prompt).clone()} placeholder={"prompt"}/>
+            <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
             <button>{"run model"}</button>
         </div>
     )

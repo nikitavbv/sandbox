@@ -100,15 +100,13 @@ impl MlSandboxService for MlSandboxServiceHandler {
         Ok(Response::new(TrainSimpleModelResponse {}))
     }
 
-    async fn run_image_generation_model(&self, req: Request<RunImageGenerationModelRequest>) -> Result<Response<RunImageGenerationModelResponse>, Status> {
+    async fn run_image_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<RunImageGenerationModelResponse>, Status> {
         let mut model = self.stable_diffusion.lock().await;
         if model.is_none() {    
             *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
         }
         
-        let prompt = req.into_inner().prompt.clone();
-
-        let input = ModelData::new().with_text("prompt".to_owned(), prompt.to_owned());
+        let input = ModelData::from(req.into_inner());
         let image = model.as_ref().unwrap().run(&input);
         
         Ok(Response::new(RunImageGenerationModelResponse {
