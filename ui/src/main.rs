@@ -1,5 +1,5 @@
 use {
-    std::sync::Arc,
+    std::{sync::{Arc, Mutex}, rc::Rc},
     tracing::info,
     yew::prelude::*,
     yew_router::prelude::*,
@@ -12,6 +12,9 @@ use {
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
         RunSimpleModelRequest,
+        InferenceRequest,
+        DataEntry,
+        data_entry
     }
 };
 
@@ -25,6 +28,51 @@ enum Route {
     ImageGenerationModel,
     #[at("/models/text-generation")]
     TextGenerationModel,
+}
+
+#[derive(Clone)]
+struct ModelState {
+    inference_started: bool,
+    prompt: String,
+    result: Option<String>,
+}
+
+enum ModelAction {
+    UpdatePrompt(String),
+    StartInference,
+    SetInferenceResult(String),
+}
+
+impl Default for ModelState {
+    fn default() -> Self {
+        Self {
+            inference_started: false,
+            prompt: "".to_owned(),
+            result: None,
+        }
+    }
+}
+
+impl Reducible for ModelState {
+    type Action = ModelAction;
+
+    fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
+        match action {
+            Self::Action::UpdatePrompt(prompt) => Self {
+                prompt,
+                ..(*self).clone()
+            },
+            Self::Action::StartInference => Self {
+                inference_started: true,
+                ..(*self).clone()
+            },
+            Self::Action::SetInferenceResult(result) => Self {
+                inference_started: false,
+                result: Some(result),
+                ..(*self).clone()
+            },
+        }.into()
+    }
 }
 
 #[function_component(App)]
@@ -116,31 +164,75 @@ fn run_image_generation_model() -> Html {
         </div>
     )
 }
-
+ 
 #[function_component(TextGenerationModel)]
 fn text_generation_model() -> Html {
     let navigator = use_navigator().unwrap();
-    let prompt = use_state(|| "".to_owned());
-    
+    let client = Arc::new(Mutex::new(MlSandboxServiceClient::new(Client::new("http://localhost:8081".to_owned()))));
+    let state = use_reducer(ModelState::default);
+
     let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
     let on_prompt_change = {
-        let prompt = prompt.clone();
+        let state = state.clone();
 
         Callback::from(move |e: Event| {
             let target: Option<EventTarget> = e.target();
             let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
             if let Some(input) = input {
-                prompt.set(input.value());
+                state.dispatch(ModelAction::UpdatePrompt(input.value()));
             }
         })
+    };
+
+    let run_inference = {
+        let state = state.clone();
+        let client = client.clone();
+        
+        let prompt = state.prompt.clone();
+
+        Callback::from(move |_| {
+            let client = client.clone();
+            let prompt = prompt.clone();
+
+            {
+                let state = state.clone();
+
+                spawn_local(async move {
+                    let mut client = client.lock().unwrap();
+                    let res = client.run_text_generation_model(InferenceRequest {
+                        entries: vec![DataEntry {
+                            key: "prompt".to_owned(),
+                            value: Some(data_entry::Value::Text(prompt.clone())),
+                        }],
+                    }).await.unwrap().into_inner().text;
+    
+                    state.dispatch(ModelAction::SetInferenceResult(res));
+                });
+            }
+
+            state.dispatch(ModelAction::StartInference);
+        })
+    };
+
+    let model_controls = if state.inference_started {
+        html!({"running inference..."})
+    } else {
+        html!(<button onclick={run_inference}>{"run model"}</button>)
+    };
+
+    let result = if let Some(result) = &state.result {
+        html!(<div><b>{"Result: "}</b>{ result }</div>)
+    } else {
+        html!(<div></div>)
     };
 
     html!(
         <div>
             <button onclick={go_home_btn_handler}>{"home"}</button>
             <h1>{"text generation model"}</h1>
-            <input onchange={on_prompt_change} value={(*prompt).clone()} placeholder={"prompt"}/>
-            <button>{"run model"}</button>
+            <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
+            { model_controls }
+            { result }
         </div>
     )
 }
