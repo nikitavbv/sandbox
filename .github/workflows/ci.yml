@@ -68,6 +68,14 @@ jobs:
         fi
     - run: trunk build --release
       working-directory: ui
+    - uses: shallwefootball/s3-upload-action@master
+      with:
+        endpoint: ${{ secrets.S3_ENDPOINT }}
+        aws_key_id: ${{ secrets.S3_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_bucket: ${{ secrets.S3_BUCKET }}
+        source_dir: 'ui/dist'
+        destination_dir: ''
     - uses: actions/upload-artifact@v3
       with:
         name: ui-dist
