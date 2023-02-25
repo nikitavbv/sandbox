@@ -43,7 +43,7 @@ jobs:
         push: true
         tags: |
           ghcr.io/nikitavbv/sandbox/sandbox:latest
-          ghcr.io/nikitavbv/sandbox/sandbox:0.1.${{ env.GITHUB_RUN_NUMBER }}
+          ghcr.io/nikitavbv/sandbox/sandbox:0.1.${{ github.run_number }}
     - uses: actions/upload-artifact@v3
       with:
         name: release-build
