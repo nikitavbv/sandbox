@@ -41,7 +41,9 @@ jobs:
       with:
         context: '.'
         push: true
-        tags: ghcr.io/nikitavbv/sandbox/sandbox:latest,ghcr.io/nikitavbv/sandbox/sandbox:0.1.${{ vars.GITHUB_RUN_NUMBER }}
+        tags: |
+          ghcr.io/nikitavbv/sandbox/sandbox:latest
+          ghcr.io/nikitavbv/sandbox/sandbox:0.1.${{ env.GITHUB_RUN_NUMBER }}
     - uses: actions/upload-artifact@v3
       with:
         name: release-build
