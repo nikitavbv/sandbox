@@ -1,7 +1,8 @@
 FROM ubuntu:22.04
 
-WORKDIR /app
+RUN mkdir /opt/sandbox
+WORKDIR /opt/sandbox
 
-COPY target/release/sandbox /app/app
+COPY target/release/sandbox /opt/sandbox/sandbox
 
-ENTRYPOINT /app/app
+ENTRYPOINT /opt/sandbox/sandbox
