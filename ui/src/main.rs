@@ -34,13 +34,24 @@ enum Route {
 struct ModelState {
     inference_started: bool,
     prompt: String,
-    result: Option<String>,
+    result: Option<InferenceResult>,
+}
+
+#[derive(Clone, PartialEq)]
+enum InferenceResult {
+    Text(String),
+    Image(Vec<u8>),
 }
 
 enum ModelAction {
     UpdatePrompt(String),
     StartInference,
-    SetInferenceResult(String),
+    SetInferenceResult(InferenceResult),
+}
+
+#[derive(Properties, PartialEq)]
+pub struct InferenceResultDisplayProps {
+    result: InferenceResult,
 }
 
 impl Default for ModelState {
@@ -64,6 +75,7 @@ impl Reducible for ModelState {
             },
             Self::Action::StartInference => Self {
                 inference_started: true,
+                result: None,
                 ..(*self).clone()
             },
             Self::Action::SetInferenceResult(result) => Self {
@@ -162,21 +174,35 @@ fn run_image_generation_model() -> Html {
 
         let prompt = state.prompt.clone();
 
-        {
+        Callback::from(move |_| {
+            let client = client.clone();
             let state = state.clone();
+            let prompt = prompt.clone();
 
-            spawn_local(async move {
-                let mut client = client.lock().unwrap();
-                let res = client.run_image_generation_model(InferenceRequest {
-                    entries: vec![DataEntry {
-                        key: "prompt".to_owned(),
-                        value: Some(data_entry::Value::Text(prompt.clone())),
-                    }]
-                }).await.unwrap().into_inner().image;
+            {
+                let state = state.clone();
 
-                // TODO: continue
-            })
-        }
+                spawn_local(async move {
+                    let mut client = client.lock().unwrap();
+                    let res = client.run_image_generation_model(InferenceRequest {
+                        entries: vec![DataEntry {
+                            key: "prompt".to_owned(),
+                            value: Some(data_entry::Value::Text(prompt.clone())),
+                        }]
+                    }).await.unwrap().into_inner().image;
+
+                    state.dispatch(ModelAction::SetInferenceResult(InferenceResult::Image(res)));
+                });
+            }
+
+            state.dispatch(ModelAction::StartInference);
+        })
+    };
+
+    let result = if let Some(result) = &state.result {
+        html!(<InferenceResultDisplay result={result.clone()} />)
+    } else {
+        html!(<div></div>)
     };
 
     html!(
@@ -184,7 +210,8 @@ fn run_image_generation_model() -> Html {
             <button onclick={go_home_btn_handler}>{"home"}</button>
             <h1>{"image generation model"}</h1>
             <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
-            <button>{"run model"}</button>
+            <button onclick={run_inference}>{"run model"}</button>
+            { result }
         </div>
     )
 }
@@ -230,7 +257,7 @@ fn text_generation_model() -> Html {
                         }],
                     }).await.unwrap().into_inner().text;
     
-                    state.dispatch(ModelAction::SetInferenceResult(res));
+                    state.dispatch(ModelAction::SetInferenceResult(InferenceResult::Text(res)));
                 });
             }
 
@@ -245,7 +272,7 @@ fn text_generation_model() -> Html {
     };
 
     let result = if let Some(result) = &state.result {
-        html!(<div><b>{"Result: "}</b>{ result }</div>)
+        html!(<InferenceResultDisplay result={result.clone()} />)
     } else {
         html!(<div></div>)
     };
@@ -259,6 +286,14 @@ fn text_generation_model() -> Html {
             { result }
         </div>
     )
+}
+
+#[function_component(InferenceResultDisplay)]
+fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
+    match &props.result {
+        InferenceResult::Text(text) => html!(<div><b>{"Result: "}</b>{ text }</div>),
+        InferenceResult::Image(image) => html!(<img src={format!("data:image/png;base64, {}", base64::encode(image))} style={"display: block;"} />),
+    }
 }
 
 fn main() {
