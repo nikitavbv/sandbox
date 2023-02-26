@@ -67,7 +67,7 @@ impl StableDiffusionImageGenerationModel {
         let uncond_prompt = "";
         let num_samples = 1;
         let seed = 40;
-        let n_steps = 12;
+        let n_steps = 20;
         let guidance_scale = 7.5;
 
         let scheduler = self.sd_config.build_scheduler(n_steps);
