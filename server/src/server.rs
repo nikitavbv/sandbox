@@ -1,6 +1,7 @@
 use {
     std::io::Cursor,
     tonic::{transport::Server, Status, Request, Response},
+    tracing::info,
     tokio::sync::Mutex,
     config::Config,
     rpc::{
@@ -33,6 +34,8 @@ pub async fn run_server(config: &Config) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
     let addr = format!("{}:{}", host, port).parse().unwrap();
+
+    info!("starting server on {:?}", addr);
 
     Server::builder()
         .accept_http1(true)
