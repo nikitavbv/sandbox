@@ -81,7 +81,7 @@ impl MlSandboxServiceHandler {
 impl MlSandboxService for MlSandboxServiceHandler {
     async fn run_simple_model(&self, req: Request<RunSimpleModelRequest>) -> Result<Response<RunSimpleModelResponse>, Status> {
         let image = req.into_inner().image;
-        let image = image::io::Reader::new(Cursor::new(&image)).with_guessed_format().unwrap().decode().unwrap();
+        let _image = image::io::Reader::new(Cursor::new(&image)).with_guessed_format().unwrap().decode().unwrap();
 
         let _model = self.model.lock().await;
         
