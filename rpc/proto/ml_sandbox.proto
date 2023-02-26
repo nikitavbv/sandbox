@@ -25,6 +25,7 @@ message TrainSimpleModelResponse {
 
 message RunImageGenerationModelResponse {
     bytes image = 1;
+    string worker = 2;
 }
 
 message InferenceRequest {
@@ -41,4 +42,5 @@ message DataEntry {
 
 message RunTextGenerationModelResponse {
     string text = 1;
+    string worker = 2;
 }

@@ -113,6 +113,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         
         Ok(Response::new(RunImageGenerationModelResponse {
             image,
+            worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
 
@@ -127,6 +128,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
         Ok(Response::new(RunTextGenerationModelResponse {
             text,
+            worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
 }
