@@ -1,4 +1,5 @@
 # todo
 
+- store generated images to s3 bucket
 - configure firewall
-- setup gpu instances
+- healthchecks everywhere

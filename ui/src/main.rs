@@ -15,8 +15,11 @@ use {
         InferenceRequest,
         DataEntry,
         data_entry
-    }
+    },
+    crate::components::header::Header,
 };
+
+pub mod components;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -101,7 +104,7 @@ fn app() -> Html {
 
     html!(
         <div>
-            {"ML Sandbox"}
+            <Header />
             <BrowserRouter>
                 <Switch<Route> render={router_switch} />
             </BrowserRouter>
