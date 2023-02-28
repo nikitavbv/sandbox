@@ -2115,6 +2115,7 @@ dependencies = [
  "hostname",
  "image",
  "npyz",
+ "rand",
  "rpc",
  "rust-bert",
  "rust-s3",

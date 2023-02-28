@@ -22,4 +22,5 @@ config = "0.13.3"
 tempfile = "3.3.0"
 rust-bert = "0.20.0"
 hostname = "0.3.1"
+rand = "0.8.5"
 rpc = { path = "../rpc", features = ["server"] }

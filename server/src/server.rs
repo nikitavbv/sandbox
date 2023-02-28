@@ -4,6 +4,7 @@ use {
     tracing::info,
     tokio::sync::Mutex,
     config::Config,
+    rand::distributions::{Alphanumeric, Distribution},
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
@@ -20,6 +21,7 @@ use {
             object_storage::ObjectStorageDataResolver,
             file::FileDataResolver,
             cached_resolver::CachedResolver,
+            resolver::DataResolver,
         },
         models::{
             io::ModelData,
@@ -57,6 +59,8 @@ struct MlSandboxServiceHandler {
     text_generation_model: Mutex<Option<TextGenerationModel>>,
 
     stable_diffusion_data_resolver: CachedResolver<ObjectStorageDataResolver, FileDataResolver>,
+
+    output_storage: ObjectStorageDataResolver,
 }
 
 impl MlSandboxServiceHandler {
@@ -70,12 +74,20 @@ impl MlSandboxServiceHandler {
         let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
         let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
 
+        let output_storage = ObjectStorageDataResolver::new_with_config(
+            "nikitavbv-sandbox".to_owned(),
+            "output".to_owned(),
+            config
+        );
+
         Self {
             model: Mutex::new(None),
             stable_diffusion: Mutex::new(None),
             text_generation_model: Mutex::new(None),
 
             stable_diffusion_data_resolver: data_resolver,
+
+            output_storage,
         }
     }
 }
@@ -111,6 +123,9 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let input = ModelData::from(req.into_inner());
         let image = model.as_ref().unwrap().run(&input);
         
+        let key = &generate_output_data_key();
+        self.output_storage.put(key, image.clone()).await;
+
         Ok(Response::new(RunImageGenerationModelResponse {
             image,
             worker: hostname::get().unwrap().to_string_lossy().to_string(),
@@ -131,4 +146,12 @@ impl MlSandboxService for MlSandboxServiceHandler {
             worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
+}
+
+fn generate_output_data_key() -> String {
+    let mut rng = rand::thread_rng();
+    Alphanumeric.sample_iter(&mut rng)
+        .take(14)
+        .map(char::from)
+        .collect()
 }
