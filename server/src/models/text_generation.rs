@@ -2,7 +2,7 @@ use {
     std::time::Instant,
     tracing::info,
     rust_bert::pipelines::text_generation::TextGenerationModel as RustBertTextGenerationModel,
-    crate::models::io::ModelData,
+    crate::models::{io::ModelData, Model},
 };
 
 pub struct TextGenerationModel {
@@ -15,8 +15,10 @@ impl TextGenerationModel {
             model: RustBertTextGenerationModel::new(Default::default()).unwrap(),
         }
     }
+}
 
-    pub fn run(&self, input: &ModelData) -> ModelData {
+impl Model for TextGenerationModel {
+    fn run(&self, input: &ModelData) -> ModelData {
         let prompt = input.get_text("prompt");
         let output = self.model.generate(&[prompt], None);
         let output = output.get(0).unwrap().to_owned();

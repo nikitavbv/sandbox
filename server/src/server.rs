@@ -27,6 +27,7 @@ use {
         },
         models::{
             io::ModelData,
+            Model,
             SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
             text_generation::TextGenerationModel,

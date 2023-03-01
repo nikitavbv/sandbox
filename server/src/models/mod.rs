@@ -10,11 +10,16 @@ use {
     },
     npyz::npz::NpzArchive,
     image::{DynamicImage, imageops::FilterType, GenericImageView},
+    self::io::ModelData,
 };
 
 pub mod image_generation;
 pub mod io;
 pub mod text_generation;
+
+pub trait Model {
+    fn run(&self, input: &ModelData) -> ModelData;
+}
 
 pub struct SimpleMnistModel {
     vs: VarStore,

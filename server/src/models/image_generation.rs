@@ -6,7 +6,10 @@ use {
     config::Config,
     tempfile::tempdir,
     crate::{
-        models::io::ModelData,
+        models::{
+            io::ModelData,
+            Model,
+        },
         data::{
             file::FileDataResolver,
             object_storage::ObjectStorageDataResolver,
@@ -58,8 +61,10 @@ impl StableDiffusionImageGenerationModel {
             unet,
         }
     }
+}
 
-    pub fn run(&self, input: &ModelData) -> ModelData {
+impl Model for StableDiffusionImageGenerationModel {
+    fn run(&self, input: &ModelData) -> ModelData {
         info!("using device: {:?}", self.device);
 
         let prompt = input.get_text(INPUT_PARAMETER_PROMPT);
