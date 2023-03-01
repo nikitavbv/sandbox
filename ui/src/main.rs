@@ -202,8 +202,13 @@ fn run_image_generation_model() -> Html {
                         }]
                     }).await.unwrap().into_inner();
 
+                    let image = match res.entries.get(0).unwrap().value.as_ref().unwrap() {
+                        data_entry::Value::Image(image) => image.clone(),
+                        other => panic!("unexpected repsonse type"),
+                    };
+
                     state.dispatch(ModelAction::SetInferenceResult(InferenceResult {
-                        data: InferenceResultData::Image(res.image),
+                        data: InferenceResultData::Image(image),
                         worker: res.worker,
                     }));
                 });
@@ -271,8 +276,13 @@ fn text_generation_model() -> Html {
                         }],
                     }).await.unwrap().into_inner();
     
+                    let text = match res.entries.get(0).unwrap().value.as_ref().unwrap() {
+                        data_entry::Value::Text(text) => text.to_owned(),
+                        other => panic!("unexpected repsonse type"),
+                    };
+
                     state.dispatch(ModelAction::SetInferenceResult(InferenceResult {
-                        data: InferenceResultData::Text(res.text),
+                        data: InferenceResultData::Text(text),
                         worker: res.worker,
                     }));
                 });

@@ -1,6 +1,6 @@
 use {
     std::collections::HashMap,
-    rpc::{InferenceRequest, InferenceResponse},
+    rpc::InferenceRequest,
 };
 
 pub struct ModelData {
