@@ -1,6 +1,6 @@
 use {
     std::collections::HashMap,
-    rpc::InferenceRequest,
+    rpc::{InferenceRequest, InferenceResponse},
 };
 
 pub struct ModelData {
@@ -70,6 +70,28 @@ impl From<rpc::data_entry::Value> for DataEntry {
     fn from(value: rpc::data_entry::Value) -> Self {
         match value {
             rpc::data_entry::Value::Text(text) => Self::Text(text),
+            rpc::data_entry::Value::Image(image) => Self::Image(image),
+        }
+    }
+}
+
+impl From<ModelData> for Vec<rpc::DataEntry> {
+    fn from(value: ModelData) -> Self {
+        value.data
+            .into_iter()
+            .map(|v| rpc::DataEntry {
+                key: v.0,
+                value: Some(v.1.into()),
+            })
+            .collect()
+    }
+}
+
+impl From<DataEntry> for rpc::data_entry::Value {
+    fn from(value: DataEntry) -> Self {
+        match value {
+            DataEntry::Text(text) => rpc::data_entry::Value::Text(text),
+            DataEntry::Image(image) => rpc::data_entry::Value::Image(image),
         }
     }
 }

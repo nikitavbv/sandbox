@@ -14,9 +14,8 @@ use {
         RunSimpleModelResponse,
         TrainSimpleModelRequest,
         TrainSimpleModelResponse,
-        RunImageGenerationModelResponse,
         InferenceRequest,
-        RunTextGenerationModelResponse,
+        InferenceResponse,
     },
     crate::{
         data::{
@@ -132,35 +131,35 @@ impl MlSandboxService for MlSandboxServiceHandler {
         Ok(Response::new(TrainSimpleModelResponse {}))
     }
 
-    async fn run_image_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<RunImageGenerationModelResponse>, Status> {
+    async fn run_image_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let mut model = self.stable_diffusion.lock().await;
         if model.is_none() {    
             *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
         }
         
         let input = ModelData::from(req.into_inner());
-        let image = model.as_ref().unwrap().run(&input).get_image("image").clone();
+        let output = model.as_ref().unwrap().run(&input);
         
         let key = &generate_output_data_key();
-        self.output_storage.put(key, image.clone()).await;
+        self.output_storage.put(key, output.get_image("image").clone()).await;
 
-        Ok(Response::new(RunImageGenerationModelResponse {
-            image,
+        Ok(Response::new(InferenceResponse {
+            entries: output.into(),
             worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
 
-    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<RunTextGenerationModelResponse>, Status> {
+    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let mut model = self.text_generation_model.lock().await;
         if model.is_none() {
             *model = Some(TextGenerationModel::new());
         }
 
         let input = ModelData::from(req.into_inner());
-        let text = model.as_ref().unwrap().run(&input).get_text("output").to_owned();
+        let output = model.as_ref().unwrap().run(&input);
 
-        Ok(Response::new(RunTextGenerationModelResponse {
-            text,
+        Ok(Response::new(InferenceResponse {
+            entries: output.into(),
             worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
