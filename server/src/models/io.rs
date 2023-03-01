@@ -9,6 +9,7 @@ pub struct ModelData {
 
 pub enum DataEntry {
     Text(String),
+    Image(Vec<u8>),
 }
 
 impl ModelData {
@@ -32,6 +33,10 @@ impl ModelData {
         self.with_parameter(key, DataEntry::Text(value))
     }
 
+    pub fn with_image(self, key: String, value: Vec<u8>) -> Self {
+        self.with_parameter(key, DataEntry::Image(value))
+    }
+
     pub fn get_parameter(&self, key: &str) -> &DataEntry {
         self.data.get(key).as_ref().unwrap()
     }
@@ -39,6 +44,13 @@ impl ModelData {
     pub fn get_text(&self, key: &str) -> &str {
         match self.get_parameter(key) {
             DataEntry::Text(text) => text,
+            _ => panic!("parameter \"{}\" is not of type text", key),
+        }
+    }
+
+    pub fn get_image(&self, key: &str) -> &Vec<u8> {
+        match self.get_parameter(key) {
+            DataEntry::Image(image) => image,
             _ => panic!("parameter \"{}\" is not of type text", key),
         }
     }

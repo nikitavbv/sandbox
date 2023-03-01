@@ -59,7 +59,7 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    pub fn run(&self, input: &ModelData) -> Vec<u8> {
+    pub fn run(&self, input: &ModelData) -> ModelData {
         info!("using device: {:?}", self.device);
 
         let prompt = input.get_text(INPUT_PARAMETER_PROMPT);
@@ -118,7 +118,10 @@ impl StableDiffusionImageGenerationModel {
         let output_file = output_dir.path().join("output.png");
         tch::vision::image::save(&image, &output_file).unwrap();
 
-        fs::read(output_file).unwrap()
+        let data = fs::read(output_file).unwrap();
+
+        ModelData::new()
+            .with_image("image".to_owned(), data)
     }
 }
 

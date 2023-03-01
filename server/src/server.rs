@@ -138,7 +138,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         }
         
         let input = ModelData::from(req.into_inner());
-        let image = model.as_ref().unwrap().run(&input);
+        let image = model.as_ref().unwrap().run(&input).get_image("image").clone();
         
         let key = &generate_output_data_key();
         self.output_storage.put(key, image.clone()).await;
@@ -156,7 +156,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         }
 
         let input = ModelData::from(req.into_inner());
-        let text = model.as_ref().unwrap().run(&input);
+        let text = model.as_ref().unwrap().run(&input).get_text("output").to_owned();
 
         Ok(Response::new(RunTextGenerationModelResponse {
             text,
