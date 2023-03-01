@@ -324,7 +324,7 @@ fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
 }
 
 fn client() -> MlSandboxServiceClient<Client> {
-    MlSandboxServiceClient::new(Client::new("http://localhost:8080".to_owned()))
+    MlSandboxServiceClient::new(Client::new(env!("API_ENDPOINT").to_owned()))
 }
 
 fn main() {
