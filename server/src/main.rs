@@ -3,7 +3,7 @@ use {
     config::Config,
     crate::{
         utils::init_logging,
-        server::run_server,
+        server::run_axum_server,
         models::{
             run_simple_model_inference, 
             image_generation::run_simple_image_generation,
@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
-        "server" => run_server(&config).await,
+        "server" => run_axum_server(&config).await,
         "simple_model" => run_simple_model_inference(),
         "simple_image_generation" => run_simple_image_generation(&config).await,
         "simple_text_generation" => run_simple_text_generation().await,

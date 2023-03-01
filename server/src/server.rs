@@ -5,6 +5,8 @@ use {
     tokio::sync::Mutex,
     config::Config,
     rand::distributions::{Alphanumeric, Distribution},
+    axum::{Router, routing::get},
+    axum_tonic::{NestTonic, RestGrpcService},
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
@@ -32,23 +34,30 @@ use {
     },
 };
 
-pub async fn run_server(config: &Config) {
+pub async fn run_axum_server(config: &Config) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
     let addr = format!("{}:{}", host, port).parse().unwrap();
 
-    info!("starting server on {:?}", addr);
+    info!("starting axum server on {:?}", addr);
+    
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/healthz", get(healthz));
 
-    Server::builder()
-        .accept_http1(true)
-        .add_service(
+    let grpc = Router::new()
+        .nest_tonic(
             tonic_reflection::server::Builder::configure()
                 .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
                 .build()
                 .unwrap()
         )
-        .add_service(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)))
-        .serve(addr)
+        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)));
+
+    let service = RestGrpcService::new(app, grpc);
+
+    axum::Server::bind(&addr)
+        .serve(service.into_make_service())
         .await
         .unwrap();
 }
@@ -154,4 +163,12 @@ fn generate_output_data_key() -> String {
         .take(14)
         .map(char::from)
         .collect()
+}
+
+async fn root() -> &'static str {
+    "sandbox"
+}
+
+async fn healthz() -> &'static str {
+    "ok"
 }
