@@ -14,6 +14,7 @@ use {
 
 pub mod data;
 pub mod models;
+pub mod scheduling;
 pub mod server;
 pub mod utils;
 

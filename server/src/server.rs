@@ -31,6 +31,7 @@ use {
             image_generation::StableDiffusionImageGenerationModel,
             text_generation::TextGenerationModel,
         },
+        scheduling::registry::ModelRegistry,
     },
 };
 
@@ -71,6 +72,7 @@ async fn grpc_router(config: &Config) -> Router {
 }
 
 struct MlSandboxServiceHandler {
+    registry: ModelRegistry,
     model: Mutex<Option<SimpleMnistModel>>,
     stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
     text_generation_model: Mutex<Option<TextGenerationModel>>,
@@ -98,6 +100,7 @@ impl MlSandboxServiceHandler {
         );
 
         Self {
+            registry: ModelRegistry::new(config).await,
             model: Mutex::new(None),
             stable_diffusion: Mutex::new(None),
             text_generation_model: Mutex::new(None),
@@ -133,6 +136,8 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
     async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let req = req.into_inner();
+        // let mut model = self.registry.get(&req.model);
+
         match req.model.as_str() {
             "image_generation" => {
                 let mut model = self.stable_diffusion.lock().await;
