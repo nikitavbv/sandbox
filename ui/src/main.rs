@@ -195,11 +195,12 @@ fn run_image_generation_model() -> Html {
 
                 spawn_local(async move {
                     let mut client = client.lock().unwrap();
-                    let res = client.run_image_generation_model(InferenceRequest {
+                    let res = client.run_model(InferenceRequest {
                         entries: vec![DataEntry {
                             key: "prompt".to_owned(),
                             value: Some(data_entry::Value::Text(prompt.clone())),
-                        }]
+                        }],
+                        model: "image_generation".to_owned(),
                     }).await.unwrap().into_inner();
 
                     let image = match res.entries.get(0).unwrap().value.as_ref().unwrap() {
@@ -269,11 +270,12 @@ fn text_generation_model() -> Html {
 
                 spawn_local(async move {
                     let mut client = client.lock().unwrap();
-                    let res = client.run_text_generation_model(InferenceRequest {
+                    let res = client.run_model(InferenceRequest {
                         entries: vec![DataEntry {
                             key: "prompt".to_owned(),
                             value: Some(data_entry::Value::Text(prompt.clone())),
                         }],
+                        model: "text_generation".to_owned(),
                     }).await.unwrap().into_inner();
     
                     let text = match res.entries.get(0).unwrap().value.as_ref().unwrap() {

@@ -1,7 +1,7 @@
 use {
     std::io::Cursor,
     tonic::{Status, Request, Response},
-    tracing::info,
+    tracing::{info, error},
     tokio::sync::Mutex,
     config::Config,
     rand::distributions::{Alphanumeric, Distribution},
@@ -131,37 +131,48 @@ impl MlSandboxService for MlSandboxServiceHandler {
         Ok(Response::new(TrainSimpleModelResponse {}))
     }
 
-    async fn run_image_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
-        let mut model = self.stable_diffusion.lock().await;
-        if model.is_none() {    
-            *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
+    async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
+        let req = req.into_inner();
+        match req.model.as_str() {
+            "image_generation" => {
+                let mut model = self.stable_diffusion.lock().await;
+                if model.is_none() {    
+                    *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
+                }
+                
+                let input = ModelData::from(req);
+                let output = model.as_ref().unwrap().run(&input);
+                
+                let key = &generate_output_data_key();
+                self.output_storage.put(key, output.get_image("image").clone()).await;
+
+                Ok(Response::new(InferenceResponse {
+                    entries: output.into(),
+                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
+                }))
+            },
+            "text_generation" => {
+                let mut model = self.text_generation_model.lock().await;
+                if model.is_none() {
+                    *model = Some(TextGenerationModel::new());
+                }
+
+                let input = ModelData::from(req);
+                let output = model.as_ref().unwrap().run(&input);
+
+                Ok(Response::new(InferenceResponse {
+                    entries: output.into(),
+                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
+                }))
+            },
+            other => {
+                error!("unexpected model: {}", other);
+                Ok(Response::new(InferenceResponse {
+                    entries: ModelData::new().into(),
+                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
+                }))
+            }
         }
-        
-        let input = ModelData::from(req.into_inner());
-        let output = model.as_ref().unwrap().run(&input);
-        
-        let key = &generate_output_data_key();
-        self.output_storage.put(key, output.get_image("image").clone()).await;
-
-        Ok(Response::new(InferenceResponse {
-            entries: output.into(),
-            worker: hostname::get().unwrap().to_string_lossy().to_string(),
-        }))
-    }
-
-    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
-        let mut model = self.text_generation_model.lock().await;
-        if model.is_none() {
-            *model = Some(TextGenerationModel::new());
-        }
-
-        let input = ModelData::from(req.into_inner());
-        let output = model.as_ref().unwrap().run(&input);
-
-        Ok(Response::new(InferenceResponse {
-            entries: output.into(),
-            worker: hostname::get().unwrap().to_string_lossy().to_string(),
-        }))
     }
 }
 

@@ -6,8 +6,7 @@ service MLSandboxService {
     rpc RunSimpleModel(RunSimpleModelRequest) returns (RunSimpleModelResponse) {}
     rpc TrainSimpleModel(TrainSimpleModelRequest) returns (TrainSimpleModelResponse) {}
 
-    rpc RunImageGenerationModel(InferenceRequest) returns (InferenceResponse) {}
-    rpc RunTextGenerationModel(InferenceRequest) returns (InferenceResponse) {}
+    rpc RunModel(InferenceRequest) returns (InferenceResponse) {}
 }
 
 message RunSimpleModelRequest {
@@ -25,6 +24,7 @@ message TrainSimpleModelResponse {
 
 message InferenceRequest {
     repeated DataEntry entries = 1;
+    string model = 2;
 }
 
 message InferenceResponse {
