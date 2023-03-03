@@ -16,6 +16,7 @@ use {
 pub mod image_generation;
 pub mod io;
 pub mod text_generation;
+pub mod text_summarization;
 
 pub trait Model {
     fn run(&self, input: &ModelData) -> ModelData;

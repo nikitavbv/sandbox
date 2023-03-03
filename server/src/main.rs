@@ -8,6 +8,7 @@ use {
             run_simple_model_inference, 
             image_generation::run_simple_image_generation,
             text_generation::run_simple_text_generation,
+            text_summarization::run_simple_text_summarization,
         },
     },
 };
@@ -33,6 +34,7 @@ async fn main() -> std::io::Result<()> {
         "simple_model" => run_simple_model_inference(),
         "simple_image_generation" => run_simple_image_generation(&config).await,
         "simple_text_generation" => run_simple_text_generation().await,
+        "simple_text_summarization" => run_simple_text_summarization().await,
         other => error!("Unexpected action: {}", other),
     };
 
