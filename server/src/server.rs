@@ -1,3 +1,5 @@
+use crate::models::text_summarization::TextSummarizationModel;
+
 use {
     std::io::Cursor,
     tonic::{Status, Request, Response},
@@ -76,6 +78,7 @@ struct MlSandboxServiceHandler {
     model: Mutex<Option<SimpleMnistModel>>,
     stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
     text_generation_model: Mutex<Option<TextGenerationModel>>,
+    text_summarization_model: Mutex<Option<TextSummarizationModel>>,
 
     stable_diffusion_data_resolver: CachedResolver<ObjectStorageDataResolver, FileDataResolver>,
 
@@ -104,6 +107,7 @@ impl MlSandboxServiceHandler {
             model: Mutex::new(None),
             stable_diffusion: Mutex::new(None),
             text_generation_model: Mutex::new(None),
+            text_summarization_model: Mutex::new(None),
 
             stable_diffusion_data_resolver: data_resolver,
 
@@ -138,7 +142,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let req = req.into_inner();
         // let mut model = self.registry.get(&req.model);
 
-        match req.model.as_str() {
+        Ok(match req.model.as_str() {
             "image_generation" => {
                 let mut model = self.stable_diffusion.lock().await;
                 if model.is_none() {    
@@ -151,10 +155,10 @@ impl MlSandboxService for MlSandboxServiceHandler {
                 let key = &generate_output_data_key();
                 self.output_storage.put(key, output.get_image("image").clone()).await;
 
-                Ok(Response::new(InferenceResponse {
+                Response::new(InferenceResponse {
                     entries: output.into(),
                     worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                }))
+                })
             },
             "text_generation" => {
                 let mut model = self.text_generation_model.lock().await;
@@ -165,19 +169,33 @@ impl MlSandboxService for MlSandboxServiceHandler {
                 let input = ModelData::from(req);
                 let output = model.as_ref().unwrap().run(&input);
 
-                Ok(Response::new(InferenceResponse {
+                Response::new(InferenceResponse {
                     entries: output.into(),
                     worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                }))
+                })
+            },
+            "text_summarization" => {
+                let mut model = self.text_summarization_model.lock().await;
+                if model.is_none() {
+                    *model = Some(TextSummarizationModel::new());
+                }
+
+                let input = ModelData::from(req);
+                let output = model.as_ref().unwrap().run(&input);
+
+                Response::new(InferenceResponse {
+                    entries: output.into(),
+                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
+                })
             },
             other => {
                 error!("unexpected model: {}", other);
-                Ok(Response::new(InferenceResponse {
+                Response::new(InferenceResponse {
                     entries: ModelData::new().into(),
                     worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                }))
+                })
             }
-        }
+        })
     }
 }
 
