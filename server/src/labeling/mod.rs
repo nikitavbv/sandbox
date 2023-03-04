@@ -2,7 +2,6 @@ use {
     std::{path::Path, fs::{self, File, create_dir_all}, io::Write, collections::HashMap},
     tracing::info,
     img_hash::{ImageHash, HasherConfig, Hasher, image::{Rgb, ImageBuffer, DynamicImage}},
-    quantiles::ckms::CKMS,
     ffmpeg_next::{
         media::Type,
         software::scaling::{context::Context, flag::Flags},
@@ -14,11 +13,13 @@ use {
 fn convert_video_to_frames() {
     ffmpeg_next::init().unwrap();
 
-    let new_video = 2;
-    // compute_hashes_for_video(new_video);
+    let new_video = 7;
+    if !are_frame_hashes_already_computed(new_video) {
+        compute_hashes_for_video(new_video)
+    }
 
     for video in (0..new_video) {
-        let similarity = compare_videos(video, new_video);
+        let similarity = compare_videos(new_video, video);
 
         if similarity > 0.5 {
             info!("similarity with {} is {}", video, similarity);
@@ -47,7 +48,7 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
 
             let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
 
-            if similarity > 0.8 {
+            if similarity > 0.88 {
                 result += hash_a_cnt * hash_b_cnt;
             }
         }
@@ -156,6 +157,12 @@ fn write_frame_hashes_for_video(video_index: usize, hashes: &HashMap<String, usi
     }
 
     fs::write(path, serde_json::to_vec(hashes).unwrap()).unwrap()
+}
+
+fn are_frame_hashes_already_computed(video_index: usize) -> bool {
+    let file_path = format!("data/data-labeling/frames/video{}/hashes.json", video_index);
+    let path = Path::new(&file_path);
+    path.exists()
 }
 
 pub fn run_data_labeling_tasks() {
