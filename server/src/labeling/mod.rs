@@ -1,6 +1,6 @@
 use {
     std::{path::Path, fs::{self, File, create_dir_all}, io::Write, collections::HashMap},
-    tracing::info,
+    tracing::{info, warn},
     img_hash::{ImageHash, HasherConfig, Hasher, image::{Rgb, ImageBuffer, DynamicImage}},
     config::Config,
     ffmpeg_next::{
@@ -14,7 +14,7 @@ use {
 fn convert_video_to_frames(config: &Config) {
     ffmpeg_next::init().unwrap();
 
-    let new_video = 30;
+    let new_video = 40;
     if !are_frame_hashes_already_computed(new_video) {
         compute_hashes_for_video(new_video)
     }
@@ -22,8 +22,8 @@ fn convert_video_to_frames(config: &Config) {
     for video in 0..new_video {
         let similarity = compare_videos(new_video, video);
 
-        if similarity > 0.35 {
-            info!("similarity with {} is {}", video, similarity);
+        if similarity > 0.1 {
+            warn!("similarity with {} is {}", video, similarity);
         } else {
             info!("video {} is different", video);
         }
