@@ -82,7 +82,10 @@ fn save_frame(hasher: &Hasher, frame: &Video, video_index: usize, frame_index: u
     let image = DynamicImage::ImageRgb8(img_buf);
     
     let hash = hasher.hash_image(&image).to_base64();
-    info!("hash: {}", hash);
+
+    let mut hashes = read_frame_hashes_for_video(video_index);
+    hashes.insert(hash.clone(), hashes.get(&hash).unwrap_or(&0) + 1);
+    write_frame_hashes_for_video(video_index, &hashes);
 
     // img_buf.save(path).unwrap();
 }
