@@ -2,6 +2,7 @@ use {
     std::{path::Path, fs::{self, File, create_dir_all}, io::Write, collections::HashMap},
     tracing::info,
     img_hash::{ImageHash, HasherConfig, Hasher, image::{Rgb, ImageBuffer, DynamicImage}},
+    config::Config,
     ffmpeg_next::{
         media::Type,
         software::scaling::{context::Context, flag::Flags},
@@ -10,18 +11,18 @@ use {
     },
 };
 
-fn convert_video_to_frames() {
+fn convert_video_to_frames(config: &Config) {
     ffmpeg_next::init().unwrap();
 
-    let new_video = 7;
+    let new_video = 30;
     if !are_frame_hashes_already_computed(new_video) {
         compute_hashes_for_video(new_video)
     }
 
-    for video in (0..new_video) {
+    for video in 0..new_video {
         let similarity = compare_videos(new_video, video);
 
-        if similarity > 0.5 {
+        if similarity > 0.35 {
             info!("similarity with {} is {}", video, similarity);
         } else {
             info!("video {} is different", video);
@@ -34,7 +35,6 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
     let hashes_b = read_frame_hashes_for_video(video_index_b);
 
     let frames_a: usize = hashes_a.values().sum();
-    let frames_b: usize = hashes_b.values().sum();
 
     let mut result = 0;
 
@@ -42,19 +42,26 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
         let hash_a: ImageHash<Vec<u8>> = ImageHash::from_base64(hash_a).unwrap();
         let hash_a_len = hash_a.as_bytes().len();
 
-        for (hash_b, hash_b_cnt) in &hashes_b {
+        let mut present = false;
+
+        for (hash_b, _) in &hashes_b {
             let hash_b: ImageHash<Vec<u8>> = ImageHash::from_base64(hash_b).unwrap();
             let hash_b_len = hash_b.as_bytes().len();
 
             let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
 
-            if similarity > 0.88 {
-                result += hash_a_cnt * hash_b_cnt;
+            if similarity > 0.9 {
+                present = true;
+                break;
             }
+        }
+
+        if present {
+            result += hash_a_cnt;
         }
     }
 
-    result as f64 / (frames_a.max(frames_b) as f64)
+    result as f64 / (frames_a as f64)
 }
 
 fn compute_hashes_for_video(video_index: usize) {
@@ -85,14 +92,15 @@ fn compute_hashes_for_video(video_index: usize) {
     let mut frame_index = 0;
 
     let hasher = HasherConfig::new().to_hasher();
+    let mut hashes = HashMap::new();
 
     let mut receive_and_process_decoded_frames =
-        |decoder: &mut ffmpeg_next::decoder::Video| -> Result<(), ffmpeg_next::Error> {
+        |decoder: &mut ffmpeg_next::decoder::Video, hashes: &mut HashMap<String, usize>| -> Result<(), ffmpeg_next::Error> {
             let mut decoded = Video::empty();
             while decoder.receive_frame(&mut decoded).is_ok() {
                 let mut rgb_frame = Video::empty();
                 scaler.run(&decoded, &mut rgb_frame).unwrap();
-                save_frame(&hasher, &rgb_frame, video_index, frame_index);
+                save_frame(&hasher, &rgb_frame, video_index, frame_index, hashes);
                 frame_index += 1;
             }
 
@@ -105,14 +113,16 @@ fn compute_hashes_for_video(video_index: usize) {
     for (stream, packet) in ictx.packets() {
         if stream.index() == video_stream_index {
             decoder.send_packet(&packet).unwrap();
-            receive_and_process_decoded_frames(&mut decoder).unwrap();
+            receive_and_process_decoded_frames(&mut decoder, &mut hashes).unwrap();
         }
     }
     decoder.send_eof().unwrap();
-    receive_and_process_decoded_frames(&mut decoder).unwrap();
+    receive_and_process_decoded_frames(&mut decoder, &mut hashes).unwrap();
+
+    write_frame_hashes_for_video(video_index, &hashes);
 }
 
-fn save_frame(hasher: &Hasher, frame: &Video, video_index: usize, frame_index: usize) {
+fn save_frame(hasher: &Hasher, frame: &Video, video_index: usize, frame_index: usize, hashes: &mut HashMap<String, usize>) {
     /*let file_path = format!("data/data-labeling/frames/video{}/{}.png", video_index, frame_index);
     let path = Path::new(&file_path);
     if let Some(parent) = path.parent() {
@@ -126,9 +136,7 @@ fn save_frame(hasher: &Hasher, frame: &Video, video_index: usize, frame_index: u
     
     let hash = hasher.hash_image(&image).to_base64();
 
-    let mut hashes = read_frame_hashes_for_video(video_index);
     hashes.insert(hash.clone(), hashes.get(&hash).unwrap_or(&0) + 1);
-    write_frame_hashes_for_video(video_index, &hashes);
 
     // img_buf.save(path).unwrap();
 }
@@ -165,6 +173,6 @@ fn are_frame_hashes_already_computed(video_index: usize) -> bool {
     path.exists()
 }
 
-pub fn run_data_labeling_tasks() {
-    convert_video_to_frames();
+pub fn run_data_labeling_tasks(config: &Config) {
+    convert_video_to_frames(config);
 }

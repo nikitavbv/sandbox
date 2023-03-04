@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
         "simple_image_generation" => run_simple_image_generation(&config).await,
         "simple_text_generation" => run_simple_text_generation().await,
         "simple_text_summarization" => run_simple_text_summarization().await,
-        "data_labeling" => run_data_labeling_tasks(),
+        "data_labeling" => run_data_labeling_tasks(&config),
         other => error!("Unexpected action: {}", other),
     };
 
