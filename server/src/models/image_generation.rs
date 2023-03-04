@@ -24,37 +24,30 @@ const INPUT_PARAMETER_PROMPT: &str = "prompt";
 pub struct StableDiffusionImageGenerationModel {
     device: Device,
     sd_config: stable_diffusion::StableDiffusionConfig,
+    model: ModelComponents,
+}
+
+struct ModelComponents {
     tokenizer: clip::Tokenizer,
     text_model: clip::ClipTextTransformer,
     vae: diffusers::models::vae::AutoEncoderKL,
     unet: diffusers::models::unet_2d::UNet2DConditionModel,
 }
 
-impl StableDiffusionImageGenerationModel {
-    pub async fn new<T: DataResolver>(data_resolver: &T) -> Self {
-        Self::init(data_resolver).await
-    }
-
-    async fn init<T: DataResolver>(data_resolver: &T) -> Self {
+impl ModelComponents {
+    async fn new<T: DataResolver>(data_resolver: &T, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
         let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await.unwrap();
         let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await.unwrap();
         let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await.unwrap();
         let unet_weights = data_resolver.resolve_to_fs_path("unet.ot").await.unwrap();
-
-        let device = Device::cuda_if_available();
-
-        let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
-        sd_config.width = 512;
-        sd_config.height = 512;
 
         let tokenizer = clip::Tokenizer::create(&vocab_file, &sd_config.clip).unwrap();
         let text_model = sd_config.build_clip_transformer(&clip_weights, device).unwrap();
         let vae = sd_config.build_vae(&vae_weights, device).unwrap();
         let unet = sd_config.build_unet(&unet_weights, device, 4).unwrap();
 
+
         Self {
-            device,
-            sd_config,
             tokenizer,
             text_model,
             vae,
@@ -63,7 +56,33 @@ impl StableDiffusionImageGenerationModel {
     }
 }
 
+impl StableDiffusionImageGenerationModel {
+    pub async fn new<T: DataResolver>(data_resolver: &T) -> Self {
+        Self::init(data_resolver).await
+    }
+
+    async fn init<T: DataResolver>(data_resolver: &T) -> Self {
+        let device = Device::cuda_if_available();
+
+        let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
+        sd_config.width = 512;
+        sd_config.height = 512;
+
+        let model = ModelComponents::new(data_resolver, &mut sd_config, device).await;
+
+        Self {
+            device,
+            sd_config,
+            model,
+        }
+    }
+}
+
 impl Model for StableDiffusionImageGenerationModel {
+    fn load(&mut self) {
+
+    }
+
     fn run(&self, input: &ModelData) -> ModelData {
         info!("using device: {:?}", self.device);
 
@@ -77,17 +96,17 @@ impl Model for StableDiffusionImageGenerationModel {
 
         let scheduler = self.sd_config.build_scheduler(n_steps);
 
-        let tokens = self.tokenizer.encode(&prompt).unwrap();
+        let tokens = self.model.tokenizer.encode(&prompt).unwrap();
         let tokens: Vec<i64> = tokens.into_iter().map(|x| x as i64).collect();
         let tokens = Tensor::of_slice(&tokens).view((1, -1)).to(self.device);
-        let uncond_tokens = self.tokenizer.encode(uncond_prompt).unwrap();
+        let uncond_tokens = self.model.tokenizer.encode(uncond_prompt).unwrap();
         let uncond_tokens: Vec<i64> = uncond_tokens.into_iter().map(|x| x as i64).collect();
         let uncond_tokens = Tensor::of_slice(&uncond_tokens).view((1, -1)).to(self.device);
 
         let no_grad_guard = tch::no_grad_guard();
 
-        let text_embeddings = self.text_model.forward(&tokens);
-        let uncond_embeddings = self.text_model.forward(&uncond_tokens);
+        let text_embeddings = self.model.text_model.forward(&tokens);
+        let uncond_embeddings = self.model.text_model.forward(&uncond_tokens);
         let text_embeddings = Tensor::cat(&[uncond_embeddings, text_embeddings], 0).to(self.device);
     
         let output_dir = tempdir().unwrap(); 
@@ -107,7 +126,7 @@ impl Model for StableDiffusionImageGenerationModel {
             let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
 
             let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep);
-            let noise_pred = self.unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
+            let noise_pred = self.model.unet.forward(&latent_model_input, timestep as f64, &text_embeddings);
             let noise_pred = noise_pred.chunk(2, 0);
             let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
             let noise_pred =
@@ -116,7 +135,7 @@ impl Model for StableDiffusionImageGenerationModel {
         }
 
         let latents = latents.to(self.device);
-        let image = self.vae.decode(&(&latents / 0.18215));
+        let image = self.model.vae.decode(&(&latents / 0.18215));
         let image = (image / 2 + 0.5).clamp(0.0, 1.0).to_device(Device::Cpu);
         let image = (image * 255.0).to_kind(Kind::Uint8);
 

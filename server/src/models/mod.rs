@@ -19,7 +19,11 @@ pub mod text_generation;
 pub mod text_summarization;
 
 pub trait Model {
+    fn load(&mut self) {
+    }
     fn run(&self, input: &ModelData) -> ModelData;
+    fn unload(&mut self) {
+    }
 }
 
 pub struct SimpleMnistModel {

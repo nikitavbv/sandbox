@@ -41,6 +41,10 @@ impl ModelRegistry {
         }
     }
 
+    pub fn add_model(&mut self, model_id: String, model: Box<dyn Model + Send>) {
+        self.models.insert(model_id, Arc::new(Mutex::new(model)));
+    }
+
     pub fn get(&self, model_id: &str) -> Option<Arc<Mutex<Box<dyn Model + Send>>>> {
         self.models.get(model_id).cloned()
     }
