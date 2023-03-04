@@ -26,7 +26,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: libavformat-dev
+        packages: libavformat-dev libavfilter-dev
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal

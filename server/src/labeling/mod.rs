@@ -1,6 +1,7 @@
 use {
     std::{path::Path, fs::{File, create_dir_all}, io::Write},
     tracing::info,
+    image::{Rgb, ImageBuffer},
     ffmpeg_next::{
         media::Type,
         software::scaling::{context::Context, flag::Flags},
@@ -67,7 +68,7 @@ fn convert_video_to_frames() {
 }
 
 fn save_frame(frame: &Video, video_index: usize, frame_index: usize) {
-    let file_path = format!("data/data-labeling/frames/video{}/{}.ppm", video_index, frame_index);
+    let file_path = format!("data/data-labeling/frames/video{}/{}.png", video_index, frame_index);
     let path = Path::new(&file_path);
     if let Some(parent) = path.parent() {
         if !parent.exists() {
@@ -75,9 +76,8 @@ fn save_frame(frame: &Video, video_index: usize, frame_index: usize) {
         }
     }
 
-    let mut file = File::create(file_path).unwrap();
-    file.write_all(format!("P6\n{} {}\n255\n", frame.width(), frame.height()).as_bytes()).unwrap();
-    file.write_all(frame.data(0)).unwrap();
+    let img_buf = ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(frame.width(), frame.height(), frame.data(0).to_vec()).unwrap();
+    img_buf.save(path).unwrap();
 }
 
 pub fn run_data_labeling_tasks() {
