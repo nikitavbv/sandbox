@@ -28,4 +28,5 @@ axum_tonic = "0.1.0"
 axum-test-helper = "0.2.0"
 http = "0.2.9"
 tracing-test = "0.2.4"
+ffmpeg-next = "5.1.1"
 rpc = { path = "../rpc", features = ["server"] }

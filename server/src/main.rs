@@ -4,6 +4,7 @@ use {
     crate::{
         utils::init_logging,
         server::run_axum_server,
+        labeling::run_data_labeling_tasks,
         models::{
             run_simple_model_inference, 
             image_generation::run_simple_image_generation,
@@ -14,6 +15,7 @@ use {
 };
 
 pub mod data;
+pub mod labeling;
 pub mod models;
 pub mod scheduling;
 pub mod server;
@@ -35,6 +37,7 @@ async fn main() -> std::io::Result<()> {
         "simple_image_generation" => run_simple_image_generation(&config).await,
         "simple_text_generation" => run_simple_text_generation().await,
         "simple_text_summarization" => run_simple_text_summarization().await,
+        "data_labeling" => run_data_labeling_tasks(),
         other => error!("Unexpected action: {}", other),
     };
 
