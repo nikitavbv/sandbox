@@ -14,10 +14,52 @@ use {
 fn convert_video_to_frames(config: &Config) {
     ffmpeg_next::init().unwrap();
 
-    let new_video = 40;
-    if !are_frame_hashes_already_computed(new_video) {
-        compute_hashes_for_video(new_video)
+    let input_dir = "./data/data-labeling/videos";
+    let paths = fs::read_dir(input_dir).unwrap();
+    let mut video_counter = 0;
+    let mut new_videos = Vec::new();
+
+    for path in paths {
+        let path = path.unwrap();
+        let name = path.file_name();
+        let name = name.to_string_lossy().to_lowercase();
+        
+        if name.starts_with("video") && name.ends_with(".mp4") {
+            let parse_result = name.replace("video", "").replace(".mp4", "").parse::<usize>();
+            if let Ok(parse_result) = parse_result {
+                video_counter = video_counter.max(parse_result);
+                continue;
+            }
+        }
+
+        if name == ".ds_store" {
+            continue;
+        }
+
+        new_videos.push(name);
     }
+
+    info!("videos to convert: {}", video_counter);
+    for new_video in &new_videos {
+        video_counter += 1;
+
+        if !new_video.to_lowercase().ends_with(".mp4") {
+            panic!("can only process mp4 files, got: {}", new_video);
+        }
+
+        let prev_name = format!("{}/{}", input_dir, new_video);
+        let new_name = format!("{}/video{}.mp4", input_dir, video_counter);
+        info!("moving {} to {}", prev_name, new_name);
+        fs::rename(prev_name, new_name).unwrap();
+    }
+
+    for video in 0..video_counter {
+        if !are_frame_hashes_already_computed(video) {
+            compute_hashes_for_video(video);
+        }
+    }
+
+    let new_video = 60;
 
     for video in 0..new_video {
         let similarity = compare_videos(new_video, video);
@@ -50,7 +92,7 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
 
             let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
 
-            if similarity > 0.9 {
+            if similarity > 0.79 {
                 present = true;
                 break;
             }
