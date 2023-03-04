@@ -14,10 +14,18 @@ use {
 fn convert_video_to_frames() {
     ffmpeg_next::init().unwrap();
 
-    // compute_hashes_for_video(1);
+    let new_video = 2;
+    // compute_hashes_for_video(new_video);
 
-    let similarity = compare_videos(0, 1);
-    info!("similarity is {}", similarity);
+    for video in (0..new_video) {
+        let similarity = compare_videos(video, new_video);
+
+        if similarity > 0.5 {
+            info!("similarity with {} is {}", video, similarity);
+        } else {
+            info!("video {} is different", video);
+        }
+    }
 }
 
 fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
@@ -39,7 +47,7 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
 
             let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
 
-            if similarity > 0.7 {
+            if similarity > 0.8 {
                 result += hash_a_cnt * hash_b_cnt;
             }
         }
