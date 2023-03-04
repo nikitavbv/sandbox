@@ -1,7 +1,8 @@
 use {
     std::{path::Path, fs::{self, File, create_dir_all}, io::Write, collections::HashMap},
     tracing::info,
-    img_hash::{HasherConfig, Hasher, image::{Rgb, ImageBuffer, DynamicImage}},
+    img_hash::{ImageHash, HasherConfig, Hasher, image::{Rgb, ImageBuffer, DynamicImage}},
+    quantiles::ckms::CKMS,
     ffmpeg_next::{
         media::Type,
         software::scaling::{context::Context, flag::Flags},
@@ -13,8 +14,41 @@ use {
 fn convert_video_to_frames() {
     ffmpeg_next::init().unwrap();
 
-    let video_index = 0;
+    // compute_hashes_for_video(1);
 
+    let similarity = compare_videos(0, 1);
+    info!("similarity is {}", similarity);
+}
+
+fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
+    let hashes_a = read_frame_hashes_for_video(video_index_a);
+    let hashes_b = read_frame_hashes_for_video(video_index_b);
+
+    let frames_a: usize = hashes_a.values().sum();
+    let frames_b: usize = hashes_b.values().sum();
+
+    let mut result = 0;
+
+    for (hash_a, hash_a_cnt) in &hashes_a {
+        let hash_a: ImageHash<Vec<u8>> = ImageHash::from_base64(hash_a).unwrap();
+        let hash_a_len = hash_a.as_bytes().len();
+
+        for (hash_b, hash_b_cnt) in &hashes_b {
+            let hash_b: ImageHash<Vec<u8>> = ImageHash::from_base64(hash_b).unwrap();
+            let hash_b_len = hash_b.as_bytes().len();
+
+            let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
+
+            if similarity > 0.7 {
+                result += hash_a_cnt * hash_b_cnt;
+            }
+        }
+    }
+
+    result as f64 / (frames_a.max(frames_b) as f64)
+}
+
+fn compute_hashes_for_video(video_index: usize) {
     let file_path = format!("data/data-labeling/videos/video{}.mp4", video_index);
     let file_path = Path::new(&file_path);
 

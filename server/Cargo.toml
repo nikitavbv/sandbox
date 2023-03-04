@@ -31,4 +31,5 @@ tracing-test = "0.2.4"
 ffmpeg-next = "5.1.1"
 img_hash = "3.2.0"
 serde_json = "1.0.93"
+quantiles = "0.7.1"
 rpc = { path = "../rpc", features = ["server"] }
