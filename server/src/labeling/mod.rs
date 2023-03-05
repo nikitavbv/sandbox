@@ -32,7 +32,7 @@ fn convert_video_to_frames(config: &Config) {
             }
         }
 
-        if name == ".ds_store" {
+        if name == ".ds_store" || name == "metadata.md" {
             continue;
         }
 
@@ -53,18 +53,18 @@ fn convert_video_to_frames(config: &Config) {
         fs::rename(prev_name, new_name).unwrap();
     }
 
-    for video in 0..video_counter {
+    for video in 0..(video_counter + 1) {
         if !are_frame_hashes_already_computed(video) {
             compute_hashes_for_video(video);
         }
     }
 
-    let new_video = 60;
+    let new_video = config.get("data_labeling.video").unwrap_or(135);
 
     for video in 0..new_video {
         let similarity = compare_videos(new_video, video);
 
-        if similarity > 0.1 {
+        if similarity > 0.2 {
             warn!("similarity with {} is {}", video, similarity);
         } else {
             info!("video {} is different", video);
@@ -92,7 +92,7 @@ fn compare_videos(video_index_a: usize, video_index_b: usize) -> f64 {
 
             let similarity = 1.0 - (hash_a.dist(&hash_b) as f64 / ((hash_a_len.max(hash_b_len) as f64) * 8.0));
 
-            if similarity > 0.79 {
+            if similarity > 0.8 {
                 present = true;
                 break;
             }
