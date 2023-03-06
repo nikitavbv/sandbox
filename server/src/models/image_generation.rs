@@ -46,7 +46,6 @@ impl ModelComponents {
         let vae = sd_config.build_vae(&vae_weights, device).unwrap();
         let unet = sd_config.build_unet(&unet_weights, device, 4).unwrap();
 
-
         Self {
             tokenizer,
             text_model,

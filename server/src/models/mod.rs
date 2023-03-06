@@ -1,5 +1,5 @@
 use {
-    std::{fs::File, io::BufReader},
+    std::{fs::File, io::BufReader, pin::Pin, future::Future},
     tracing::info,
     tch::{
         nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig},
@@ -9,8 +9,13 @@ use {
         Device,
     },
     npyz::npz::NpzArchive,
+    config::Config,
     image::{DynamicImage, imageops::FilterType, GenericImageView},
-    self::io::ModelData,
+    crate::data::file::FileDataResolver,
+    self::{
+        io::ModelData,
+        image_generation::StableDiffusionImageGenerationModel,
+    },
 };
 
 pub mod image_generation;
@@ -19,10 +24,36 @@ pub mod text_generation;
 pub mod text_summarization;
 
 pub trait Model {
+    fn create() -> Self where Self:Sized {
+        unimplemented!()
+    }
+
     fn load(&mut self) {
     }
+
     fn run(&self, input: &ModelData) -> ModelData;
+    
     fn unload(&mut self) {
+    }
+}
+
+pub struct ModelDefinition {
+    id: String,
+    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model>>>>,
+}
+
+impl ModelDefinition {
+    pub fn default(config: &Config) -> Self {
+        Self {
+            id: "stable-diffusion".to_owned(),
+            factory: |resolver| Box::pin(async move {
+                Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model>
+            }),
+        }
+    }
+
+    pub async fn do_something(&self) -> Box<dyn Model> {
+        (self.factory)(FileDataResolver::new("".to_owned())).await
     }
 }
 
