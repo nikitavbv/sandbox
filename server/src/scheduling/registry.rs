@@ -13,39 +13,34 @@ use {
         },
         models::{
             Model,
+            ModelDefinition,
             image_generation::StableDiffusionImageGenerationModel,
         },
     },
 };
 
 pub struct ModelRegistry {
-    models: HashMap<String, Arc<Mutex<Box<dyn Model + Send>>>>,
+    models: HashMap<String, ModelDefinition>,
 }
 
 impl ModelRegistry {
     pub async fn new(config: &Config) -> Self {
-        let object_storage_resolver = ObjectStorageDataResolver::new_with_config(
-            "nikitavbv-sandbox".to_owned(), 
-            "data/models/stable-diffusion".to_owned(), 
-            config
-        );
-
-        let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
-        let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
-
-        let mut models: HashMap<String, Arc<Mutex<Box<dyn Model + Send>>>> = HashMap::new();        
-        // models.insert("image_generation".to_owned(), Arc::new(Mutex::new(Box::new(StableDiffusionImageGenerationModel::new(&data_resolver).await))));
-
         Self {
-            models,
+            models: HashMap::new(),
         }
     }
 
-    pub fn add_model(&mut self, model_id: String, model: Box<dyn Model + Send>) {
-        self.models.insert(model_id, Arc::new(Mutex::new(model)));
+    pub fn with_definition(self, definition: ModelDefinition) -> Self {
+        let mut models = self.models;
+        models.insert(definition.id().to_owned(), definition);
+
+        Self {
+            models,
+            ..self
+        }
     }
 
-    pub fn get(&self, model_id: &str) -> Option<Arc<Mutex<Box<dyn Model + Send>>>> {
+    pub fn get(&self, model_id: &str) -> Option<ModelDefinition> {
         self.models.get(model_id).cloned()
     }
 }

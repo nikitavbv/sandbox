@@ -1,7 +1,5 @@
-use crate::models::text_summarization::TextSummarizationModel;
-
 use {
-    std::io::Cursor,
+    std::{io::Cursor, pin::Pin, future::Future},
     tonic::{Status, Request, Response},
     tracing::{info, error},
     tokio::sync::Mutex,
@@ -29,11 +27,16 @@ use {
         models::{
             io::ModelData,
             Model,
+            ModelDefinition,
             SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
             text_generation::TextGenerationModel,
+            text_summarization::TextSummarizationModel,
         },
-        scheduling::registry::ModelRegistry,
+        scheduling::{
+            registry::ModelRegistry,
+            simple::SimpleScheduler,
+        },
     },
 };
 
@@ -74,7 +77,8 @@ async fn grpc_router(config: &Config) -> Router {
 }
 
 struct MlSandboxServiceHandler {
-    registry: ModelRegistry,
+    scheduer: SimpleScheduler,
+
     model: Mutex<Option<SimpleMnistModel>>,
     stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
     text_generation_model: Mutex<Option<TextGenerationModel>>,
@@ -102,8 +106,12 @@ impl MlSandboxServiceHandler {
             config
         );
 
+        let registry = ModelRegistry::new(config).await
+            .with_definition(ModelDefinition::new("image_generation".to_owned(), image_generation_model_factory));
+
         Self {
-            registry: ModelRegistry::new(config).await,
+            scheduer: SimpleScheduler::new(registry),
+            
             model: Mutex::new(None),
             stable_diffusion: Mutex::new(None),
             text_generation_model: Mutex::new(None),
@@ -213,6 +221,10 @@ async fn root() -> &'static str {
 
 async fn healthz() -> &'static str {
     "ok"
+}
+
+fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>> {
+    unimplemented!()
 }
 
 #[cfg(test)]

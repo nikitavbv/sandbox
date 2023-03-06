@@ -37,23 +37,35 @@ pub trait Model {
     }
 }
 
+#[derive(Clone)]
 pub struct ModelDefinition {
     id: String,
-    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model>>>>,
+    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>>,
 }
 
 impl ModelDefinition {
+    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>>) -> Self {
+        Self {
+            id,
+            factory,
+        }
+    }
+
     pub fn default(config: &Config) -> Self {
         Self {
             id: "stable-diffusion".to_owned(),
             factory: |resolver| Box::pin(async move {
-                Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model>
+                Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model + Send>
             }),
         }
     }
 
-    pub async fn do_something(&self) -> Box<dyn Model> {
-        (self.factory)(FileDataResolver::new("".to_owned())).await
+    pub async fn create_instance(&self) -> Box<dyn Model + Send> {
+        (self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await
+    }
+
+    pub fn id(&self) -> &String {
+        &self.id
     }
 }
 
