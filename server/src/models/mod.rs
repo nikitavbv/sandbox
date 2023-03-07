@@ -1,5 +1,5 @@
 use {
-    std::{fs::File, io::BufReader, pin::Pin, future::Future},
+    std::{fs::File, io::BufReader, pin::Pin, future::Future, sync::Arc},
     tracing::info,
     tch::{
         nn::{self, VarStore, ConvConfig, Conv2D, Linear, OptimizerConfig},
@@ -11,6 +11,7 @@ use {
     npyz::npz::NpzArchive,
     config::Config,
     image::{DynamicImage, imageops::FilterType, GenericImageView},
+    tokio::sync::Mutex,
     crate::data::file::FileDataResolver,
     self::{
         io::ModelData,
@@ -40,28 +41,19 @@ pub trait Model {
 #[derive(Clone)]
 pub struct ModelDefinition {
     id: String,
-    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>>,
+    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>>,
 }
 
 impl ModelDefinition {
-    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>>) -> Self {
+    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>>) -> Self {
         Self {
             id,
             factory,
         }
     }
 
-    pub fn default(config: &Config) -> Self {
-        Self {
-            id: "stable-diffusion".to_owned(),
-            factory: |resolver| Box::pin(async move {
-                Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model + Send>
-            }),
-        }
-    }
-
-    pub async fn create_instance(&self) -> Box<dyn Model + Send> {
-        (self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await
+    pub async fn create_instance(&self) -> Arc<Mutex<Box<dyn Model>>> {
+        Arc::new((self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await)
     }
 
     pub fn id(&self) -> &String {

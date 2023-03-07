@@ -152,13 +152,9 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
         Ok(match req.model.as_str() {
             "image_generation" => {
-                let mut model = self.stable_diffusion.lock().await;
-                if model.is_none() {    
-                    *model = Some(StableDiffusionImageGenerationModel::new(&self.stable_diffusion_data_resolver).await);
-                }
-                
+                let model_id = req.model.clone();
                 let input = ModelData::from(req);
-                let output = model.as_ref().unwrap().run(&input);
+                let output = self.scheduer.run(&model_id, &input).await;
                 
                 let key = &generate_output_data_key();
                 self.output_storage.put(key, output.get_image("image").clone()).await;
@@ -223,8 +219,10 @@ async fn healthz() -> &'static str {
     "ok"
 }
 
-fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>>>> {
-    unimplemented!()
+fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>> {
+    Box::pin(async move {
+        Mutex::new(Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model>)
+    })
 }
 
 #[cfg(test)]
