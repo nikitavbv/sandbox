@@ -75,9 +75,9 @@ struct MlSandboxServiceHandler {
 impl MlSandboxServiceHandler {
     pub async fn new(config: &Config) -> Self {
         let registry = ModelRegistry::new(config).await
-            .with_definition(ModelDefinition::new("image_generation".to_owned(), image_generation_model_factory))
-            .with_definition(ModelDefinition::new("text_generation".to_owned(), text_generation_model_factory))
-            .with_definition(ModelDefinition::new("text_summarization".to_owned(), text_summarization_model_factory));
+            .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
+            .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
+            .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));
 
         Self {
             scheduer: SimpleScheduler::new(registry),
