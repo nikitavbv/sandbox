@@ -11,7 +11,6 @@ use {
     wasm_bindgen::JsCast,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
-        RunSimpleModelRequest,
         InferenceRequest,
         DataEntry,
         data_entry
