@@ -37,6 +37,10 @@ impl ModelData {
         self.with_parameter(key, DataEntry::Image(value))
     }
 
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.data.contains_key(key)
+    }
+
     pub fn get_parameter(&self, key: &str) -> &DataEntry {
         self.data.get(key).as_ref().unwrap()
     }

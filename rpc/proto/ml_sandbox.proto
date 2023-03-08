@@ -3,23 +3,7 @@ syntax = "proto3";
 package ml_sandbox;
 
 service MLSandboxService {
-    rpc RunSimpleModel(RunSimpleModelRequest) returns (RunSimpleModelResponse) {}
-    rpc TrainSimpleModel(TrainSimpleModelRequest) returns (TrainSimpleModelResponse) {}
-
     rpc RunModel(InferenceRequest) returns (InferenceResponse) {}
-}
-
-message RunSimpleModelRequest {
-    bytes image = 1;
-}
-
-message RunSimpleModelResponse {
-}
-
-message TrainSimpleModelRequest {
-}
-
-message TrainSimpleModelResponse {
 }
 
 message InferenceRequest {

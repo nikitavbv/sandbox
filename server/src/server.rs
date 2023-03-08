@@ -10,10 +10,6 @@ use {
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
-        RunSimpleModelRequest,
-        RunSimpleModelResponse,
-        TrainSimpleModelRequest,
-        TrainSimpleModelResponse,
         InferenceRequest,
         InferenceResponse,
     },
@@ -28,7 +24,6 @@ use {
             io::ModelData,
             Model,
             ModelDefinition,
-            SimpleMnistModel,
             image_generation::StableDiffusionImageGenerationModel,
             text_generation::TextGenerationModel,
             text_summarization::TextSummarizationModel,
@@ -78,14 +73,6 @@ async fn grpc_router(config: &Config) -> Router {
 
 struct MlSandboxServiceHandler {
     scheduer: SimpleScheduler,
-
-    model: Mutex<Option<SimpleMnistModel>>,
-    stable_diffusion: Mutex<Option<StableDiffusionImageGenerationModel>>,
-    text_generation_model: Mutex<Option<TextGenerationModel>>,
-    text_summarization_model: Mutex<Option<TextSummarizationModel>>,
-
-    stable_diffusion_data_resolver: CachedResolver<ObjectStorageDataResolver, FileDataResolver>,
-
     output_storage: ObjectStorageDataResolver,
 }
 
@@ -107,18 +94,12 @@ impl MlSandboxServiceHandler {
         );
 
         let registry = ModelRegistry::new(config).await
-            .with_definition(ModelDefinition::new("image_generation".to_owned(), image_generation_model_factory));
+            .with_definition(ModelDefinition::new("image_generation".to_owned(), image_generation_model_factory))
+            .with_definition(ModelDefinition::new("text_generation".to_owned(), text_generation_model_factory))
+            .with_definition(ModelDefinition::new("text_summarization".to_owned(), text_summarization_model_factory));
 
         Self {
             scheduer: SimpleScheduler::new(registry),
-            
-            model: Mutex::new(None),
-            stable_diffusion: Mutex::new(None),
-            text_generation_model: Mutex::new(None),
-            text_summarization_model: Mutex::new(None),
-
-            stable_diffusion_data_resolver: data_resolver,
-
             output_storage,
         }
     }
@@ -126,80 +107,22 @@ impl MlSandboxServiceHandler {
 
 #[tonic::async_trait]
 impl MlSandboxService for MlSandboxServiceHandler {
-    async fn run_simple_model(&self, req: Request<RunSimpleModelRequest>) -> Result<Response<RunSimpleModelResponse>, Status> {
-        let image = req.into_inner().image;
-        let _image = image::io::Reader::new(Cursor::new(&image)).with_guessed_format().unwrap().decode().unwrap();
-
-        let _model = self.model.lock().await;
-        
-        Ok(Response::new(RunSimpleModelResponse {}))
-    }
-
-    async fn train_simple_model(&self, _req: Request<TrainSimpleModelRequest>) -> Result<Response<TrainSimpleModelResponse>, Status> {
-        let mut model = self.model.lock().await;
-        if model.is_none() {
-            *model = Some(SimpleMnistModel::new());
-        }
-
-        model.as_ref().unwrap().train();
-        
-        Ok(Response::new(TrainSimpleModelResponse {}))
-    }
-
     async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let req = req.into_inner();
-        // let mut model = self.registry.get(&req.model);
 
-        Ok(match req.model.as_str() {
-            "image_generation" => {
-                let model_id = req.model.clone();
-                let input = ModelData::from(req);
-                let output = self.scheduer.run(&model_id, &input).await;
-                
-                let key = &generate_output_data_key();
-                self.output_storage.put(key, output.get_image("image").clone()).await;
+        let model_id = req.model.clone();
+        let input = ModelData::from(req);
+        let output = self.scheduer.run(&model_id, &input).await;
+        
+        if output.contains_key("image") {
+            let key = &generate_output_data_key();
+            self.output_storage.put(key, output.get_image("image").clone()).await;    
+        }
 
-                Response::new(InferenceResponse {
-                    entries: output.into(),
-                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                })
-            },
-            "text_generation" => {
-                let mut model = self.text_generation_model.lock().await;
-                if model.is_none() {
-                    *model = Some(TextGenerationModel::new());
-                }
-
-                let input = ModelData::from(req);
-                let output = model.as_ref().unwrap().run(&input);
-
-                Response::new(InferenceResponse {
-                    entries: output.into(),
-                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                })
-            },
-            "text_summarization" => {
-                let mut model = self.text_summarization_model.lock().await;
-                if model.is_none() {
-                    *model = Some(TextSummarizationModel::new());
-                }
-
-                let input = ModelData::from(req);
-                let output = model.as_ref().unwrap().run(&input);
-
-                Response::new(InferenceResponse {
-                    entries: output.into(),
-                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                })
-            },
-            other => {
-                error!("unexpected model: {}", other);
-                Response::new(InferenceResponse {
-                    entries: ModelData::new().into(),
-                    worker: hostname::get().unwrap().to_string_lossy().to_string(),
-                })
-            }
-        })
+        Ok(Response::new(InferenceResponse {
+            entries: output.into(),
+            worker: hostname::get().unwrap().to_string_lossy().to_string(),
+        }))
     }
 }
 
@@ -219,9 +142,21 @@ async fn healthz() -> &'static str {
     "ok"
 }
 
-fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>> {
+fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
     Box::pin(async move {
-        Mutex::new(Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model>)
+        Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model + Send>
+    })
+}
+
+fn text_generation_model_factory(_resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
+    Box::pin(async move {
+        Box::new(TextGenerationModel::new()) as Box<dyn Model + Send>
+    })
+}
+
+fn text_summarization_model_factory(_resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
+    Box::pin(async move {
+        Box::new(TextSummarizationModel::new()) as Box<dyn Model + Send>
     })
 }
 

@@ -41,19 +41,19 @@ pub trait Model {
 #[derive(Clone)]
 pub struct ModelDefinition {
     id: String,
-    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>>,
+    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>,
 }
 
 impl ModelDefinition {
-    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Mutex<Box<dyn Model>>>>>) -> Self {
+    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>) -> Self {
         Self {
             id,
             factory,
         }
     }
 
-    pub async fn create_instance(&self) -> Arc<Mutex<Box<dyn Model>>> {
-        Arc::new((self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await)
+    pub async fn create_instance(&self) -> Box<dyn Model + Send> {
+        (self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await
     }
 
     pub fn id(&self) -> &String {

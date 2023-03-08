@@ -1,5 +1,4 @@
 use {
-    std::sync::Arc,
     tokio::sync::Mutex,
     tracing::info,
     crate::{
@@ -11,26 +10,25 @@ use {
 pub struct SimpleScheduler {
     registry: ModelRegistry,
 
-    // loaded_model: Mutex<Option<(ModelDefinition, Arc<Box<dyn Model>>)>>,
+    loaded_model: Mutex<Option<(ModelDefinition, Box<dyn Model + Send>)>>,
 }
 
 impl SimpleScheduler {
     pub fn new(registry: ModelRegistry) -> Self {
         Self {
             registry,
-            // loaded_model: Mutex::new(None),
+            loaded_model: Mutex::new(None),
         }
     }
 
     pub async fn run(&self, model_id: &str, input: &ModelData) -> ModelData {
-        unimplemented!()
-        /*self.load_model_if_needed(model_id).await;
+        self.load_model_if_needed(model_id).await;
         let model = self.loaded_model.lock().await;
-        model.as_ref().unwrap().1.run(input)*/
+        model.as_ref().unwrap().1.run(input)
     }
 
     async fn load_model_if_needed(&self, model_id: &str) {
-        /*let mut loaded_model = self.loaded_model.lock().await;
+        let mut loaded_model = self.loaded_model.lock().await;
 
         if loaded_model.is_none() || loaded_model.as_ref().unwrap().0.id() != model_id {
             info!(model_id, "loading model");
@@ -40,7 +38,6 @@ impl SimpleScheduler {
             *loaded_model = Some((definition, model));
         } else {
             info!(model_id, "model is already loaded");
-        }*/
-        unimplemented!()
+        }
     }
 }
