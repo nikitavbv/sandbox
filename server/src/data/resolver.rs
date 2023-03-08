@@ -63,6 +63,10 @@ impl DataResolver {
         None
     }
 
+    pub async fn put(&self, path: String, value: &[u8]) {
+        self.bucket.as_ref().unwrap().put_object(path, value).await.unwrap();
+    }
+
     fn key_to_path(&self, key: &str) -> String {
         Path::new("data").join(key).to_string_lossy().to_string()
     }

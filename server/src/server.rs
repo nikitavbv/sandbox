@@ -97,7 +97,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         
         if output.contains_key("image") {
             let key = &generate_output_data_key();
-            // self.output_storage.put(key, output.get_image("image").clone()).await;    
+            self.context.data_resolver().put(format!("output/images/{}", key), &output.get_image("image").clone()).await;    
         }
 
         Ok(Response::new(InferenceResponse {
