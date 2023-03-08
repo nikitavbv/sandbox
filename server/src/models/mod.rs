@@ -12,7 +12,10 @@ use {
     config::Config,
     image::{DynamicImage, imageops::FilterType, GenericImageView},
     tokio::sync::Mutex,
-    crate::data::file::FileDataResolver,
+    crate::{
+        data::resolver::DataResolver,
+        context::Context,
+    },
     self::{
         io::ModelData,
         image_generation::StableDiffusionImageGenerationModel,
@@ -41,19 +44,19 @@ pub trait Model {
 #[derive(Clone)]
 pub struct ModelDefinition {
     id: String,
-    factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>,
+    factory: fn(Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>,
 }
 
 impl ModelDefinition {
-    pub fn new(id: String, factory: fn(FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>) -> Self {
+    pub fn new(id: String, factory: fn(Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>>) -> Self {
         Self {
             id,
             factory,
         }
     }
 
-    pub async fn create_instance(&self) -> Box<dyn Model + Send> {
-        (self.factory)(FileDataResolver::new("no path here, this should be fixed".to_owned())).await
+    pub async fn create_instance(&self, context: Arc<Context>) -> Box<dyn Model + Send> {
+        (self.factory)(context).await
     }
 
     pub fn id(&self) -> &String {

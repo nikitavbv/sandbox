@@ -11,9 +11,6 @@ use {
             Model,
         },
         data::{
-            file::FileDataResolver,
-            object_storage::ObjectStorageDataResolver,
-            cached_resolver::CachedResolver,
             resolver::DataResolver,
         },
     },
@@ -35,7 +32,7 @@ struct ModelComponents {
 }
 
 impl ModelComponents {
-    async fn new<T: DataResolver>(data_resolver: &T, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
+    async fn new(data_resolver: &DataResolver, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
         let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await.unwrap();
         let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await.unwrap();
         let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await.unwrap();
@@ -56,11 +53,11 @@ impl ModelComponents {
 }
 
 impl StableDiffusionImageGenerationModel {
-    pub async fn new<T: DataResolver>(data_resolver: &T) -> Self {
+    pub async fn new(data_resolver: &DataResolver) -> Self {
         Self::init(data_resolver).await
     }
 
-    async fn init<T: DataResolver>(data_resolver: &T) -> Self {
+    async fn init(data_resolver: &DataResolver) -> Self {
         let device = Device::cuda_if_available();
 
         let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
@@ -151,16 +148,8 @@ impl Model for StableDiffusionImageGenerationModel {
 pub async fn run_simple_image_generation(config: &Config) {
     tch::maybe_init_cuda();
 
-    let object_storage_resolver = ObjectStorageDataResolver::new_with_config(
-        "nikitavbv-sandbox".to_owned(), 
-        "data/models/stable-diffusion".to_owned(), 
-        config
-    );
-
-    let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
-    let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
-
-    let model = StableDiffusionImageGenerationModel::new(&data_resolver).await;
+    let resolver = DataResolver::new(config);
+    let model = StableDiffusionImageGenerationModel::new(&&resolver).await;
     
     let started_at = Instant::now();
     let input = ModelData::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());

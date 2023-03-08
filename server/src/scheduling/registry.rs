@@ -6,11 +6,6 @@ use {
     tokio::sync::Mutex,
     config::Config,
     crate::{
-        data::{
-            file::FileDataResolver,
-            cached_resolver::CachedResolver,
-            object_storage::ObjectStorageDataResolver,
-        },
         models::{
             Model,
             ModelDefinition,

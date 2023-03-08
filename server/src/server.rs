@@ -1,5 +1,5 @@
 use {
-    std::{io::Cursor, pin::Pin, future::Future},
+    std::{io::Cursor, pin::Pin, future::Future, sync::Arc},
     tonic::{Status, Request, Response},
     tracing::{info, error},
     tokio::sync::Mutex,
@@ -14,12 +14,7 @@ use {
         InferenceResponse,
     },
     crate::{
-        data::{
-            object_storage::ObjectStorageDataResolver,
-            file::FileDataResolver,
-            cached_resolver::CachedResolver,
-            resolver::DataResolver,
-        },
+        data::resolver::DataResolver,
         models::{
             io::ModelData,
             Model,
@@ -32,6 +27,7 @@ use {
             registry::ModelRegistry,
             simple::SimpleScheduler,
         },
+        context::Context,
     },
 };
 
@@ -73,26 +69,11 @@ async fn grpc_router(config: &Config) -> Router {
 
 struct MlSandboxServiceHandler {
     scheduer: SimpleScheduler,
-    output_storage: ObjectStorageDataResolver,
+    context: Arc<Context>,
 }
 
 impl MlSandboxServiceHandler {
     pub async fn new(config: &Config) -> Self {
-        let object_storage_resolver = ObjectStorageDataResolver::new_with_config(
-            "nikitavbv-sandbox".to_owned(), 
-            "data/models/stable-diffusion".to_owned(), 
-            config
-        );
-
-        let file_resolver = FileDataResolver::new("./data/stable-diffusion".to_owned());
-        let data_resolver = CachedResolver::new(object_storage_resolver, file_resolver);
-
-        let output_storage = ObjectStorageDataResolver::new_with_config(
-            "nikitavbv-sandbox".to_owned(),
-            "output".to_owned(),
-            config
-        );
-
         let registry = ModelRegistry::new(config).await
             .with_definition(ModelDefinition::new("image_generation".to_owned(), image_generation_model_factory))
             .with_definition(ModelDefinition::new("text_generation".to_owned(), text_generation_model_factory))
@@ -100,7 +81,7 @@ impl MlSandboxServiceHandler {
 
         Self {
             scheduer: SimpleScheduler::new(registry),
-            output_storage,
+            context: Arc::new(Context::new(DataResolver::new(config))),
         }
     }
 }
@@ -112,11 +93,11 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
         let model_id = req.model.clone();
         let input = ModelData::from(req);
-        let output = self.scheduer.run(&model_id, &input).await;
+        let output = self.scheduer.run(self.context.clone(), &model_id, &input).await;
         
         if output.contains_key("image") {
             let key = &generate_output_data_key();
-            self.output_storage.put(key, output.get_image("image").clone()).await;    
+            // self.output_storage.put(key, output.get_image("image").clone()).await;    
         }
 
         Ok(Response::new(InferenceResponse {
@@ -142,19 +123,19 @@ async fn healthz() -> &'static str {
     "ok"
 }
 
-fn image_generation_model_factory(resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
+fn image_generation_model_factory(context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {    
     Box::pin(async move {
-        Box::new(StableDiffusionImageGenerationModel::new(&resolver).await) as Box<dyn Model + Send>
+        Box::new(StableDiffusionImageGenerationModel::new(&context.data_resolver()).await) as Box<dyn Model + Send>
     })
 }
 
-fn text_generation_model_factory(_resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
+fn text_generation_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
     Box::pin(async move {
         Box::new(TextGenerationModel::new()) as Box<dyn Model + Send>
     })
 }
 
-fn text_summarization_model_factory(_resolver: FileDataResolver) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
+fn text_summarization_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
     Box::pin(async move {
         Box::new(TextSummarizationModel::new()) as Box<dyn Model + Send>
     })
