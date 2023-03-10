@@ -32,7 +32,7 @@ use {
     },
 };
 
-pub async fn run_axum_server(config: &Config) {
+pub async fn run_axum_server<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
     let addr = format!("{}:{}", host, port).parse().unwrap();
@@ -40,14 +40,14 @@ pub async fn run_axum_server(config: &Config) {
     info!("starting axum server on {:?}", addr);
     
     axum::Server::bind(&addr)
-        .serve(service(config).await.into_make_service())
+        .serve(service(config, scheduler).await.into_make_service())
         .await
         .unwrap();
 }
 
-async fn service(config: &Config) -> RestGrpcService {
+async fn service<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) -> RestGrpcService {
     let app = rest_router();
-    let grpc = grpc_router(config).await;
+    let grpc = grpc_router(config, scheduler).await;
     RestGrpcService::new(app, grpc)
 }
 
@@ -57,14 +57,7 @@ fn rest_router() -> Router {
         .route("/healthz", get(healthz))
 }
 
-async fn grpc_router(config: &Config) -> Router {
-    let registry = ModelRegistry::new(config).await
-        .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
-        .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
-        .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));
-
-    let scheduler = SimpleScheduler::new(registry);
-
+async fn grpc_router<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) -> Router {
     Router::new()
         .nest_tonic(
             tonic_reflection::server::Builder::configure()
@@ -124,24 +117,6 @@ async fn root() -> &'static str {
 
 async fn healthz() -> &'static str {
     "ok"
-}
-
-fn image_generation_model_factory(context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {    
-    Box::pin(async move {
-        Box::new(StableDiffusionImageGenerationModel::new(&context.data_resolver()).await) as Box<dyn Model + Send>
-    })
-}
-
-fn text_generation_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
-    Box::pin(async move {
-        Box::new(TextGenerationModel::new()) as Box<dyn Model + Send>
-    })
-}
-
-fn text_summarization_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
-    Box::pin(async move {
-        Box::new(TextSummarizationModel::new()) as Box<dyn Model + Send>
-    })
 }
 
 #[cfg(test)]
