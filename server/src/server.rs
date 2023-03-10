@@ -25,6 +25,7 @@ use {
         },
         scheduling::{
             registry::ModelRegistry,
+            scheduler::Scheduler,
             simple::SimpleScheduler,
         },
         context::Context,
@@ -57,6 +58,13 @@ fn rest_router() -> Router {
 }
 
 async fn grpc_router(config: &Config) -> Router {
+    let registry = ModelRegistry::new(config).await
+        .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
+        .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
+        .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));
+
+    let scheduler = SimpleScheduler::new(registry);
+
     Router::new()
         .nest_tonic(
             tonic_reflection::server::Builder::configure()
@@ -64,36 +72,31 @@ async fn grpc_router(config: &Config) -> Router {
                 .build()
                 .unwrap()
         )
-        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)))
+        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config, scheduler).await)))
 }
 
-struct MlSandboxServiceHandler {
-    scheduer: SimpleScheduler,
+struct MlSandboxServiceHandler<T: Scheduler> {
+    scheduler: T,
     context: Arc<Context>,
 }
 
-impl MlSandboxServiceHandler {
-    pub async fn new(config: &Config) -> Self {
-        let registry = ModelRegistry::new(config).await
-            .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
-            .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
-            .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));
-
+impl<T: Scheduler> MlSandboxServiceHandler<T> {
+    pub async fn new(config: &Config, scheduler: T) -> Self {
         Self {
-            scheduer: SimpleScheduler::new(registry),
+            scheduler,
             context: Arc::new(Context::new(DataResolver::new(config))),
         }
     }
 }
 
 #[tonic::async_trait]
-impl MlSandboxService for MlSandboxServiceHandler {
+impl<T: Scheduler + Send + Sync + 'static> MlSandboxService for MlSandboxServiceHandler<T> {
     async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let req = req.into_inner();
 
         let model_id = req.model.clone();
         let input = ModelData::from(req);
-        let output = self.scheduer.run(self.context.clone(), &model_id, &input).await;
+        let output = self.scheduler.run(self.context.clone(), &model_id, &input).await;
         
         if output.contains_key("image") {
             let key = &generate_output_data_key();

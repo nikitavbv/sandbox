@@ -2,9 +2,10 @@ use {
     std::sync::Arc,
     tokio::sync::Mutex,
     tracing::info,
+    async_trait::async_trait,
     crate::{
         models::{ModelDefinition, Model, io::ModelData},
-        scheduling::registry::ModelRegistry,
+        scheduling::{registry::ModelRegistry, scheduler::Scheduler},
         context::Context,
     },
 };
@@ -23,12 +24,6 @@ impl SimpleScheduler {
         }
     }
 
-    pub async fn run(&self, context: Arc<Context>, model_id: &str, input: &ModelData) -> ModelData {
-        self.load_model_if_needed(context, model_id).await;
-        let model = self.loaded_model.lock().await;
-        model.as_ref().unwrap().1.run(input)
-    }
-
     async fn load_model_if_needed(&self, context: Arc<Context>, model_id: &str) {
         let mut loaded_model = self.loaded_model.lock().await;
 
@@ -41,5 +36,14 @@ impl SimpleScheduler {
         } else {
             info!(model_id, "model is already loaded");
         }
+    }
+}
+
+#[async_trait]
+impl Scheduler for SimpleScheduler {
+    async fn run(&self, context: Arc<Context>, model_id: &str, input: &ModelData) -> ModelData {
+        self.load_model_if_needed(context, model_id).await;
+        let model = self.loaded_model.lock().await;
+        model.as_ref().unwrap().1.run(input)
     }
 }
