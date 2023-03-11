@@ -1,0 +1,482 @@
+# Log configuration
+log:
+  # Log level
+  level: info
+  # Log format
+  format: text
+  # Log file path
+  # filePath:
+
+# Server configurations
+# server:
+#   listenAddr: ""
+#   port: 8080
+#   # Server timeout options
+#   timeouts:
+#     readTimeout: ""
+#     readHeaderTimeout: ""
+#     writeTimeout: ""
+#     idleTimeout: ""
+#   # Compress options
+#   compress:
+#     enabled: true
+#     # Compression level
+#     # level: 5
+#     # Types
+#     # types:
+#     #   - text/html
+#     #   - text/css
+#     #   - text/plain
+#     #   - text/javascript
+#     #   - application/javascript
+#     #   - application/x-javascript
+#     #   - application/json
+#     #   - application/atom+xml
+#     #   - application/rss+xml
+#     #   - image/svg+xml
+#   # CORS configuration
+#   cors:
+#     # Enabled
+#     enabled: false
+#     # Allow all traffic
+#     allowAll: true
+#     # Allow Origins
+#     # Example: https://fake.com
+#     allowOrigins: []
+#     # Allow HTTP Methods
+#     allowMethods: []
+#     # Allow Headers
+#     allowHeaders: []
+#     # Expose Headers
+#     exposeHeaders: []
+#     # Max age
+#     # 300 is the maximum value not ignored by any of major browsers
+#     # Source: https://github.com/go-chi/cors
+#     maxAge: 0
+#     # Allow credentials
+#     allowCredentials: false
+#     # Run debug
+#     debug: false
+#     # OPTIONS method Passthrough
+#     optionsPassthrough: false
+#   # Cache configuration
+#   cache:
+#     # Force no cache headers on all responses
+#     noCacheEnabled: true
+#     # Expires header value
+#     expires:
+#     # Cache-control header value
+#     cacheControl:
+#     # Pragma header value
+#     pragma:
+#     # X-Accel-Expires header value
+#     xAccelExpires:
+#   # SSL/TLS configuration
+#   ssl:
+#     # Is SSL/TLS configuration enabled ?
+#     enabled: true
+#     # Certificates to serve when connected
+#     certificates:
+#       - # Note: Exactly one of certificate/certificateUrl and privateKey/privateKeyUrl must be specified.
+#         # The PEM encoded certificate
+#         certificate: |
+#           -----BEGIN CERTIFICATE-----
+#           ....
+#           -----END CERTIFICATE-----
+#         # The URL of a resource containing the certificate
+#         # Check other URL types in documentation
+#         certificateUrl: arn:aws:ssm:region:accountId:parameter/name
+#         # Additional URL configuration if certificateUrl is an S3 URL
+#         certificateUrlConfig:
+#           # Timeout for HTTP connections (including AWS calls) to get SSL certificate/keys
+#           httpTimeout:
+#           # AWS region for S3/SSM/Secrets Manager-stored documents
+#           awsRegion: us-east-1
+#           # Custom endpoint for S3/SSM/Secrets Manager API calls
+#           awsEndpoint:
+#           # Credentials to access AWS-based documents
+#           awsCredentials:
+#             accessKey:
+#               env: AWS_ACCESS_KEY_ID
+#             secretKey:
+#               path: secret_key_file
+#           # Disable SSL for AWS API calls. This does not affect `https` URLs
+#           awsDisableSSL: false
+#         # The PEM encoded private key
+#         privateKey: |
+#           -----BEGIN RSA PRIVATE KEY-----
+#           -----END RSA PRIVATE KEY-----
+#         # Additional URL configuration if privateKeyUrl is an S3 URL
+#         # Check other URL types in documentation
+#         privateKeyUrl: arn:aws:secretsmanager:region:accountId:secret/name
+#         # Additional URL configuration if privateKeyUrl is an S3 URL
+#         privateKeyUrlConfig:
+#           # Timeout for HTTP connections (including AWS calls) to get SSL certificate/keys
+#           httpTimeout:
+#           # AWS region for S3/SSM/Secrets Manager-stored documents
+#           awsRegion: us-east-1
+#           # Custom endpoint for S3/SSM/Secrets Manager API calls
+#           awsEndpoint:
+#           # Credentials to access AWS-based documents
+#           awsCredentials:
+#             accessKey:
+#               env: AWS_ACCESS_KEY_ID
+#             secretKey:
+#               path: secret_key_file
+#           # Disable SSL for AWS API calls. This does not affect `https` URLs
+#           awsDisableSSL: false
+#     # List of hostnames to generate self-signed certificates for
+#     selfSignedHostnames:
+#       - localhost
+#       - localhost.localdomain
+#     # The minimum TLS version to allow when a client connects
+#     minTLSVersion: TLSv1.2
+#     # The maximum TLS version to allow when a client connects
+#     maxTLSVersion: TLSv1.3
+#     # The TLS ciphers to enable
+#     cipherSuites: # See https://pkg.go.dev/crypto/tls#pkg-constants for valid names; the current default is shown below.
+#       - TLS_AES_128_GCM_SHA256
+#       - TLS_AES_256_GCM_SHA384
+#       - TLS_CHACHA20_POLY1305_SHA256
+#       - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+#       - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+#       - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+
+# Template configurations
+# templates:
+#   helpers:
+#     - templates/_helpers.tpl
+#   targetList:
+#     path: templates/target-list.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "200"
+#   folderList:
+#     path: templates/folder-list.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "200"
+#   badRequestError:
+#     path: templates/bad-request-error.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "400"
+#   forbiddenError:
+#     path: templates/forbidden-error.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "403"
+#   internalServerError:
+#     path: templates/internal-server-error.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "500"
+#   notFoundError:
+#     path: templates/not-found-error.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "404"
+#   unauthorizedError:
+#     path: templates/unauthorized-error.tpl
+#     headers:
+#       Content-Type: '{{ template "main.headers.contentType" . }}'
+#     status: "401"
+#   put:
+#     path: templates/put.tpl
+#     headers: {}
+#     status: "204"
+#   delete:
+#     path: templates/delete.tpl
+#     headers: {}
+#     status: "204"
+
+# Authentication Providers
+# authProviders:
+#   # Header providers
+#   # This authentication method should be used only with a software like [Oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) or an authentication gateway that put headers with user information inside.
+#   # Warning: S3-proxy won't validate headers value or anything else. It will take values as they are coming.
+#   header:
+#     oauth2-proxy:
+#       usernameHeader: x-forwarded-preferred-username
+#       emailHeader: x-forwarded-email
+#       groupsHeader: x-forwarded-groups
+#   # OIDC providers
+#   oidc:
+#     provider1:
+#       clientID: client-id
+#       clientSecret:
+#         path: client-secret-in-file # client secret file
+#       state: my-secret-state-key # do not use this in production ! put something random here
+#       issuerUrl: https://issuer-url/
+#       redirectUrl: http://localhost:8080/ # /auth/oidc/callback will be added automatically
+#       scopes: # OIDC Scopes (defaults: openid, email, profile)
+#         - openid
+#         - email
+#         - profile
+#       groupClaim: groups # path in token
+#       # cookieDomains: [] # Cookie domains matching the request host
+#       # cookieSecure: true # Is the cookie generated secure ?
+#       # cookieName: oidc # Cookie generated name
+#       emailVerified: true # check email verified field from token
+#       # loginPath: /auth/provider1 # Override login path dynamically generated from provider key
+#       # callbackPath: /auth/provider1/callback # Override callback path dynamically generated from provider key
+#   # Basic auth providers
+#   basic:
+#     provider2:
+#       realm: My Basic Auth Realm
+
+# List targets feature
+# This will generate a webpage with list of targets with links using targetList template
+# listTargets:
+#   # To enable the list targets feature
+#   enabled: false
+#   ## Mount point
+#   mount:
+#     path:
+#       - /
+#     # A specific host can be added for filtering. Otherwise, all hosts will be accepted
+#     # host: localhost:8080
+#   ## Resource configuration
+#   resource:
+#     # A Path must be declared for a resource filtering
+#     path: /
+#     # HTTP Methods authorized (Must be in GET, PUT or DELETE)
+#     methods:
+#       - GET
+#       - PUT
+#       - DELETE
+#     # Whitelist
+#     whitelist: false
+#     # A authentication provider declared in section before, here is the key name
+#     provider: provider1
+#     # OIDC section for access filter
+#     oidc:
+#       # NOTE: This list can be empty ([]) for authentication only and no group filter
+#       authorizationAccesses: # Authorization accesses : groups or email or regexp
+#         - group: devops_users
+#     # Header section for access filter
+#     header:
+#       # NOTE: This list can be empty ([]) for authentication only and no group filter
+#       authorizationAccesses: # Authorization accesses : groups or email or regexp
+#         - group: devops_users
+#     # Basic authentication section
+#     basic:
+#       credentials:
+#         - user: user1
+#           password:
+#             path: password1-in-file
+
+# Targets map
+targets:
+  first-bucket:
+    ## Mount point
+    mount:
+      path:
+        - /
+      # A specific host can be added for filtering. Otherwise, all hosts will be accepted
+      # host: localhost:8080
+    # ## Resources declaration
+    # ## WARNING: Think about all path that you want to protect. At the end of the list, you should add a resource filter for /* otherwise, it will be public.
+    # resources:
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /
+    #     # Whitelist
+    #     whiteList: true
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /specific_doc/*
+    #     # HTTP Methods authorized (Must be in GET, PUT or DELETE)
+    #     methods:
+    #       - GET
+    #       - PUT
+    #       - DELETE
+    #     # A authentication provider declared in section before, here is the key name
+    #     provider: provider1
+    #     # OIDC section for access filter
+    #     oidc:
+    #       # NOTE: This list can be empty ([]) for authentication only and no group filter
+    #       authorizationAccesses: # Authorization accesses : groups or email or regexp
+    #         - group: specific_users
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /directory1/*
+    #     # HTTP Methods authorized (Must be in GET, PUT or DELETE)
+    #     methods:
+    #       - GET
+    #       - PUT
+    #       - DELETE
+    #     # A authentication provider declared in section before, here is the key name
+    #     provider: provider1
+    #     # Basic authentication section
+    #     basic:
+    #       credentials:
+    #         - user: user1
+    #           password:
+    #             path: password1-in-file
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /opa-protected/*
+    #     # OIDC section for access filter
+    #     oidc:
+    #       # Authorization through OPA server configuration
+    #       authorizationOPAServer:
+    #         # OPA server url with data path
+    #         url: http://localhost:8181/v1/data/example/authz/allowed
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /specific_doc/*
+    #     # HTTP Methods authorized (Must be in GET, PUT or DELETE)
+    #     methods:
+    #       - GET
+    #       - PUT
+    #       - DELETE
+    #     # A authentication provider declared in section before, here is the key name
+    #     provider: provider1
+    #     # Header section for access filter
+    #     header:
+    #       # NOTE: This list can be empty ([]) for authentication only and no group filter
+    #       authorizationAccesses: # Authorization accesses : groups or email or regexp
+    #         - group: specific_users
+    #   # A Path must be declared for a resource filtering (a wildcard can be added to match every sub path)
+    #   - path: /opa-protected/*
+    #     # Header section for access filter
+    #     header:
+    #       # Authorization through OPA server configuration
+    #       authorizationOPAServer:
+    #         # OPA server url with data path
+    #         url: http://localhost:8181/v1/data/example/authz/allowed
+    # ## Actions
+    actions:
+       # Action for GET requests on target
+      GET:
+        # Will allow GET requests
+        enabled: true
+        # Configuration for GET requests
+        config:
+          # Redirect with trailing slash when a file isn't found
+          # redirectWithTrailingSlashForNotFoundFile: true
+          # Index document to display if exists in folder
+          indexDocument: index.html
+          # Allow to add headers to streamed files (can be templated)
+          streamedFileHeaders: {}
+          # Redirect to a S3 signed URL
+          # redirectToSignedUrl: true
+          # Signed URL expiration time
+          # signedUrlExpiration: 15m
+          # Webhooks
+          webhooks: []
+    #   # Action for PUT requests on target
+    #   PUT:
+    #     # Will allow PUT requests
+    #     enabled: true
+    #     # Configuration for PUT requests
+    #     config:
+    #       # Metadata key/values that will be put on S3 objects.
+    #       # Values can be templated. Empty values will be flushed.
+    #       metadata:
+    #         key: value
+    #       # System Metadata cases.
+    #       # Values can be templated. Empty values will be flushed.
+    #       systemMetadata:
+    #         # Cache-Control value (will be put as header after)
+    #         cacheControl: ""
+    #         # Content-Disposition value (will be put as header after)
+    #         contentDisposition: ""
+    #         # Content-Encoding value (will be put as header after)
+    #         contentEncoding: ""
+    #         # Content-Language value (will be put as header after)
+    #         contentLanguage: ""
+    #         # Expires value (will be put as header after)
+    #         # Side note: This must have the RFC3339 date format at the end.
+    #         expires: ""
+    #       # Storage class that will be used for uploaded objects
+    #       # See storage class here: https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html
+    #       # Values can be templated. Empty values will be flushed.
+    #       storageClass: STANDARD # GLACIER, ...
+    #       # Will allow override objects if enabled
+    #       allowOverride: false
+    #       # Webhooks
+    #       webhooks: []
+    #   # Action for DELETE requests on target
+    #   DELETE:
+    #     # Will allow DELETE requests
+    #     enabled: true
+    #     # Configuration for DELETE requests
+    #     config:
+    #       # Webhooks
+    #       webhooks: []
+    # # Key rewrite list
+    # # This will allow to rewrite keys before doing any requests to S3
+    # # For more information about how this works, see in the documentation.
+    # keyRewriteList:
+    #   - # Source represents a Regexp (golang format with group naming support)
+    #     source: ^/(?P<one>\w+)/(?P<two>\w+)/(?P<three>\w+)?$
+    #     # Target type: Regex or Template
+    #     # Regex will allow to do a simple regex replace/update, like in the example
+    #     # Template will allow to do golang template replace, like this example as "target" value: {{ regexReplaceAll "/input1(/.*)" .Key (printf "/input1/%s${1}" .User.Username) }}
+    #     # targetType: REGEX # TEMPLATE
+    #     # Target represents the template of the new key that will be used
+    #     target: /$two/$one/$three/$one/
+    ## Target custom templates
+    # templates:
+    #   # Helpers
+    #   helpers:
+    #   - inBucket: false
+    #     path: ""
+    #   # Folder list template
+    #   folderList:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "200"
+    #   # Not found error template
+    #   notFoundError:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "404"
+    #   # Internal server error template
+    #   internalServerError:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "500"
+    #   # Forbidden error template
+    #   forbiddenError:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "403"
+    #   # Unauthorized error template
+    #   unauthorizedError:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "401"
+    #   # Bad Request error template
+    #   badRequestError:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "400"
+    #   # PUT template
+    #   put:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "204"
+    #   # DELETE template
+    #   delete:
+    #     inBucket: false
+    #     path: ""
+    #     headers: {}
+    #     status: "204"
+    ## Bucket configuration
+    bucket:
+      name: nikitavbv-sandbox-ui
+      prefix:
+      region: ams1
+      s3Endpoint: https://ams1.vultrobjects.com
+      disableSSL: false
+      credentials:
+         accessKey:
+           value: $OBJECT_STORAGE_ACCESS_KEY
+         secretKey:
+           value: $OBJECT_STORAGE_SECRET_KEY
+

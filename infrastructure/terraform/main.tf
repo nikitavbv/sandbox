@@ -27,10 +27,10 @@ variable tags {
 }
 
 data vultr_object_storage_cluster object_storage_ams {
-    filter {
-        name = "region"
-        values = ["ams"]
-    }
+  filter {
+    name = "region"
+    values = ["ams"]
+  }
 }
 
 resource vultr_object_storage object_storage {
@@ -87,7 +87,9 @@ resource vultr_instance frontend {
   vpc_ids = [vultr_vpc.frontend.id]
   user_data = <<SCRIPT
 #!/usr/bin/env bash
-echo "does it work?" > /root/test
+pacman -S --noconfirm docker bridge-utils
+systemctl enable docker
+echo "${file(".secrets/object_storage_access_key")}" > /root/access_key
 SCRIPT
 
   lifecycle {
