@@ -87,9 +87,12 @@ resource vultr_instance frontend {
   vpc_ids = [vultr_vpc.frontend.id]
   user_data = <<SCRIPT
 #!/usr/bin/env bash
-pacman -S --noconfirm docker bridge-utils
+pacman -S --noconfirm bridge-utils gettext
+pacman -S --noconfirm docker
 systemctl enable docker
-echo "${file(".secrets/object_storage_access_key")}" > /root/access_key
+export OBJECT_STORAGE_ACCESS_KEY="${file(".secrets/object_storage_access_key")}"
+export OBJECT_STORAGE_SECRET_KEY="${file(".secrets/object_storage_secret_key")}"
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s3-proxy.yaml | envsubst > /root/config.yaml
 SCRIPT
 
   lifecycle {
