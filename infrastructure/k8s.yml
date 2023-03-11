@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: sandbox
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: sandbox
+    spec:
+      containers:
+      - name: sandbox
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.118
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox
+  namespace: default
+spec:
+  selector:
+    name: sandbox
+  ports:
+  - name: 'http'
+    port: 80
+    targetPort: 8080
