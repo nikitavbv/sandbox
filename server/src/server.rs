@@ -32,7 +32,7 @@ use {
     },
 };
 
-pub async fn run_axum_server<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) {
+pub async fn run_axum_server(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
     let addr = format!("{}:{}", host, port).parse().unwrap();
@@ -45,7 +45,7 @@ pub async fn run_axum_server<T: Scheduler + Send + Sync + 'static>(config: &Conf
         .unwrap();
 }
 
-async fn service<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) -> RestGrpcService {
+async fn service(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> RestGrpcService {
     let app = rest_router();
     let grpc = grpc_router(config, scheduler).await;
     RestGrpcService::new(app, grpc)
@@ -57,7 +57,7 @@ fn rest_router() -> Router {
         .route("/healthz", get(healthz))
 }
 
-async fn grpc_router<T: Scheduler + Send + Sync + 'static>(config: &Config, scheduler: T) -> Router {
+async fn grpc_router(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> Router {
     Router::new()
         .nest_tonic(
             tonic_reflection::server::Builder::configure()
@@ -68,13 +68,13 @@ async fn grpc_router<T: Scheduler + Send + Sync + 'static>(config: &Config, sche
         .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config, scheduler).await)))
 }
 
-struct MlSandboxServiceHandler<T: Scheduler> {
-    scheduler: T,
+struct MlSandboxServiceHandler {
+    scheduler: Box<dyn Scheduler + Send + Sync>,
     context: Arc<Context>,
 }
 
-impl<T: Scheduler> MlSandboxServiceHandler<T> {
-    pub async fn new(config: &Config, scheduler: T) -> Self {
+impl MlSandboxServiceHandler {
+    pub async fn new(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> Self {
         Self {
             scheduler,
             context: Arc::new(Context::new(DataResolver::new(config))),
@@ -83,7 +83,7 @@ impl<T: Scheduler> MlSandboxServiceHandler<T> {
 }
 
 #[tonic::async_trait]
-impl<T: Scheduler + Send + Sync + 'static> MlSandboxService for MlSandboxServiceHandler<T> {
+impl MlSandboxService for MlSandboxServiceHandler {
     async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
         let req = req.into_inner();
 
