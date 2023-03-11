@@ -18,6 +18,7 @@ use {
             scheduler::Scheduler,
             simple::SimpleScheduler,
             registry::ModelRegistry,
+            nop::DoNothingScheduler,
         },
         context::Context,
     },
@@ -42,7 +43,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
-        "server" => run_axum_server(&config, create_scheduler(&config).await).await,
+        "server" => run_axum_server(&config, init_scheduler(&config).await).await,
         "simple_model" => run_simple_model_inference(),
         "simple_image_generation" => run_simple_image_generation(&config).await,
         "simple_text_generation" => run_simple_text_generation().await,
@@ -55,7 +56,19 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-async fn create_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
+async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
+    let scheduler_name = config.get_string("scheduler.name").unwrap_or("simple".into());
+
+    info!("using scheduler: {}", scheduler_name);
+
+    match scheduler_name.as_str() {
+        "simple" => init_simple_scheduler(config).await,
+        "nop" => Box::new(DoNothingScheduler::new()),
+        other => panic!("unknown scheduler: {}", other),
+    }
+}
+
+async fn init_simple_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
     let registry = ModelRegistry::new(config).await
         .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
         .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
