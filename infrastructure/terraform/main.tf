@@ -92,7 +92,12 @@ pacman -S --noconfirm docker
 systemctl enable docker
 export OBJECT_STORAGE_ACCESS_KEY="${file(".secrets/object_storage_access_key")}"
 export OBJECT_STORAGE_SECRET_KEY="${file(".secrets/object_storage_secret_key")}"
-curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s3-proxy.yaml | envsubst > /root/config.yaml
+mkdir /root/conf
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s3-proxy.yaml | envsubst > /root/conf/config.yaml
+wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/s3-proxy.service
+mv s3-proxy.service /etc/systemd/system/
+systemctl enable s3-proxy
+reboot
 SCRIPT
 
   lifecycle {
