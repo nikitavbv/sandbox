@@ -75,10 +75,6 @@ impl StableDiffusionImageGenerationModel {
 }
 
 impl Model for StableDiffusionImageGenerationModel {
-    fn load(&mut self) {
-
-    }
-
     fn run(&self, input: &ModelData) -> ModelData {
         info!("using device: {:?}", self.device);
 

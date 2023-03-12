@@ -31,14 +31,8 @@ pub trait Model {
     fn create() -> Self where Self:Sized {
         unimplemented!()
     }
-
-    fn load(&mut self) {
-    }
-
-    fn run(&self, input: &ModelData) -> ModelData;
     
-    fn unload(&mut self) {
-    }
+    fn run(&self, input: &ModelData) -> ModelData;
 }
 
 #[derive(Clone)]

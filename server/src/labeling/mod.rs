@@ -11,6 +11,8 @@ use {
     },
 };
 
+mod video_hashes;
+
 fn convert_video_to_frames(config: &Config) {
     ffmpeg_next::init().unwrap();
 
