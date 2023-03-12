@@ -1,0 +1,15 @@
+[Unit]
+Description=S3 Proxy
+Requires=docker.service
+After=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+RemainAfterExit=true
+ExecStartPre=-/usr/bin/docker rm %n
+ExecStartPre=/usr/bin/docker pull oxynozeta/s3-proxy
+ExecStart=/usr/bin/docker run --rm --name %n -p 8080:8080 -p 9090:9090 -v /root/conf:/proxy/conf oxynozeta/s3-proxy
+
+[Install]
+WantedBy=default.target
