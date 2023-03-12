@@ -10,6 +10,7 @@ pub struct ModelData {
 pub enum DataEntry {
     Text(String),
     Image(Vec<u8>),
+    U32(u32),
 }
 
 impl ModelData {
@@ -37,6 +38,10 @@ impl ModelData {
         self.with_parameter(key, DataEntry::Image(value))
     }
 
+    pub fn with_u32(self, key: String, value: u32) -> Self {
+        self.with_parameter(key, DataEntry::U32(value))
+    }
+
     pub fn contains_key(&self, key: &str) -> bool {
         self.data.contains_key(key)
     }
@@ -58,6 +63,13 @@ impl ModelData {
             _ => panic!("parameter \"{}\" is not of type text", key),
         }
     }
+
+    pub fn get_u32(&self, key: &str) -> u32 {
+        match self.get_parameter(key) {
+            DataEntry::U32(u32) => *u32,
+            _ => panic!("paraneter \"{}\" is not of type text", key),
+        }
+    }
 }
 
 impl From<InferenceRequest> for ModelData {
@@ -75,6 +87,7 @@ impl From<rpc::data_entry::Value> for DataEntry {
         match value {
             rpc::data_entry::Value::Text(text) => Self::Text(text),
             rpc::data_entry::Value::Image(image) => Self::Image(image),
+            rpc::data_entry::Value::Unsigned32(u32) => Self::U32(u32),
         }
     }
 }
@@ -96,6 +109,7 @@ impl From<DataEntry> for rpc::data_entry::Value {
         match value {
             DataEntry::Text(text) => rpc::data_entry::Value::Text(text),
             DataEntry::Image(image) => rpc::data_entry::Value::Image(image),
+            DataEntry::U32(u32) => rpc::data_entry::Value::Unsigned32(u32),
         }
     }
 }

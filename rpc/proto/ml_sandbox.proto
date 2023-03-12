@@ -22,5 +22,6 @@ message DataEntry {
     oneof value {
         string text = 2;
         bytes image = 3;
+        uint32 unsigned32 = 4;
     }
 }
