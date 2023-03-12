@@ -49,11 +49,15 @@ data vultr_region waw {
 resource vultr_vpc frontend {
   region = data.vultr_region.waw.id
   description = "sandbox-frontend"
+  v4_subnet = "10.27.96.0"
+  v4_subnet_mask = 20
 }
 
 resource vultr_vpc backend {
   region = data.vultr_region.waw.id
   description = "sandbox-backend"
+  v4_subnet = "10.27.128.0"
+  v4_subnet_mask = 20
 }
 
 // cloud instance to server frontend files
@@ -130,9 +134,9 @@ resource vultr_instance envoy_1 {
   user_data = <<SCRIPT
 #!/usr/bin/env bash
 pacman -S --noconfirm bridge-utils gettext docker
-export SSL_CERTIFICATE="${file(".secrets/ssl_certificate_envoy")}"
-export SSL_PRIVATE_KEY="${file(".secrets/ssl_private_key_envoy")}"
-curl https://github.com/nikitavbv/sandbox/blob/master/infrastructure/envoy.yaml | envsubst > /root/config.yaml
+export SSL_CERTIFICATE=$(echo "${base64encode(file(".secrets/ssl_certificate_envoy"))}" | base64 -d)
+export SSL_PRIVATE_KEY=$(echo "${base64encode(file(".secrets/ssl_private_key_envoy"))}" | base64 -d)
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/envoy.yaml | envsubst > /root/config.yaml
 wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/envoy.service
 mv envoy.service /etc/systemd/system/
 systemctl enable envoy
