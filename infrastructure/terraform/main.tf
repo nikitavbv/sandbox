@@ -116,3 +116,26 @@ resource cloudflare_record frontend_1 {
   comment = "sandbox frontend instance internal"
   ttl = 300
 }
+
+// cloud instance for envoy proxy
+resource vultr_instance envoy_1 {
+  plan = data.vultr_plan.small_cpu_instance.id
+  region = data.vultr_region.waw.id
+  os_id = data.vultr_os.arch_linux.id
+  label = "sandbox-envoy-1"
+  tags = var.tags
+  hostname = "sandbox-envoy-1"
+  enable_ipv6 = true
+  vpc_ids = [vultr_vpc.frontend.id, vultr_vpc.backend.id]
+  user_data = <<SCRIPT
+#!/usr/bin/env bash
+pacman -S --noconfirm bridge-utils gettext docker
+export SSL_CERTIFICATE="${file(".secrets/ssl_certificate_envoy")}"
+export SSL_PRIVATE_KEY="${file(".secrets/ssl_private_key_envoy")}"
+
+SCRIPT
+
+  lifecycle {
+    ignore_changes = [server_status]
+  }
+}
