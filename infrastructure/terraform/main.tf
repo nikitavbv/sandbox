@@ -132,7 +132,12 @@ resource vultr_instance envoy_1 {
 pacman -S --noconfirm bridge-utils gettext docker
 export SSL_CERTIFICATE="${file(".secrets/ssl_certificate_envoy")}"
 export SSL_PRIVATE_KEY="${file(".secrets/ssl_private_key_envoy")}"
-
+curl https://github.com/nikitavbv/sandbox/blob/master/infrastructure/envoy.yaml | envsubst > /root/config.yaml
+wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/envoy.service
+mv envoy.service /etc/systemd/system/
+systemctl enable envoy
+ufw allow 80
+reboot
 SCRIPT
 
   lifecycle {
