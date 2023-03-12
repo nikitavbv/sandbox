@@ -76,13 +76,13 @@ data vultr_os arch_linux {
   }
 }
 
-resource vultr_instance frontend {
+resource vultr_instance frontend_1 {
   plan = data.vultr_plan.small_cpu_instance.id
   region = data.vultr_region.waw.id
   os_id = data.vultr_os.arch_linux.id
-  label = "sandbox-frontend"
+  label = "sandbox-frontend-1"
   tags = var.tags
-  hostname = "sandbox-frontend"
+  hostname = "sandbox-frontend-1"
   enable_ipv6 = true
   vpc_ids = [vultr_vpc.frontend.id]
   user_data = <<SCRIPT
@@ -97,6 +97,7 @@ curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s
 wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/s3-proxy.service
 mv s3-proxy.service /etc/systemd/system/
 systemctl enable s3-proxy
+ufw allow 8080
 reboot
 SCRIPT
 
@@ -109,7 +110,7 @@ resource cloudflare_record frontend_1 {
   zone_id = file(".secrets/cloudflare_zone_id")
   type = "A"
   name = "sandbox-frontend-1"
-  value = vultr_instance.frontend.internal_ip
+  value = vultr_instance.frontend_1.internal_ip
   proxied = false
   allow_overwrite = true
   comment = "sandbox frontend instance internal"
