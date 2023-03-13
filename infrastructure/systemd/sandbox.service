@@ -1,0 +1,15 @@
+[Unit]
+Description=sandbox
+Requires=docker.service
+After=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+RemainAfterExit=true
+ExecStartPre=-/usr/bin/docker rm %n
+ExecStartPre=/usr/bin/docker pull ghcr.io/nikitavbv/sandbox/sandbox:0.1.128
+ExecStart=/usr/bin/docker run --rm --name %n -p 8080:8080 ghcr.io/nikitavbv/sandbox/sandbox:0.1.128
+
+[Install]
+WantedBy=default.target

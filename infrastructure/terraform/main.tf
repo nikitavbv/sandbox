@@ -174,8 +174,9 @@ resource vultr_instance cpu_1 {
   user_data = <<SCRIPT
 #!/usr/bin/env bash
 pacman -S --noconfirm bridge-utils gettext docker
-
-systemctl enable envoy
+wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox.service
+mv sandbox.service /etc/systemd/system/
+systemctl enable sandbox
 ufw allow 8080
 SCRIPT
 
