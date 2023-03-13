@@ -188,3 +188,14 @@ SCRIPT
     ignore_changes = [server_status]
   }
 }
+
+resource cloudflare_record cpu_1 {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  type = "A"
+  name = "sandbox-cpu-1"
+  value = vultr_instance.cpu_1.internal_ip
+  proxied = false
+  allow_overwrite = true
+  comment = "sandbox cpu worker internal"
+  ttl = 300
+}
