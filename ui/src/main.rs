@@ -279,7 +279,7 @@ fn text_generation_model() -> Html {
 
                 spawn_local(async move {
                     let mut client = client.lock().unwrap();
-                    let res = client.run_model(InferenceRequest {
+                    let res = client.run_text_generation_model(InferenceRequest {
                         entries: vec![DataEntry {
                             key: "prompt".to_owned(),
                             value: Some(data_entry::Value::Text(prompt.clone())),

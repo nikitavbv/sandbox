@@ -101,6 +101,16 @@ impl MlSandboxService for MlSandboxServiceHandler {
             worker: hostname::get().unwrap().to_string_lossy().to_string(),
         }))
     }
+
+    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
+        let req = req.into_inner();
+        let input = ModelData::from(req);
+        let output = self.scheduler.run(self.context.clone(), "text-generation", &input).await;
+        Ok(Response::new(InferenceResponse {
+            entries: output.into(),
+            worker: hostname::get().unwrap().to_string_lossy().to_string(),
+        }))
+    }
 }
 
 fn generate_output_data_key() -> String {

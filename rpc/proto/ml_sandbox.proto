@@ -4,6 +4,7 @@ package ml_sandbox;
 
 service MLSandboxService {
     rpc RunModel(InferenceRequest) returns (InferenceResponse) {}
+    rpc RunTextGenerationModel(InferenceRequest) returns (InferenceResponse) {}
 }
 
 message InferenceRequest {
