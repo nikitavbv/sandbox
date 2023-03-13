@@ -148,3 +148,38 @@ SCRIPT
     ignore_changes = [server_status]
   }
 }
+
+// cloud instance for cpu worker
+data vultr_plan high_performance_amd_4c_instance {
+  filter {
+    name = "locations"
+    values = [data.vultr_region.waw.id]
+  }
+
+  filter {
+    name = "id"
+    values = ["vhp-4c-8gb-amd"]
+  }
+}
+
+resource vultr_instance cpu_1 {
+  plan = data.vultr_plan.high_performance_amd_4c_instance.id
+  region = data.vultr_region.waw.id
+  os_id = data.vultr_os.arch_linux.id
+  label = "sandbox-cpu-1"
+  tags = var.tags
+  hostname = "sandbox-cpu-1"
+  enable_ipv6 = true
+  vpc_ids = [vultr_vpc.backend.id]
+  user_data = <<SCRIPT
+#!/usr/bin/env bash
+pacman -S --noconfirm bridge-utils gettext docker
+
+systemctl enable envoy
+ufw allow 8080
+SCRIPT
+
+  lifecycle {
+    ignore_changes = [server_status]
+  }
+}
