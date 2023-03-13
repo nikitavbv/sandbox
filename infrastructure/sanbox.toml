@@ -1,0 +1,11 @@
+target = "server"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[object_storage]
+endpoint = "https://ams1.vultrobjects.com"
+region = "vultr"
+access_key = "$OBJECT_STORAGE_ACCESS_KEY"
+secret_key = "$OBJECT_STORAGE_SECRET_KEY"

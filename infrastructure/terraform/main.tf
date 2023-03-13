@@ -174,10 +174,14 @@ resource vultr_instance cpu_1 {
   user_data = <<SCRIPT
 #!/usr/bin/env bash
 pacman -S --noconfirm bridge-utils gettext docker
+export OBJECT_STORAGE_ACCESS_KEY="${file(".secrets/object_storage_access_key")}"
+export OBJECT_STORAGE_SECRET_KEY="${file(".secrets/object_storage_secret_key")}"
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/sandbox.toml | envsubst > /root/config.toml
 wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox.service
 mv sandbox.service /etc/systemd/system/
 systemctl enable sandbox
 ufw allow 8080
+reboot
 SCRIPT
 
   lifecycle {
