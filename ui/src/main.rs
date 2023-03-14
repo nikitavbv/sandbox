@@ -7,7 +7,7 @@ use {
     tonic::{Request, Status},
     wasm_bindgen_futures::spawn_local,
     tracing_wasm::WASMLayerConfigBuilder,
-    web_sys::{EventTarget, HtmlInputElement},
+    web_sys::{EventTarget, HtmlInputElement, window},
     wasm_bindgen::JsCast,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
@@ -426,7 +426,7 @@ fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
 }
 
 fn client() -> MlSandboxServiceClient<Client> {
-    MlSandboxServiceClient::new(Client::new("/".to_owned()))
+    MlSandboxServiceClient::new(Client::new(window().unwrap().location().origin().unwrap()))
 }
 
 fn main() {
