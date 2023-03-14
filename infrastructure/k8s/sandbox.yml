@@ -15,10 +15,23 @@ spec:
     spec:
       containers:
       - name: sandbox
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.118
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.144
         ports:
         - containerPort: 8080
           protocol: TCP
+        env:
+        - name: SANDBOX_CONFIG_PATH
+          value: /etc/sandbox/config/config.toml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/sandbox/config
+      volumes:
+      - name: config
+        configMap:
+          name: sandbox-config
+          items:
+          - key: config.toml
+            path: config.toml
 ---
 apiVersion: v1
 kind: Service
