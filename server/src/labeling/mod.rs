@@ -45,7 +45,9 @@ fn convert_video_to_frames(config: &Config) {
     for new_video in &new_videos {
         video_counter += 1;
 
-        if !new_video.to_lowercase().ends_with(".mp4") {
+        if new_video.to_lowercase().ends_with(".mov") {
+            panic!("got mov file, convert it using:\nffmpeg -i {} -c:v libx264 -preset slow -crf 22 -c:a copy converted.mp4", new_video);
+        } else if !new_video.to_lowercase().ends_with(".mp4") {
             panic!("can only process mp4 files, got: {}", new_video);
         }
 
