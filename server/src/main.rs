@@ -1,5 +1,5 @@
 use {
-    std::{sync::Arc, pin::Pin, future::Future},
+    std::{sync::Arc, pin::Pin, future::Future, env::var},
     tracing::{info, error},
     config::Config,
     crate::{
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     init_logging();
 
     let config = Config::builder()
-        .add_source(config::File::with_name("./config.toml"))
+        .add_source(config::File::with_name(var("SANDBOX_CONFIG_PATH").unwrap_or("./config.toml".to_owned()).as_str()))
         .add_source(config::Environment::with_prefix("SANDBOX"))
         .build()
         .unwrap();
