@@ -426,7 +426,7 @@ fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
 }
 
 fn client() -> MlSandboxServiceClient<Client> {
-    MlSandboxServiceClient::new(Client::new("/"))
+    MlSandboxServiceClient::new(Client::new("/".to_owned()))
 }
 
 fn main() {
