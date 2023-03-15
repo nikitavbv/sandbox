@@ -49,7 +49,7 @@ impl Scheduler for PgQueueSchedulerClient {
         let task_id = generate_task_id();
         let input: Vec<u8> = rpc::ModelData::from(input.clone()).encode_to_vec();
 
-        sqlx::query("insert into sanbox_tasks (task_id, status, model_input, model_id) values ($1, $2, $3, $5)")
+        sqlx::query("insert into sandbox_tasks (task_id, status, model_input, model_id) values ($1, $2, $3, $5)")
             .bind(task_id)
             .bind(TaskStatus::New.encode())
             .bind(input)
