@@ -3,10 +3,12 @@ use {
     rpc::InferenceRequest,
 };
 
+#[derive(Clone)]
 pub struct ModelData {
     data: HashMap<String, DataEntry>,
 }
 
+#[derive(Clone)]
 pub enum DataEntry {
     Text(String),
     Image(Vec<u8>),
@@ -101,6 +103,14 @@ impl From<ModelData> for Vec<rpc::DataEntry> {
                 value: Some(v.1.into()),
             })
             .collect()
+    }
+}
+
+impl From<ModelData> for rpc::ModelData {
+    fn from(value: ModelData) -> Self {
+        Self {
+            entries: Vec::<rpc::DataEntry>::from(value),
+        }
     }
 }
 

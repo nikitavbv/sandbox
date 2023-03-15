@@ -17,6 +17,10 @@ message InferenceResponse {
     string worker = 2;
 }
 
+message ModelData {
+    repeated DataEntry entries = 1;
+}
+
 message DataEntry {
     string key = 1;
 
