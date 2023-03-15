@@ -19,6 +19,7 @@ use {
             simple::SimpleScheduler,
             registry::ModelRegistry,
             nop::DoNothingScheduler,
+            pg_queue::PgQueueSchedulerClient,
         },
         context::Context,
     },
@@ -64,6 +65,7 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
     match scheduler_name.as_str() {
         "simple" => init_simple_scheduler(config).await,
         "nop" => Box::new(DoNothingScheduler::new()),
+        "pg_queue" => init_pg_queue_scheduler(config).await,
         other => panic!("unknown scheduler: {}", other),
     }
 }
@@ -75,6 +77,10 @@ async fn init_simple_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sy
         .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));
 
     Box::new(SimpleScheduler::new(registry))
+}
+
+async fn init_pg_queue_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
+    Box::new(PgQueueSchedulerClient::new(&config.get_string("scheduler.postgres_connection_string").unwrap()).await)
 }
 
 fn image_generation_model_factory(context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {    
