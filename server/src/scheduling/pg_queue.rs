@@ -12,14 +12,16 @@ use {
 };
 
 enum TaskStatus {
-    New,
+    Pending,
+    InProgress,
     Completed,
 }
 
 impl TaskStatus {
     pub fn encode(&self) -> String {
         match self {
-            TaskStatus::New => "new",
+            TaskStatus::Pending => "pending",
+            TaskStatus::InProgress => "in-progress",
             TaskStatus::Completed => "completed",
         }.to_owned()
     }
@@ -51,7 +53,7 @@ impl Scheduler for PgQueueSchedulerClient {
 
         sqlx::query("insert into sandbox_tasks (task_id, status, model_input, model_id) values ($1, $2, $3, $4)")
             .bind(task_id)
-            .bind(TaskStatus::New.encode())
+            .bind(TaskStatus::Pending.encode())
             .bind(input)
             .bind(model_id)
             .execute(&self.pool)
