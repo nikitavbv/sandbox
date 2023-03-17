@@ -84,6 +84,16 @@ impl From<InferenceRequest> for ModelData {
     }
 }
 
+impl From<rpc::ModelData> for ModelData {
+    fn from(value: rpc::ModelData) -> Self {
+        Self {
+            data: value.entries.into_iter()
+                .map(|v| (v.key, DataEntry::from(v.value.unwrap())))
+                .collect(),
+        }
+    }
+}
+
 impl From<rpc::data_entry::Value> for DataEntry {
     fn from(value: rpc::data_entry::Value) -> Self {
         match value {
