@@ -12,6 +12,11 @@ use {
     },
 };
 
+struct Task {
+    task_id: String,
+    // TODO: finish defining this struct
+}
+
 enum TaskStatus {
     Pending,
     InProgress,
@@ -80,6 +85,32 @@ impl Scheduler for PgQueueSchedulerClient {
     }
 }
 
+pub struct PgQueueWorker {
+    pool: Pool<Postgres>,
+    scheduler: Box<dyn Scheduler>,
+}
+
+impl PgQueueWorker {
+    pub async fn new(postgres_connection_string: &str, scheduler: Box<dyn Scheduler>) -> Self {
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(postgres_connection_string)
+            .await
+            .unwrap();
+
+        Self {
+            pool,
+            scheduler,
+        }
+    }
+
+    pub async fn run(&self) {
+        loop {
+            // TODO: fetch tasks from queue
+            let query = "update sandbox_tasks set status = $1 where task_id in (select task_id from sandbox_tasks where status = \"pending\" for update skip locked limit 1) returning *";            
+        }
+    }
+}
 
 fn generate_task_id() -> String {
     let mut rng = rand::thread_rng();
