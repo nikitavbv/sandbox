@@ -12,11 +12,6 @@ use {
     },
 };
 
-struct Task {
-    task_id: String,
-    // TODO: finish defining this struct
-}
-
 enum TaskStatus {
     Pending,
     InProgress,
@@ -106,8 +101,25 @@ impl PgQueueWorker {
 
     pub async fn run(&self) {
         loop {
-            // TODO: fetch tasks from queue
-            let query = "update sandbox_tasks set status = $1 where task_id in (select task_id from sandbox_tasks where status = \"pending\" for update skip locked limit 1) returning *";            
+            let query = "update sandbox_tasks set status = \"in-progress\" where task_id in (select task_id from sandbox_tasks where status = \"pending\" for update skip locked limit 1) returning task_id";            
+            let row: Option<(String, Vec<u8>)> = sqlx::query_as(query)
+                .fetch_optional(&self.pool)
+                .await
+                .unwrap();
+
+            if let Some(task) = row {
+                info!("got task with id: {:?}", task.0);
+
+                sqlx::query("update sandbox_tasks set status = \"completed\" and model_output = $1 where task_id = $2")
+                    .bind(task.1)
+                    .bind(task.0)
+                    .execute(&self.pool)
+                    .await
+                    .unwrap();
+            } else {
+                info!("no task available yet");
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
         }
     }
 }

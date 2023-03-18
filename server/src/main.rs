@@ -19,7 +19,7 @@ use {
             simple::SimpleScheduler,
             registry::ModelRegistry,
             nop::DoNothingScheduler,
-            pg_queue::PgQueueSchedulerClient,
+            pg_queue::{PgQueueSchedulerClient, PgQueueWorker},
         },
         context::Context,
     },
@@ -50,6 +50,7 @@ async fn main() -> std::io::Result<()> {
         "simple_text_generation" => run_simple_text_generation().await,
         "simple_text_summarization" => run_simple_text_summarization().await,
         "data_labeling" => run_data_labeling_tasks(&config),
+        "worker" => run_worker(&config).await,
         other => error!("Unexpected action: {}", other),
     };
 
@@ -68,6 +69,18 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
         "pg_queue" => init_pg_queue_scheduler(config).await,
         other => panic!("unknown scheduler: {}", other),
     }
+}
+
+async fn run_worker(config: &Config) {
+    let worker = PgQueueWorker::new(
+        &config
+            .get_string("worker.postgres_connection_string")
+            .unwrap(),
+        init_scheduler(config).await,
+    )
+    .await;
+
+    worker.run().await;
 }
 
 async fn init_simple_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
