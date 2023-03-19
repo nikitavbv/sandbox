@@ -5,6 +5,7 @@ Description=sandbox
 TimeoutStartSec=0
 Restart=always
 RemainAfterExit=true
+WorkingDirectory=/root
 ExecStart=/root/sandbox-gpu.sh
 
 [Install]

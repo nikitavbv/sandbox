@@ -36,6 +36,10 @@ data vultr_object_storage_cluster object_storage_ams {
 resource vultr_object_storage object_storage {
   cluster_id = data.vultr_object_storage_cluster.object_storage_ams.id
   label = "${file(".secrets/object_storage_cluster_name")}"
+  
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 // VPCs
@@ -232,7 +236,10 @@ resource vultr_instance gpu_1 {
   vpc_ids = []
   user_data = <<SCRIPT
 #!/usr/bin/env bash
-pacman -S --noconfirm gettext
+pacman -S --noconfirm gettext protobuf
+export OBJECT_STORAGE_ACCESS_KEY="${file(".secrets/object_storage_access_key")}"
+export OBJECT_STORAGE_SECRET_KEY="${file(".secrets/object_storage_secret_key")}"
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/sandbox.toml | envsubst > /root/config.toml
 curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.sh > /root/sandbox-gpu.sh
 chmod +x /root/sandbox-gpu.sh
 curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.service > /etc/systemd/system/sandbox.service
