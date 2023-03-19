@@ -61,6 +61,10 @@ impl DataResolver {
             Err(err) => panic!("failed to fetch object with path: {}, error is: {}", bucket_path, err),
         };
 
+        if !path.parent().unwrap().exists() {
+            fs::create_dir_all(path.parent().unwrap()).await.unwrap();
+        }
+
         fs::write(path, object_data).await.unwrap();
 
         None
