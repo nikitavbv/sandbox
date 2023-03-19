@@ -21,7 +21,7 @@ impl DataResolver {
         let access_key: String = config.get("object_storage.access_key").unwrap();
         let secret_key: String = config.get("object_storage.secret_key").unwrap();
         let bucket_name = "nikitavbv-sandbox";
-        let bucket_prefix = "data".to_owned(); 
+        let bucket_prefix = "data/models/stable-diffusion".to_owned(); 
         
         let bucket = Bucket::new(
             &bucket_name,
