@@ -232,10 +232,9 @@ resource vultr_instance gpu_1 {
   vpc_ids = []
   user_data = <<SCRIPT
 #!/usr/bin/env bash
-pacman -S --noconfirm bridge-utils gettext
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-git clone https://github.com/nikitavbv/sandbox.git
-cd sandbox && source ./linux-gpu-env.sh && cargo build --release
+pacman -S --noconfirm gettext
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.sh > /root/sandbox-gpu.sh
+chmod +x /root/sandbox-gpu.sh
 curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.service > /etc/systemd/system/sandbox.service
 systemctl enable sandbox
 ufw allow 8080

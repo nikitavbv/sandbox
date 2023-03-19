@@ -5,7 +5,7 @@ Description=sandbox
 TimeoutStartSec=0
 Restart=always
 RemainAfterExit=true
-ExecStart=/root/sandbox/server/target/release/server
+ExecStart=/root/sandbox-gpu.sh
 
 [Install]
 WantedBy=default.target
