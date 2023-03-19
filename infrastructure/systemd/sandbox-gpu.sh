@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if ! command -v rustc &> /dev/null
+if [ ! -d "/root/.cargo" ]
 then
     echo "Rust is not installed. Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
