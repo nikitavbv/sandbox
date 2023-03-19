@@ -67,7 +67,7 @@ impl DataResolver {
 
         fs::write(path, object_data).await.unwrap();
 
-        None
+        Some(path_str)
     }
 
     pub async fn put(&self, path: String, value: &[u8]) {
