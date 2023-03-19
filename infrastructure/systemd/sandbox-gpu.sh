@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export HOME=/root
+
 if [ ! -d "/root/.cargo" ]
 then
     echo "Rust is not installed. Installing Rust..."

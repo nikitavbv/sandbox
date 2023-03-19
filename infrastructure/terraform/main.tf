@@ -238,7 +238,6 @@ chmod +x /root/sandbox-gpu.sh
 curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.service > /etc/systemd/system/sandbox.service
 systemctl enable sandbox
 ufw allow 8080
-reboot
 SCRIPT
 
   lifecycle {
