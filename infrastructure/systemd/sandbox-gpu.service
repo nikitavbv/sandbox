@@ -1,0 +1,11 @@
+[Unit]
+Description=sandbox
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+RemainAfterExit=true
+ExecStart=/root/sandbox/server/target/release/server
+
+[Install]
+WantedBy=default.target

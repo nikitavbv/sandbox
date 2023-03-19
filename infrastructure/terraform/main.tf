@@ -200,3 +200,60 @@ resource cloudflare_record cpu_1 {
   comment = "sandbox cpu worker internal"
   ttl = 300
 }
+
+// cloud instance for gpu worker
+data vultr_region fra {
+  filter {
+    name = "id"
+    values = ["fra"]
+  }
+}
+
+data vultr_plan gpu_a100_10vram_instance {
+  filter {
+    name = "locations"
+    values = [data.vultr_region.fra.id]
+  }
+
+  filter {
+    name = "id"
+    values = ["vcg-a100-2c-15g-10vram"]
+  }
+}
+
+resource vultr_instance gpu_1 {
+  plan = data.vultr_plan.gpu_a100_10vram_instance.id
+  region = data.vultr_region.fra.id
+  os_id = data.vultr_os.arch_linux.id
+  label = "sandbox-gpu-1"
+  tags = var.tags
+  hostname = "sandbox-gpu-1"
+  enable_ipv6 = true
+  vpc_ids = []
+  user_data = <<SCRIPT
+#!/usr/bin/env bash
+pacman -S --noconfirm bridge-utils gettext
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+git clone https://github.com/nikitavbv/sandbox.git
+cd sandbox && source ./linux-gpu-env.sh && cargo build --release
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.service > /etc/systemd/system/sandbox.service
+systemctl enable sandbox
+ufw allow 8080
+reboot
+SCRIPT
+
+  lifecycle {
+    ignore_changes = [server_status]
+  }
+}
+
+resource cloudflare_record gpu_1 {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  type = "A"
+  name = "sandbox-gpu-1"
+  value = vultr_instance.gpu_1.main_ip
+  proxied = false
+  allow_overwrite = true
+  comment = "sandbox gpu-1 worker internal"
+  ttl = 300
+}
