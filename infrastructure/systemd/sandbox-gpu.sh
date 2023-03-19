@@ -23,4 +23,6 @@ cd /root/sandbox
 source /root/.cargo/env
 source ./linux-gpu-env.sh
 
+cp /root/config.toml /root/sandbox
+
 cargo run --release
