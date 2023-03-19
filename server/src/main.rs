@@ -5,7 +5,6 @@ use {
     crate::{
         utils::init_logging,
         server::run_axum_server,
-        labeling::run_data_labeling_tasks,
         models::{
             Model,
             ModelDefinition,
@@ -25,8 +24,12 @@ use {
     },
 };
 
-pub mod data;
+#[cfg(feature = "video-hashes")]
 pub mod labeling;
+#[cfg(feature = "video-hashes")]
+use crate::labeling::run_data_labeling_tasks;
+
+pub mod data;
 pub mod models;
 pub mod scheduling;
 pub mod context;
@@ -56,6 +59,11 @@ async fn main() -> std::io::Result<()> {
 
     info!("done");
     Ok(())
+}
+
+#[cfg(not(feature = "video-hashes"))]
+fn run_data_labeling_tasks(_config: &Config) {
+    panic!("server was built without support for video-hashes features");
 }
 
 async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {

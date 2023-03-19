@@ -28,10 +28,13 @@ axum_tonic = "0.1.0"
 axum-test-helper = "0.2.0"
 http = "0.2.9"
 tracing-test = "0.2.4"
-ffmpeg-next = "5.1.1"
+ffmpeg-next = { version = "5.1.1", optional = true }
 img_hash = "3.2.0"
 serde_json = "1.0.93"
 quantiles = "0.7.1"
 prost = "0.11.8"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 rpc = { path = "../rpc", features = ["server"] }
+
+[features]
+video-hashes = ["dep:ffmpeg-next"]
