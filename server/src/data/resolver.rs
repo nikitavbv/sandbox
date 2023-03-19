@@ -56,7 +56,10 @@ impl DataResolver {
         }
 
         let bucket_path = format!("{}/{}", self.bucket_prefix, key);
-        let object_data = self.bucket.as_ref().unwrap().get_object(bucket_path).await.unwrap().to_vec();
+        let object_data = match self.bucket.as_ref().unwrap().get_object(&bucket_path).await {
+            Ok(v) => v.to_vec(),
+            Err(err) => panic!("failed to fetch object with path: {}, error is: {}", bucket_path, err),
+        };
 
         fs::write(path, object_data).await.unwrap();
 
