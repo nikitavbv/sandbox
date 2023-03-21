@@ -77,6 +77,11 @@ $SSL_PRIVATE_KEY
               socket_address:
                 address: sandbox-gpu-1.nikitavbv.com
                 port_value: 8080
+        - endpoint:
+            address:
+              socket_address:
+                address: sandbox-gpu-2.nikitavbv.com
+                port_value: 8080
   - name: sandbox_backend_cpu
     type: STRICT_DNS
     dns_lookup_family: V4_ONLY

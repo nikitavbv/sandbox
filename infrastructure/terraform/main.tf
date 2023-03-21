@@ -153,6 +153,17 @@ SCRIPT
   }
 }
 
+resource cloudflare_record envoy_1 {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  type = "A"
+  name = "sandbox-envoy-1"
+  value = vultr_instance.envoy_1.main_ip
+  proxied = false
+  allow_overwrite = true
+  comment = "sandbox envoy-1 instance"
+  ttl = 300
+}
+
 // cloud instance for cpu worker
 data vultr_plan high_performance_amd_4c_instance {
   filter {
@@ -260,5 +271,43 @@ resource cloudflare_record gpu_1 {
   proxied = false
   allow_overwrite = true
   comment = "sandbox gpu-1 worker internal"
+  ttl = 300
+}
+
+resource vultr_instance gpu_2 {
+  plan = data.vultr_plan.gpu_a100_10vram_instance.id
+  region = data.vultr_region.fra.id
+  os_id = data.vultr_os.arch_linux.id
+  label = "sandbox-gpu-2"
+  tags = var.tags
+  hostname = "sandbox-gpu-2"
+  enable_ipv6 = true
+  vpc_ids = []
+  user_data = <<SCRIPT
+#!/usr/bin/env bash
+pacman -S --noconfirm gettext protobuf
+export OBJECT_STORAGE_ACCESS_KEY="${file(".secrets/object_storage_access_key")}"
+export OBJECT_STORAGE_SECRET_KEY="${file(".secrets/object_storage_secret_key")}"
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/sandbox.toml | envsubst > /root/config.toml
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.sh > /root/sandbox-gpu.sh
+chmod +x /root/sandbox-gpu.sh
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/sandbox-gpu.service > /etc/systemd/system/sandbox.service
+systemctl enable sandbox
+ufw allow 8080
+SCRIPT
+
+  lifecycle {
+    ignore_changes = [server_status]
+  }
+}
+
+resource cloudflare_record gpu_2 {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  type = "A"
+  name = "sandbox-gpu-2"
+  value = vultr_instance.gpu_2.main_ip
+  proxied = false
+  allow_overwrite = true
+  comment = "sandbox gpu-2 worker internal"
   ttl = 300
 }
