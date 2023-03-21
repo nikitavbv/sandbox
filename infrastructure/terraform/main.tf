@@ -164,6 +164,44 @@ resource cloudflare_record envoy_1 {
   ttl = 300
 }
 
+resource vultr_instance envoy_2 {
+  plan = data.vultr_plan.small_cpu_instance.id
+  region = data.vultr_region.waw.id
+  os_id = data.vultr_os.arch_linux.id
+  label = "sandbox-envoy-2"
+  tags = var.tags
+  hostname = "sandbox-envoy-2"
+  enable_ipv6 = true
+  vpc_ids = [vultr_vpc.frontend.id, vultr_vpc.backend.id]
+  user_data = <<SCRIPT
+#!/usr/bin/env bash
+pacman -S --noconfirm bridge-utils gettext docker
+export SSL_CERTIFICATE=$(echo "${base64encode(file(".secrets/ssl_certificate_envoy"))}" | base64 -d)
+export SSL_PRIVATE_KEY=$(echo "${base64encode(file(".secrets/ssl_private_key_envoy"))}" | base64 -d)
+curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/envoy.yaml | envsubst > /root/config.yaml
+wget https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/systemd/envoy.service
+mv envoy.service /etc/systemd/system/
+systemctl enable envoy
+ufw allow 80
+reboot
+SCRIPT
+
+  lifecycle {
+    ignore_changes = [server_status]
+  }
+}
+
+resource cloudflare_record envoy_2 {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  type = "A"
+  name = "sandbox-envoy-2"
+  value = vultr_instance.envoy_2.main_ip
+  proxied = false
+  allow_overwrite = true
+  comment = "sandbox envoy-2 instance"
+  ttl = 300
+}
+
 // cloud instance for cpu worker
 data vultr_plan high_performance_amd_4c_instance {
   filter {
