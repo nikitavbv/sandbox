@@ -349,3 +349,55 @@ resource cloudflare_record gpu_2 {
   comment = "sandbox gpu-2 worker internal"
   ttl = 300
 }
+
+resource cloudflare_load_balancer sandbox_lb {
+  zone_id = file(".secrets/cloudflare_zone_id")
+  name = "sandbox.nikitavbv.com"
+  default_pool_ids = [cloudflare_load_balancer_pool.sandbox_main_pool.id]
+  fallback_pool_id = cloudflare_load_balancer_pool.sandbox_main_pool.id
+  description = "load balancer for sandbox"
+  proxied = true
+}
+
+resource cloudflare_load_balancer_pool sandbox_main_pool {
+  account_id = file(".secrets/cloudflare_account_id")
+  name = "sandbox-main"
+  
+  origins {
+    name = "envoy-1"
+    address = "sandbox-envoy-1.nikitavbv.com"
+  }
+
+  origins {
+    name = "envoy-2"
+    address = "sandbox-envoy-2.nikitavbv.com"
+  }
+
+  monitor = cloudflare_load_balancer_monitor.healthcheck.id
+}
+
+resource cloudflare_load_balancer_monitor healthcheck {
+  account_id = file(".secrets/cloudflare_account_id")
+  description = "healthcheck"
+  type = "https"
+  expected_codes = "2xx"
+  method = "GET"
+  path = "/healthz"
+  interval = 60
+  retries = 5
+}
+
+resource cloudflare_notification_policy origin_status {
+  account_id = file(".secrets/cloudflare_account_id")
+  name = "Notify when origin status changes"
+  enabled = true
+  alert_type = "load_balancing_health_alert"
+
+  email_integration {
+    id = "nikitavbv@gmail.com"
+  }
+
+  filters {
+    pool_id = [cloudflare_load_balancer_pool.sandbox_main_pool.id]
+  }
+}
