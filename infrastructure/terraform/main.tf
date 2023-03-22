@@ -108,6 +108,7 @@ systemctl enable s3-proxy
 ufw allow 8080
 reboot
 SCRIPT
+  firewall_group_id = vultr_firewall_group.frontend.id
 
   lifecycle {
     ignore_changes = [server_status] 
@@ -277,7 +278,7 @@ data vultr_plan gpu_a100_10vram_instance {
   }
 }
 
-resource vultr_instance gpu_1 {
+/*resource vultr_instance gpu_1 {
   plan = data.vultr_plan.gpu_a100_10vram_instance.id
   region = data.vultr_region.fra.id
   os_id = data.vultr_os.arch_linux.id
@@ -353,7 +354,7 @@ resource cloudflare_record gpu_2 {
   allow_overwrite = true
   comment = "sandbox gpu-2 worker internal"
   ttl = 300
-}
+}*/
 
 resource cloudflare_load_balancer sandbox_lb {
   zone_id = file(".secrets/cloudflare_zone_id")
@@ -454,5 +455,18 @@ resource vultr_firewall_rule allow_https_from_backend_vpc_to_cpu {
   ip_type = "v4"
   subnet = vultr_vpc.backend.v4_subnet
   subnet_size = vultr_vpc.backend.v4_subnet_mask
+  port = "8080"
+}
+
+resource vultr_firewall_group frontend {
+  description = "sandbox-frontend"
+}
+
+resource vultr_firewall_rule allow_https_from_frontend_vpc_to_frontend {
+  firewall_group_id = vultr_firewall_group.frontend.id
+  protocol = "tcp"
+  ip_type = "v4"
+  subnet = vultr_vpc.frontend.v4_subnet
+  subnet_size = vultr_vpc.frontend.v4_subnet_mask
   port = "8080"
 }
