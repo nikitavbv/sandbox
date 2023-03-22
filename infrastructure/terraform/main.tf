@@ -147,6 +147,7 @@ systemctl enable envoy
 ufw allow 80
 reboot
 SCRIPT
+  firewall_group_id = vultr_firewall_group.envoy.id
 
   lifecycle {
     ignore_changes = [server_status]
@@ -185,6 +186,7 @@ systemctl enable envoy
 ufw allow 80
 reboot
 SCRIPT
+  firewall_group_id = vultr_firewall_group.envoy.id
 
   lifecycle {
     ignore_changes = [server_status]
@@ -237,6 +239,7 @@ systemctl enable sandbox
 ufw allow 8080
 reboot
 SCRIPT
+  firewall_group_id = vultr_firewall_group.cpu_workers.id
 
   lifecycle {
     ignore_changes = [server_status]
@@ -295,6 +298,7 @@ curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s
 systemctl enable sandbox
 ufw allow 8080
 SCRIPT
+  firewall_group_id = vultr_firewall_group.gpu_workers.id
 
   lifecycle {
     ignore_changes = [server_status]
@@ -333,6 +337,7 @@ curl https://raw.githubusercontent.com/nikitavbv/sandbox/master/infrastructure/s
 systemctl enable sandbox
 ufw allow 8080
 SCRIPT
+  firewall_group_id = vultr_firewall_group.gpu_workers.id
 
   lifecycle {
     ignore_changes = [server_status]
@@ -400,4 +405,54 @@ resource cloudflare_notification_policy origin_status {
   filters {
     pool_id = [cloudflare_load_balancer_pool.sandbox_main_pool.id]
   }
+}
+
+// firewall
+resource vultr_firewall_group envoy {
+  description = "envoy"
+}
+
+resource vultr_firewall_rule allow_https_from_cloudflare_to_envoy {
+  firewall_group_id = vultr_firewall_group.envoy.id
+  protocol = "tcp"
+  ip_type = "v4"
+  source = "cloudflare"
+  subnet = "0.0.0.0"
+  subnet_size = 0
+  port = "443"
+}
+
+resource vultr_firewall_group gpu_workers {
+  description = "sandbox-gpu"
+}
+
+resource vultr_firewall_rule allow_https_from_envoy1_to_gpu {
+  firewall_group_id = vultr_firewall_group.gpu_workers.id
+  protocol = "tcp"
+  ip_type = "v4"
+  subnet = vultr_instance.envoy_1.main_ip
+  subnet_size = 32
+  port = "8080"
+}
+
+resource vultr_firewall_rule allow_https_from_envoy2_to_gpu {
+  firewall_group_id = vultr_firewall_group.gpu_workers.id
+  protocol = "tcp"
+  ip_type = "v4"
+  subnet = vultr_instance.envoy_2.main_ip
+  subnet_size = 32
+  port = "8080"
+}
+
+resource vultr_firewall_group cpu_workers {
+  description = "sandbox-cpu"
+}
+
+resource vultr_firewall_rule allow_https_from_backend_vpc_to_cpu {
+  firewall_group_id = vultr_firewall_group.cpu_workers.id
+  protocol = "tcp"
+  ip_type = "v4"
+  subnet = vultr_vpc.backend.v4_subnet
+  subnet_size = vultr_vpc.backend.v4_subnet_mask
+  port = "8080"
 }
