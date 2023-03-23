@@ -101,7 +101,7 @@ impl PgQueueWorker {
 
     pub async fn run(&self) {
         loop {
-            let query = "update sandbox_tasks set status = \"in-progress\" where task_id in (select task_id from sandbox_tasks where status = \"pending\" for update skip locked limit 1) returning task_id";            
+            let query = "update sandbox_tasks set status = 'in-progress' where task_id in (select task_id from sandbox_tasks where status = 'pending' for update skip locked limit 1) returning task_id, model_input";            
             let row: Option<(String, Vec<u8>)> = sqlx::query_as(query)
                 .fetch_optional(&self.pool)
                 .await
@@ -110,7 +110,7 @@ impl PgQueueWorker {
             if let Some(task) = row {
                 info!("got task with id: {:?}", task.0);
 
-                sqlx::query("update sandbox_tasks set status = \"completed\" and model_output = $1 where task_id = $2")
+                sqlx::query("update sandbox_tasks set status = 'completed', model_output = $1 where task_id = $2")
                     .bind(task.1)
                     .bind(task.0)
                     .execute(&self.pool)
