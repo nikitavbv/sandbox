@@ -5,6 +5,7 @@ use {
     crate::{
         utils::init_logging,
         server::run_axum_server,
+        autoscaling::shutdown::AutoShutdownScheduler,
         data::resolver::DataResolver,
         models::{
             Model,
@@ -30,6 +31,7 @@ pub mod labeling;
 #[cfg(feature = "video-hashes")]
 use crate::labeling::run_data_labeling_tasks;
 
+pub mod autoscaling;
 pub mod data;
 pub mod models;
 pub mod scheduling;
@@ -72,12 +74,18 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
 
     info!("using scheduler: {}", scheduler_name);
 
-    match scheduler_name.as_str() {
+    let mut scheduler = match scheduler_name.as_str() {
         "simple" => init_simple_scheduler(config).await,
         "nop" => Box::new(DoNothingScheduler::new()),
         "pg_queue" => init_pg_queue_scheduler(config).await,
         other => panic!("unknown scheduler: {}", other),
+    };
+
+    if config.get_bool("scheduler.auto_shutdown").unwrap_or(false) {
+        scheduler = Box::new(AutoShutdownScheduler::new(scheduler));
     }
+
+    scheduler
 }
 
 async fn run_worker(config: &Config) {
