@@ -83,10 +83,11 @@ impl Scheduler for PgQueueSchedulerClient {
 pub struct PgQueueWorker {
     pool: Pool<Postgres>,
     scheduler: Box<dyn Scheduler>,
+    context: Arc<Context>,
 }
 
 impl PgQueueWorker {
-    pub async fn new(postgres_connection_string: &str, scheduler: Box<dyn Scheduler>) -> Self {
+    pub async fn new(postgres_connection_string: &str, scheduler: Box<dyn Scheduler>, context: Context) -> Self {
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(postgres_connection_string)
@@ -96,23 +97,30 @@ impl PgQueueWorker {
         Self {
             pool,
             scheduler,
+            context: Arc::new(context),
         }
     }
 
     pub async fn run(&self) {
         loop {
-            let query = "update sandbox_tasks set status = 'in-progress' where task_id in (select task_id from sandbox_tasks where status = 'pending' for update skip locked limit 1) returning task_id, model_input";            
-            let row: Option<(String, Vec<u8>)> = sqlx::query_as(query)
+            let query = "update sandbox_tasks set status = 'in-progress' where task_id in (select task_id from sandbox_tasks where status = 'pending' for update skip locked limit 1) returning task_id, model_id, model_input";            
+            let row: Option<(String, String, Vec<u8>)> = sqlx::query_as(query)
                 .fetch_optional(&self.pool)
                 .await
                 .unwrap();
 
-            if let Some(task) = row {
-                info!("got task with id: {:?}", task.0);
+            if let Some((task_id, model_id, model_input)) = row {
+                let input = rpc::ModelData::decode(&*model_input).unwrap();
+                let input = ModelData::from(input);
+
+                info!("got task with id: {:?}", task_id);
+
+                let model_output = self.scheduler.run(self.context.clone(), &model_id, &input).await;
+                let model_output = rpc::ModelData::from(model_output).encode_to_vec();
 
                 sqlx::query("update sandbox_tasks set status = 'completed', model_output = $1 where task_id = $2")
-                    .bind(task.1)
-                    .bind(task.0)
+                    .bind(model_output)
+                    .bind(task_id)
                     .execute(&self.pool)
                     .await
                     .unwrap();

@@ -5,6 +5,7 @@ use {
     crate::{
         utils::init_logging,
         server::run_axum_server,
+        data::resolver::DataResolver,
         models::{
             Model,
             ModelDefinition,
@@ -80,11 +81,14 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
 }
 
 async fn run_worker(config: &Config) {
+    let context = Context::new(DataResolver::new(config));
+
     let worker = PgQueueWorker::new(
         &config
             .get_string("worker.postgres_connection_string")
             .unwrap(),
         init_scheduler(config).await,
+        context,
     )
     .await;
 
