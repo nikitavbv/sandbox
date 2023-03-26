@@ -2,7 +2,7 @@ use {
     std::{sync::Arc, time::{Duration, Instant}},
     tracing::info,
     async_trait::async_trait,
-    tokio::{time, sync::Mutex},
+    tokio::{time::sleep, sync::Mutex, process::Command},
     crate::{
         models::io::ModelData,
         scheduling::scheduler::Scheduler,
@@ -41,22 +41,19 @@ impl<T: Scheduler + Send + Sync> Scheduler for AutoShutdownScheduler<T> {
 
 async fn monitor_last_activity_at(activity_at: Arc<Mutex<Instant>>) {
     info!("auto-shutdown handler started");
-    // TODO: add actual auto shutdown here
-    /* 
     loop {
-        sleep(Duration::from_secs(60)).await;
+        sleep(Duration::from_secs(5)).await;
 
         let elapsed = {
-            let last_call_time = last_call_time.lock().await;
+            let last_call_time = activity_at.lock().await;
             last_call_time.elapsed()
         };
 
-        if elapsed >= Duration::from_secs(10 * 60) {
-            println!("Shutting down the system...");
-            // Use the appropriate command for your system
-            let _ = Command::new("shutdown").arg("-h").arg("now").status();
+        info!("elapsed: {:?}", elapsed);
+        if elapsed >= Duration::from_secs(10) {
+            info!("Shutting down the system...");
+            let _ = Command::new("sudo").arg("shutdown").arg("-h").arg("now").status();
             break;
         }
-    } 
-    */
+    }
 }
