@@ -42,18 +42,19 @@ impl<T: Scheduler + Send + Sync> Scheduler for AutoShutdownScheduler<T> {
 async fn monitor_last_activity_at(activity_at: Arc<Mutex<Instant>>) {
     info!("auto-shutdown handler started");
     loop {
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(60)).await;
 
         let elapsed = {
             let last_call_time = activity_at.lock().await;
             last_call_time.elapsed()
         };
 
-        info!("elapsed: {:?}", elapsed);
-        if elapsed >= Duration::from_secs(10) {
+        if elapsed >= Duration::from_secs(10 * 60) {
             info!("Shutting down the system...");
             let _ = Command::new("sudo").arg("shutdown").arg("-h").arg("now").status();
             break;
+        } else {
+            info!("time since last activity: {:?}", elapsed);
         }
     }
 }
