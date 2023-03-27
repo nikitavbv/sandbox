@@ -11,6 +11,6 @@ RUN /opt/sandbox/linux-gpu-env.sh
 ENV LIBTORCH=/opt/sandbox/libtorch
 ENV LD_LIBRARY_PATH=/opt/sandbox/libtorch/lib
 
-COPY target/release/server /opt/sandbox/sandbox
+COPY target/release/sandbox-server /opt/sandbox/sandbox
 
 ENTRYPOINT /opt/sandbox/sandbox

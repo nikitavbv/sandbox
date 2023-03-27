@@ -54,7 +54,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: release-build
-        path: target/release/server
+        path: target/release/sandbox-server
 
   ui-build:
     name: UI Build

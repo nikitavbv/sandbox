@@ -2366,6 +2366,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b4b9743ed687d4b4bcedf9ff5eaa7398495ae14e61cba0a295704edbc7decde"
 
 [[package]]
+name = "sandbox-server"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "aws-region",
+ "axum",
+ "axum-test-helper",
+ "axum_tonic",
+ "config",
+ "diffusers",
+ "ffmpeg-next",
+ "futures-util",
+ "hostname",
+ "http",
+ "image 0.24.5",
+ "img_hash",
+ "npyz",
+ "prost",
+ "quantiles",
+ "rand",
+ "rpc",
+ "rust-bert",
+ "rust-s3",
+ "serde_json",
+ "sqlx",
+ "tch",
+ "tempfile",
+ "tokio",
+ "tonic",
+ "tonic-reflection",
+ "tonic-web",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-test",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2481,43 +2518,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "aws-region",
- "axum",
- "axum-test-helper",
- "axum_tonic",
- "config",
- "diffusers",
- "ffmpeg-next",
- "futures-util",
- "hostname",
- "http",
- "image 0.24.5",
- "img_hash",
- "npyz",
- "prost",
- "quantiles",
- "rand",
- "rpc",
- "rust-bert",
- "rust-s3",
- "serde_json",
- "sqlx",
- "tch",
- "tempfile",
- "tokio",
- "tonic",
- "tonic-reflection",
- "tonic-web",
- "tracing",
- "tracing-subscriber",
- "tracing-test",
 ]
 
 [[package]]
