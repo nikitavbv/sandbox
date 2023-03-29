@@ -10,8 +10,6 @@ use {
         models::{
             Model,
             ModelDefinition,
-            run_simple_model_inference, 
-            image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
             text_generation::{TextGenerationModel, run_simple_text_generation},
             text_summarization::{TextSummarizationModel, run_simple_text_summarization},
         },
@@ -27,9 +25,15 @@ use {
 };
 
 #[cfg(feature = "video-hashes")]
-pub mod labeling;
-#[cfg(feature = "video-hashes")]
 use crate::labeling::run_data_labeling_tasks;
+
+#[cfg(feature = "tch-inference")]
+use {
+    crate::models::image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
+};
+
+#[cfg(feature = "video-hashes")]
+pub mod labeling;
 
 pub mod autoscaling;
 pub mod data;
@@ -51,8 +55,16 @@ async fn main() -> std::io::Result<()> {
 
     match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
         "server" => run_axum_server(&config, init_scheduler(&config).await).await,
-        "simple_model" => run_simple_model_inference(),
-        "simple_image_generation" => run_simple_image_generation(&config).await,
+        "simple_image_generation" => {
+            #[cfg(not(feature = "tch-inference"))]
+            {
+                error!("this command requires crate to be compiled with tch-inference feature");
+                return Ok(());
+            }
+
+            #[cfg(feature = "tch-inference")]
+            run_simple_image_generation(&config).await            
+        },
         "simple_text_generation" => run_simple_text_generation().await,
         "simple_text_summarization" => run_simple_text_summarization().await,
         "data_labeling" => run_data_labeling_tasks(&config),
@@ -75,7 +87,16 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
     info!("using scheduler: {}", scheduler_name);
 
     let mut scheduler = match scheduler_name.as_str() {
-        "simple" => init_simple_scheduler(config).await,
+        "simple" => {
+            #[cfg(not(feature = "tch-inference"))]
+            {
+                error!("simple scheduler requires this crate to be compiled with tch-inference feature. Using nop scheduler instead...");
+                return Box::new(DoNothingScheduler::new());
+            }
+
+            #[cfg(feature = "tch-inference")]
+            init_simple_scheduler(config).await
+        },
         "nop" => Box::new(DoNothingScheduler::new()),
         "pg_queue" => init_pg_queue_scheduler(config).await,
         other => panic!("unknown scheduler: {}", other),
@@ -103,6 +124,7 @@ async fn run_worker(config: &Config) {
     worker.run().await;
 }
 
+#[cfg(feature = "tch-inference")]
 async fn init_simple_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
     let registry = ModelRegistry::new(config).await
         .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
@@ -116,18 +138,21 @@ async fn init_pg_queue_scheduler(config: &Config) -> Box<dyn Scheduler + Send + 
     Box::new(PgQueueSchedulerClient::new(&config.get_string("scheduler.postgres_connection_string").unwrap()).await)
 }
 
+#[cfg(feature = "tch-inference")]
 fn image_generation_model_factory(context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {    
     Box::pin(async move {
         Box::new(StableDiffusionImageGenerationModel::new(&context.data_resolver()).await) as Box<dyn Model + Send>
     })
 }
 
+#[cfg(feature = "tch-inference")]
 fn text_generation_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
     Box::pin(async move {
         Box::new(TextGenerationModel::new()) as Box<dyn Model + Send>
     })
 }
 
+#[cfg(feature = "tch-inference")]
 fn text_summarization_model_factory(_context: Arc<Context>) -> Pin<Box<dyn Future<Output = Box<dyn Model + Send>> + Send>> {
     Box::pin(async move {
         Box::new(TextSummarizationModel::new()) as Box<dyn Model + Send>

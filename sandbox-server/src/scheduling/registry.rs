@@ -9,7 +9,6 @@ use {
         models::{
             Model,
             ModelDefinition,
-            image_generation::StableDiffusionImageGenerationModel,
         },
     },
 };

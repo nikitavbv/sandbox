@@ -19,9 +19,6 @@ use {
             io::ModelData,
             Model,
             ModelDefinition,
-            image_generation::StableDiffusionImageGenerationModel,
-            text_generation::TextGenerationModel,
-            text_summarization::TextSummarizationModel,
         },
         scheduling::{
             registry::ModelRegistry,
