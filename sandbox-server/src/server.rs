@@ -42,7 +42,7 @@ pub async fn run_axum_server(config: &Config, scheduler: Box<dyn Scheduler + Sen
         .unwrap();
 }
 
-async fn service(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> RestGrpcService {
+pub async fn service(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> RestGrpcService {
     let app = rest_router();
     let grpc = grpc_router(config, scheduler).await;
     RestGrpcService::new(app, grpc)
