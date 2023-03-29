@@ -20,7 +20,7 @@ rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains signifi
 aws-region = "0.25.1"
 config = "0.13.3"
 tempfile = "3.3.0"
-rust-bert = "0.20.0"
+rust-bert = { version = "0.20.0", optional = true }
 hostname = "0.3.1"
 rand = "0.8.5"
 axum = "0.6.9"
@@ -38,4 +38,4 @@ rpc = { path = "../rpc", features = ["server"] }
 
 [features]
 video-hashes = ["dep:ffmpeg-next"]
-tch-inference = ["dep:tch", "dep:diffusers"]
+tch-inference = ["dep:tch", "dep:diffusers", "dep:rust-bert"]

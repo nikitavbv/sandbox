@@ -14,10 +14,12 @@ use {
 
 #[cfg(feature="tch-inference")]
 pub mod image_generation;
+#[cfg(feature="tch-inference")]
+pub mod text_summarization;
+#[cfg(feature="tch-inference")]
+pub mod text_generation;
 
 pub mod io;
-pub mod text_generation;
-pub mod text_summarization;
 
 pub trait Model {
     fn create() -> Self where Self:Sized {

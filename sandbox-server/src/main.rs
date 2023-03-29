@@ -10,8 +10,6 @@ use {
         models::{
             Model,
             ModelDefinition,
-            text_generation::{TextGenerationModel, run_simple_text_generation},
-            text_summarization::{TextSummarizationModel, run_simple_text_summarization},
         },
         scheduling::{
             scheduler::Scheduler,
@@ -29,7 +27,11 @@ use crate::labeling::run_data_labeling_tasks;
 
 #[cfg(feature = "tch-inference")]
 use {
-    crate::models::image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
+    crate::models::{
+        image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
+        text_generation::{TextGenerationModel, run_simple_text_generation},
+        text_summarization::{TextSummarizationModel, run_simple_text_summarization},
+    },
 };
 
 #[cfg(feature = "video-hashes")]
@@ -65,8 +67,26 @@ async fn main() -> std::io::Result<()> {
             #[cfg(feature = "tch-inference")]
             run_simple_image_generation(&config).await            
         },
-        "simple_text_generation" => run_simple_text_generation().await,
-        "simple_text_summarization" => run_simple_text_summarization().await,
+        "simple_text_generation" => {
+            #[cfg(not(feature = "tch-inference"))]
+            {
+                error!("this command requires crate to be compiled with tch-inference feature");
+                return Ok(());
+            }
+
+            #[cfg(feature = "tch-inference")]
+            run_simple_text_generation().await
+        },
+        "simple_text_summarization" => {
+            #[cfg(not(feature = "tch-inference"))]
+            {
+                error!("this command requires crate to be compiled with tch-inference feature");
+                return Ok(());
+            }
+            
+            #[cfg(feature = "tch-inference")]
+            run_simple_text_summarization().await
+        },
         "data_labeling" => run_data_labeling_tasks(&config),
         "worker" => run_worker(&config).await,
         other => error!("Unexpected action: {}", other),
