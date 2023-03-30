@@ -7,14 +7,8 @@ use {
         server::run_axum_server,
         autoscaling::shutdown::AutoShutdownScheduler,
         data::resolver::DataResolver,
-        models::{
-            Model,
-            ModelDefinition,
-        },
         scheduling::{
             scheduler::Scheduler,
-            simple::SimpleScheduler,
-            registry::ModelRegistry,
             nop::DoNothingScheduler,
             pg_queue::{PgQueueSchedulerClient, PgQueueWorker},
         },
@@ -27,10 +21,18 @@ use crate::labeling::run_data_labeling_tasks;
 
 #[cfg(feature = "tch-inference")]
 use {
-    crate::models::{
-        image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
-        text_generation::{TextGenerationModel, run_simple_text_generation},
-        text_summarization::{TextSummarizationModel, run_simple_text_summarization},
+    crate::{
+        models::{
+            Model,
+            ModelDefinition,
+            image_generation::{StableDiffusionImageGenerationModel, run_simple_image_generation},
+            text_generation::{TextGenerationModel, run_simple_text_generation},
+            text_summarization::{TextSummarizationModel, run_simple_text_summarization},
+        },
+        scheduling::{
+            simple::SimpleScheduler,
+            registry::ModelRegistry,
+        },
     },
 };
 
