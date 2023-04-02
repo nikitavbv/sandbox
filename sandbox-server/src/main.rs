@@ -7,6 +7,9 @@ use {
         server::run_axum_server,
         autoscaling::shutdown::AutoShutdownScheduler,
         data::resolver::DataResolver,
+        autoscaling::{
+            gcloud_instance_starter,
+        },
         scheduling::{
             scheduler::Scheduler,
             nop::DoNothingScheduler,
@@ -59,6 +62,9 @@ async fn main() -> std::io::Result<()> {
 
     match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
         "server" => run_axum_server(&config, init_scheduler(&config).await).await,
+        "autoscaling_test" => {
+            gcloud_instance_starter::start(&config).await;
+        },
         "simple_image_generation" => {
             #[cfg(not(feature = "tch-inference"))]
             {
