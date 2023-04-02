@@ -3,17 +3,28 @@ use {
     config::Config,
     gcp_auth::{AuthenticationManager, CustomServiceAccount},
     hyper_tls::HttpsConnector,
+    async_trait::async_trait,
+    crate::scheduling::scheduler::Scheduler,
 };
 
 pub struct GcloudInstanceStarter {
+    service_account: CustomServiceAccount,
 }
 
 impl GcloudInstanceStarter {
-    pub fn new() -> Self {
+    pub fn new(service_account: CustomServiceAccount) -> Self {
         Self {
+            service_account,
         }
     }
 }
+
+/*#[async_trait]
+impl Scheduler for GcloudInstanceStarter {
+    async fn run(&self, context: Arc<Context>, model_id: &str, input: &ModelData) -> ModelData {
+        // TODO: implement scheduler that will start google cloud instance if it is not running yet.
+    }
+}*/
 
 pub async fn start(config: &Config) {
     info!("this is autoscaling test");
