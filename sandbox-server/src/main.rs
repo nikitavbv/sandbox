@@ -2,13 +2,15 @@ use {
     std::{sync::Arc, pin::Pin, future::Future, env::var},
     tracing::{info, error},
     config::Config,
+    base64::Engine,
+    gcp_auth::CustomServiceAccount,
     crate::{
         utils::init_logging,
         server::run_axum_server,
         autoscaling::shutdown::AutoShutdownScheduler,
         data::resolver::DataResolver,
         autoscaling::{
-            gcloud_instance_starter,
+            gcloud_instance_starter::GcloudInstanceStarter,
         },
         scheduling::{
             scheduler::Scheduler,
@@ -62,9 +64,6 @@ async fn main() -> std::io::Result<()> {
 
     match config.get_string("target").unwrap_or("server".to_owned()).as_str() {
         "server" => run_axum_server(&config, init_scheduler(&config).await).await,
-        "autoscaling_test" => {
-            gcloud_instance_starter::start(&config).await;
-        },
         "simple_image_generation" => {
             #[cfg(not(feature = "tch-inference"))]
             {
@@ -132,6 +131,14 @@ async fn init_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
 
     if config.get_bool("scheduler.auto_shutdown").unwrap_or(false) {
         scheduler = Box::new(AutoShutdownScheduler::new(scheduler));
+    }
+
+    if config.get_bool("scheduler.gcp_instance_starter").unwrap_or(false) {
+        let key = config.get_string("autoscaling.gcp_service_account_key").unwrap();
+        let key = base64::engine::general_purpose::STANDARD_NO_PAD.decode(key).unwrap();
+        let key = String::from_utf8_lossy(&key);
+        let service_account = CustomServiceAccount::from_json(&key).unwrap();
+        scheduler = Box::new(GcloudInstanceStarter::new(service_account, scheduler));
     }
 
     scheduler
