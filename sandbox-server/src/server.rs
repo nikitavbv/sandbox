@@ -52,6 +52,7 @@ fn rest_router() -> Router {
     Router::new()
         .route("/", get(root))
         .route("/healthz", get(healthz))
+        .route("/api/healthz", get(healthz))
 }
 
 async fn grpc_router(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> Router {
