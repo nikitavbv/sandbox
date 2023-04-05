@@ -1,7 +1,5 @@
 use {
     std::sync::Arc,
-    tracing::info,
-    config::Config,
     gcp_auth::{AuthenticationManager, CustomServiceAccount},
     hyper_tls::HttpsConnector,
     async_trait::async_trait,
