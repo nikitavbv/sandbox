@@ -5,10 +5,7 @@ use {
     config::Config,
     image::{DynamicImage, imageops::FilterType, GenericImageView},
     tokio::sync::Mutex,
-    crate::{
-        data::resolver::DataResolver,
-        context::Context,
-    },
+    crate::context::Context,
     self::io::ModelData,
 };
 
