@@ -1,16 +1,7 @@
 use {
-    std::{
-        collections::HashMap,
-        sync::Arc,
-    },
-    tokio::sync::Mutex,
+    std::collections::HashMap,
     config::Config,
-    crate::{
-        models::{
-            Model,
-            ModelDefinition,
-        },
-    },
+    crate::models::ModelDefinition,
 };
 
 pub struct ModelRegistry {
