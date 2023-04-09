@@ -1,8 +1,7 @@
 use {
-    std::{io::Cursor, pin::Pin, future::Future, sync::Arc},
+    std::sync::Arc,
     tonic::{Status, Request, Response},
-    tracing::{info, error},
-    tokio::sync::Mutex,
+    tracing::info,
     config::Config,
     rand::distributions::{Alphanumeric, Distribution},
     axum::{Router, routing::get},
@@ -17,14 +16,8 @@ use {
         data::resolver::DataResolver,
         models::{
             io::ModelData,
-            Model,
-            ModelDefinition,
         },
-        scheduling::{
-            registry::ModelRegistry,
-            scheduler::Scheduler,
-            simple::SimpleScheduler,
-        },
+        scheduling::scheduler::Scheduler,
         context::Context,
     },
 };
