@@ -1,5 +1,5 @@
 use {
-    std::{sync::Arc, pin::Pin, future::Future, env::var},
+    std::env::var,
     tracing::{info, error},
     config::Config,
     base64::Engine,
