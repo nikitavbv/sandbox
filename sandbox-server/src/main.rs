@@ -161,7 +161,7 @@ async fn run_worker(config: &Config) {
 
 #[cfg(feature = "tch-inference")]
 async fn init_simple_scheduler(config: &Config) -> Box<dyn Scheduler + Send + Sync> {
-    let registry = ModelRegistry::new(config).await
+    let registry = ModelRegistry::new().await
         .with_definition(ModelDefinition::new("image-generation".to_owned(), image_generation_model_factory))
         .with_definition(ModelDefinition::new("text-generation".to_owned(), text_generation_model_factory))
         .with_definition(ModelDefinition::new("text-summarization".to_owned(), text_summarization_model_factory));

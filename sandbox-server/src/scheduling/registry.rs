@@ -9,7 +9,7 @@ pub struct ModelRegistry {
 }
 
 impl ModelRegistry {
-    pub async fn new(config: &Config) -> Self {
+    pub async fn new() -> Self {
         Self {
             models: HashMap::new(),
         }
