@@ -1,6 +1,5 @@
 use {
     std::collections::HashMap,
-    config::Config,
     crate::models::ModelDefinition,
 };
 
