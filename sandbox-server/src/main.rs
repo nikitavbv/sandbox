@@ -26,6 +26,7 @@ use crate::labeling::run_data_labeling_tasks;
 
 #[cfg(feature = "tch-inference")]
 use {
+    std::future::Future,
     crate::{
         models::{
             Model,
