@@ -117,7 +117,6 @@ fn home() -> Html {
     let client = Arc::new(Mutex::new(client()));
     let state = use_reducer(ModelState::default);
 
-    let go_home_btn_handler = Callback::from(move |_| navigator.push(&Route::Home));
     let on_prompt_change = {
         let state = state.clone();
 
@@ -178,8 +177,7 @@ fn home() -> Html {
 
     html!(
         <div>
-            <button onclick={go_home_btn_handler}>{"home"}</button>
-            <h1>{"image generation model"}</h1>
+            <h1>{"image generation"}</h1>
             <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
             <button onclick={run_inference}>{"run model"}</button>
             { result }
