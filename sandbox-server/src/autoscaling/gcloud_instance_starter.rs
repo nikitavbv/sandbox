@@ -4,30 +4,23 @@ use {
     hyper_tls::HttpsConnector,
     async_trait::async_trait,
     crate::{
-        scheduling::scheduler::Scheduler,
         context::Context,
-        models::io::ModelData,
     },
 };
 
 pub struct GcloudInstanceStarter {
     auth_manager: AuthenticationManager,
-    inner: Box<dyn Scheduler + Send + Sync>,
 }
 
 impl GcloudInstanceStarter {
-    pub fn new(service_account: CustomServiceAccount, inner: Box<dyn Scheduler + Send + Sync>) -> Self {
+    pub fn new(service_account: CustomServiceAccount) -> Self {
         Self {
             auth_manager: gcp_auth::AuthenticationManager::from(service_account),
-            inner,
         }
     }
-}
 
-#[async_trait]
-impl Scheduler for GcloudInstanceStarter {
-    async fn run(&self, context: Arc<Context>, model_id: &str, input: &ModelData) -> ModelData {
-        let scopes = &["https://www.googleapis.com/auth/compute"];
+    fn start(&self) {
+        /*let scopes = &["https://www.googleapis.com/auth/compute"];
         let token = self.auth_manager.get_token(scopes).await.unwrap();
         let token = token.as_str();
     
@@ -42,6 +35,6 @@ impl Scheduler for GcloudInstanceStarter {
             .unwrap();
         client.request(request).await.unwrap();
 
-        self.inner.run(context, model_id, input).await
+        self.inner.run(context, model_id, input).await*/
     }
 }

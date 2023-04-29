@@ -9,20 +9,14 @@ use {
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
-        InferenceRequest,
-        InferenceResponse,
     },
     crate::{
         data::resolver::DataResolver,
-        models::{
-            io::ModelData,
-        },
-        scheduling::scheduler::Scheduler,
         context::Context,
     },
 };
 
-pub async fn run_axum_server(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) {
+pub async fn run_axum_server(config: &Config) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
     let addr = format!("{}:{}", host, port).parse().unwrap();
@@ -30,14 +24,14 @@ pub async fn run_axum_server(config: &Config, scheduler: Box<dyn Scheduler + Sen
     info!("starting axum server on {:?}", addr);
     
     axum::Server::bind(&addr)
-        .serve(service(config, scheduler).await.into_make_service())
+        .serve(service(config).await.into_make_service())
         .await
         .unwrap();
 }
 
-pub async fn service(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> RestGrpcService {
+pub async fn service(config: &Config) -> RestGrpcService {
     let app = rest_router();
-    let grpc = grpc_router(config, scheduler).await;
+    let grpc = grpc_router(config).await;
     RestGrpcService::new(app, grpc)
 }
 
@@ -48,7 +42,7 @@ fn rest_router() -> Router {
         .route("/api/healthz", get(healthz))
 }
 
-async fn grpc_router(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> Router {
+async fn grpc_router(config: &Config) -> Router {
     Router::new()
         .nest_tonic(
             tonic_reflection::server::Builder::configure()
@@ -56,18 +50,16 @@ async fn grpc_router(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync
                 .build()
                 .unwrap()
         )
-        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config, scheduler).await)))
+        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)))
 }
 
 struct MlSandboxServiceHandler {
-    scheduler: Box<dyn Scheduler + Send + Sync>,
     context: Arc<Context>,
 }
 
 impl MlSandboxServiceHandler {
-    pub async fn new(config: &Config, scheduler: Box<dyn Scheduler + Send + Sync>) -> Self {
+    pub async fn new(config: &Config) -> Self {
         Self {
-            scheduler,
             context: Arc::new(Context::new(DataResolver::new(config))),
         }
     }
@@ -75,33 +67,6 @@ impl MlSandboxServiceHandler {
 
 #[tonic::async_trait]
 impl MlSandboxService for MlSandboxServiceHandler {
-    async fn run_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
-        let req = req.into_inner();
-
-        let model_id = req.model.clone();
-        let input = ModelData::from(req);
-        let output = self.scheduler.run(self.context.clone(), &model_id, &input).await;
-        
-        if output.contains_key("image") {
-            let key = &generate_output_data_key();
-            self.context.data_resolver().put(format!("output/images/{}", key), &output.get_image("image").clone()).await;    
-        }
-
-        Ok(Response::new(InferenceResponse {
-            entries: output.into(),
-            worker: hostname::get().unwrap().to_string_lossy().to_string(),
-        }))
-    }
-
-    async fn run_text_generation_model(&self, req: Request<InferenceRequest>) -> Result<Response<InferenceResponse>, Status> {
-        let req = req.into_inner();
-        let input = ModelData::from(req);
-        let output = self.scheduler.run(self.context.clone(), "text-generation", &input).await;
-        Ok(Response::new(InferenceResponse {
-            entries: output.into(),
-            worker: hostname::get().unwrap().to_string_lossy().to_string(),
-        }))
-    }
 }
 
 fn generate_output_data_key() -> String {
