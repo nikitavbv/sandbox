@@ -2,7 +2,9 @@
 
 members = [
     "rpc",
-    "sandbox-server"
+    "sandbox-server",
+    "sandbox-worker",
+    "sandbox-video-processing"
 ]
 
 exclude = [

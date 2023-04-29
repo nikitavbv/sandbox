@@ -7,7 +7,6 @@ edition = "2021"
 tokio = { version = "1.25.0", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
-tch = { version = "0.10.2", optional = true }
 npyz = { version = "0.7.3", features = ["npz"] }
 futures-util = "0.3.26"
 async-trait = "0.1.64"
@@ -15,12 +14,10 @@ image = "0.24.5"
 tonic = "0.8.1"
 tonic-reflection = "0.5.0"
 tonic-web = "0.4.0"
-diffusers = { git = "https://github.com/LaurentMazare/diffusers-rs", optional = true } # the version from crates.io uses an old version of tch
 rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains significant changes compared to the version from crates.io
 aws-region = "0.25.1"
 config = "0.13.3"
 tempfile = "3.3.0"
-rust-bert = { version = "0.20.0", optional = true }
 hostname = "0.3.1"
 rand = "0.8.5"
 axum = "0.6.9"
@@ -28,7 +25,6 @@ axum_tonic = "0.1.0"
 axum-test-helper = "0.2.0"
 http = "0.2.9"
 tracing-test = "0.2.4"
-ffmpeg-next = { version = "5.1.1", optional = true }
 img_hash = "3.2.0"
 serde_json = "1.0.93"
 quantiles = "0.7.1"
@@ -39,7 +35,3 @@ hyper = "0.14.25"
 hyper-tls = "0.5.0"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 rpc = { path = "../rpc", features = ["server"] }
-
-[features]
-video-hashes = ["dep:ffmpeg-next"]
-tch-inference = ["dep:tch", "dep:diffusers", "dep:rust-bert"]
