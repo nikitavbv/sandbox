@@ -11,9 +11,6 @@ use {
     wasm_bindgen::JsCast,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
-        InferenceRequest,
-        DataEntry,
-        data_entry
     },
     crate::components::header::Header,
 };
@@ -140,30 +137,7 @@ fn home() -> Html {
             let state = state.clone();
             let prompt = prompt.clone();
 
-            {
-                let state = state.clone();
-
-                spawn_local(async move {
-                    let mut client = client.lock().unwrap();
-                    let res = client.run_model(InferenceRequest {
-                        entries: vec![DataEntry {
-                            key: "prompt".to_owned(),
-                            value: Some(data_entry::Value::Text(prompt.clone())),
-                        }],
-                        model: "image-generation".to_owned(),
-                    }).await.unwrap().into_inner();
-
-                    let image = match res.entries.get(0).unwrap().value.as_ref().unwrap() {
-                        data_entry::Value::Image(image) => image.clone(),
-                        other => panic!("unexpected repsonse type"),
-                    };
-
-                    state.dispatch(ModelAction::SetInferenceResult(InferenceResult {
-                        data: InferenceResultData::Image(image),
-                        worker: res.worker,
-                    }));
-                });
-            }
+            // TODO: send request here
 
             state.dispatch(ModelAction::StartInference);
         })
