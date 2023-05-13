@@ -3,17 +3,8 @@ use {
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
-    config::Config,
     tempfile::tempdir,
-    crate::{
-        models::{
-            io::ModelData,
-            Model,
-        },
-        data::{
-            resolver::DataResolver,
-        },
-    },
+    crate::data::DataResolver,
 };
 
 const INPUT_PARAMETER_PROMPT: &str = "prompt";
@@ -72,13 +63,9 @@ impl StableDiffusionImageGenerationModel {
             model,
         }
     }
-}
 
-impl Model for StableDiffusionImageGenerationModel {
-    fn run(&self, input: &ModelData) -> ModelData {
+    fn run(&self, prompt: &str) -> Vec<u8> {
         info!("using device: {:?}", self.device);
-
-        let prompt = input.get_text(INPUT_PARAMETER_PROMPT);
 
         let uncond_prompt = "";
         let num_samples = 1;
@@ -139,16 +126,4 @@ impl Model for StableDiffusionImageGenerationModel {
         ModelData::new()
             .with_image("image".to_owned(), data)
     }
-}
-
-pub async fn run_simple_image_generation(config: &Config) {
-    tch::maybe_init_cuda();
-
-    let resolver = DataResolver::new(config);
-    let model = StableDiffusionImageGenerationModel::new(&&resolver).await;
-    
-    let started_at = Instant::now();
-    let input = ModelData::new().with_text(INPUT_PARAMETER_PROMPT.to_owned(), "orange cat looking into a window".to_owned());
-    model.run(&input);
-    info!("image generated in {} seconds", (Instant::now() - started_at).as_secs());
 }
