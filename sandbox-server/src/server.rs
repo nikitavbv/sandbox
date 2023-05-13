@@ -12,7 +12,7 @@ use {
         GenerateImageRequest,
         GenerateImageResponse,
     },
-    crate::state::database::Database,
+    crate::state::{database::Database, queue::{Queue, TaskMessage}},
 };
 
 pub async fn run_axum_server(config: &Config) {
@@ -54,12 +54,14 @@ async fn grpc_router(config: &Config) -> Result<Router> {
 
 struct MlSandboxServiceHandler {
     database: Database,
+    queue: Queue,
 }
 
 impl MlSandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
             database: Database::new(&config.get_string("database.node")?).await?,
+            queue: Queue::new(&config.get_string("queue.node")?),
         })
     }
 }
@@ -70,6 +72,10 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
+        self.queue.publish_task_message(&TaskMessage {
+            id: task_id.clone(),
+            prompt: req.prompt.clone(),
+        }).await;
         self.database.new_task(&task_id, &req.prompt).await.unwrap();
 
         Ok(tonic::Response::new(GenerateImageResponse {
