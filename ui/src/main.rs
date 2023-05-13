@@ -11,6 +11,7 @@ use {
     wasm_bindgen::JsCast,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
+        GenerateImageRequest,
     },
     crate::components::header::Header,
 };
@@ -138,6 +139,12 @@ fn home() -> Html {
             let prompt = prompt.clone();
 
             // TODO: send request here
+            spawn_local(async move {
+                let mut client = client.lock().unwrap();
+                let res = client.generate_image(GenerateImageRequest {
+                    prompt,
+                }).await;
+            });
 
             state.dispatch(ModelAction::StartInference);
         })

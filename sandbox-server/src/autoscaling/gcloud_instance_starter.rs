@@ -3,9 +3,6 @@ use {
     gcp_auth::{AuthenticationManager, CustomServiceAccount},
     hyper_tls::HttpsConnector,
     async_trait::async_trait,
-    crate::{
-        context::Context,
-    },
 };
 
 pub struct GcloudInstanceStarter {

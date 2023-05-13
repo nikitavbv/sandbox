@@ -3,4 +3,13 @@ syntax = "proto3";
 package ml_sandbox;
 
 service MLSandboxService {
+    rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
+}
+
+message GenerateImageRequest {
+    string prompt = 1;
+}
+
+message GenerateImageResponse {
+    string id = 1;
 }

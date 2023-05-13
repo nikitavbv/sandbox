@@ -1,19 +1,18 @@
 use {
-    std::sync::Arc,
     tonic::{Status, Request, Response},
     tracing::info,
     config::Config,
     rand::distributions::{Alphanumeric, Distribution},
     axum::{Router, routing::get},
     axum_tonic::{NestTonic, RestGrpcService},
+    anyhow::Result,
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
+        GenerateImageRequest,
+        GenerateImageResponse,
     },
-    crate::{
-        data::resolver::DataResolver,
-        context::Context,
-    },
+    crate::state::Database,
 };
 
 pub async fn run_axum_server(config: &Config) {
@@ -24,15 +23,15 @@ pub async fn run_axum_server(config: &Config) {
     info!("starting axum server on {:?}", addr);
     
     axum::Server::bind(&addr)
-        .serve(service(config).await.into_make_service())
+        .serve(service(config).await.unwrap().into_make_service())
         .await
         .unwrap();
 }
 
-pub async fn service(config: &Config) -> RestGrpcService {
+pub async fn service(config: &Config) -> Result<RestGrpcService> {
     let app = rest_router();
-    let grpc = grpc_router(config).await;
-    RestGrpcService::new(app, grpc)
+    let grpc = Router::new().nest("/api", grpc_router(config).await?);
+    Ok(RestGrpcService::new(app, grpc))
 }
 
 fn rest_router() -> Router {
@@ -42,31 +41,36 @@ fn rest_router() -> Router {
         .route("/api/healthz", get(healthz))
 }
 
-async fn grpc_router(config: &Config) -> Router {
-    Router::new()
+async fn grpc_router(config: &Config) -> Result<Router> {
+    Ok(Router::new()
         .nest_tonic(
             tonic_reflection::server::Builder::configure()
                 .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
                 .build()
                 .unwrap()
         )
-        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await)))
+        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await?))))
 }
 
 struct MlSandboxServiceHandler {
-    context: Arc<Context>,
+    database: Database,
 }
 
 impl MlSandboxServiceHandler {
-    pub async fn new(config: &Config) -> Self {
-        Self {
-            context: Arc::new(Context::new(DataResolver::new(config))),
-        }
+    pub async fn new(config: &Config) -> Result<Self> {
+        Ok(Self {
+            database: Database::new(&config.get_string("database.node")?).await?,
+        })
     }
 }
 
 #[tonic::async_trait]
 impl MlSandboxService for MlSandboxServiceHandler {
+    async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
+        Ok(tonic::Response::new(GenerateImageResponse {
+            id: "some_id".to_owned(),
+        }))
+    }
 }
 
 fn generate_output_data_key() -> String {

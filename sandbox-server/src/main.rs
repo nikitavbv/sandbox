@@ -7,19 +7,12 @@ use {
     crate::{
         utils::init_logging,
         server::run_axum_server,
-        data::resolver::DataResolver,
-        autoscaling::{
-            gcloud_instance_starter::GcloudInstanceStarter,
-        },
-        context::Context,
     },
 };
 
 pub mod autoscaling;
-pub mod data;
 pub mod state;
 
-pub mod context;
 pub mod server;
 pub mod utils;
 

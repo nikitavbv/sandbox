@@ -16,4 +16,10 @@ impl Database {
                 .await?,
         })
     }
+
+    pub async fn new_task(&self, id: &str, prompt: &str) -> Result<()> {
+        self.session.query("insert into sandbox.sandbox_tasks (task_id, prompt, status) values (?, ?, 'new')", (id, prompt))
+            .await?;
+        Ok(())
+    }
 }
