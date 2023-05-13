@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./sandbox-server/Cargo.toml"
+    ]
+}

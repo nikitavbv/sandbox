@@ -12,7 +12,7 @@ use {
         GenerateImageRequest,
         GenerateImageResponse,
     },
-    crate::state::Database,
+    crate::state::database::Database,
 };
 
 pub async fn run_axum_server(config: &Config) {
