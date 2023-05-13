@@ -1,7 +1,16 @@
-use rdkafka::{
-    config::ClientConfig,
-    producer::FutureProducer,
+use {
+    serde::{Serialize, Deserialize},
+    rdkafka::{
+        config::ClientConfig,
+        producer::FutureProducer,
+    },
 };
+
+#[derive(Serialize, Deserialize)]
+pub struct TaskMessage {
+    id: String,
+    prompt: String,
+}
 
 pub struct Queue {
     producer: FutureProducer,
