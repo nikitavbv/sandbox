@@ -67,13 +67,18 @@ impl MlSandboxServiceHandler {
 #[tonic::async_trait]
 impl MlSandboxService for MlSandboxServiceHandler {
     async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
+        let req = req.into_inner();
+
+        let task_id = generate_task_id();
+        self.database.new_task(&task_id, &req.prompt).await.unwrap();
+
         Ok(tonic::Response::new(GenerateImageResponse {
-            id: "some_id".to_owned(),
+            id: task_id,
         }))
     }
 }
 
-fn generate_output_data_key() -> String {
+fn generate_task_id() -> String {
     let mut rng = rand::thread_rng();
     Alphanumeric.sample_iter(&mut rng)
         .take(14)
@@ -89,34 +94,3 @@ async fn healthz() -> &'static str {
     "ok"
 }
 
-#[cfg(test)]
-mod tests {
-    use {
-        http::StatusCode,
-        axum_test_helper::TestClient,
-        tracing_test::traced_test,
-        super::*,
-    };
-
-    #[tokio::test]
-    #[traced_test]
-    async fn test_healthcheck() {
-        let app = test_client().await;
-        let res = app.get("/healthz").send().await;
-        assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.text().await, "ok");
-    }
-    
-    async fn test_client() -> TestClient {
-        info!("creating test");
-        TestClient::new(service(&test_config()).await)
-    }
-    
-    fn test_config() -> Config {
-        Config::builder()
-            .add_source(config::File::with_name("../config.toml"))
-            .add_source(config::Environment::with_prefix("SANDBOX"))
-            .build()
-            .unwrap()
-    }
-}

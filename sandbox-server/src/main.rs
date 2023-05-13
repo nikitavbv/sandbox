@@ -2,8 +2,6 @@ use {
     std::env::var,
     tracing::{info, error},
     config::Config,
-    base64::Engine,
-    gcp_auth::CustomServiceAccount,
     crate::{
         utils::init_logging,
         server::run_axum_server,

@@ -1,3 +1,5 @@
+use yew_router::navigator;
+
 use {
     std::{sync::{Arc, Mutex}, rc::Rc},
     tracing::info,
@@ -13,15 +15,21 @@ use {
         ml_sandbox_service_client::MlSandboxServiceClient,
         GenerateImageRequest,
     },
-    crate::components::header::Header,
+    crate::{
+        components::header::Header,
+        pages::task::TaskPage,
+    },
 };
 
 pub mod components;
+pub mod pages;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
     #[at("/")]
     Home,
+    #[at("/tasks/:id")]
+    Task { id: String },
 }
 
 #[derive(Clone)]
@@ -29,7 +37,6 @@ struct ModelState {
     inference_started: bool,
     prompt: String,
     result: Option<InferenceResult>,
-    result_generated_by: Option<String>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -61,7 +68,6 @@ impl Default for ModelState {
             inference_started: false,
             prompt: "".to_owned(),
             result: None,
-            result_generated_by: None,
         }
     }
 }
@@ -106,6 +112,7 @@ fn app() -> Html {
 fn router_switch(route: Route) -> Html {
     match route {
         Route::Home => html!(<Home />),
+        Route::Task { id }=> html!(<TaskPage task_id={id} />),
     }
 }
 
@@ -130,23 +137,26 @@ fn home() -> Html {
     let run_inference = {
         let state = state.clone();
         let client = client.clone();
+        let navigator = navigator.clone();
 
         let prompt = state.prompt.clone();
 
         Callback::from(move |_| {
             let client = client.clone();
             let state = state.clone();
+            let navigator = navigator.clone();
+
             let prompt = prompt.clone();
 
-            // TODO: send request here
             spawn_local(async move {
                 let mut client = client.lock().unwrap();
                 let res = client.generate_image(GenerateImageRequest {
                     prompt,
-                }).await;
+                }).await.unwrap().into_inner();
+                navigator.push(&Route::Task {
+                    id: res.id,
+                });
             });
-
-            state.dispatch(ModelAction::StartInference);
         })
     };
 
