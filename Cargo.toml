@@ -2,6 +2,7 @@
 
 members = [
     "rpc",
+    "sandbox-common",
     "sandbox-server",
     "sandbox-worker",
     "sandbox-video-processing"

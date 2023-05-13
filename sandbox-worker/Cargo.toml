@@ -6,4 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tracing = "0.1.37"
 diffusers = { git = "https://github.com/LaurentMazare/diffusers-rs" } # the version from crates.io uses an old version of tch
+sandbox-common = { path = "../sandbox-common" }

@@ -2,8 +2,8 @@ use {
     std::env::var,
     tracing::{info, error},
     config::Config,
+    sandbox_common::utils::init_logging,
     crate::{
-        utils::init_logging,
         server::run_axum_server,
     },
 };
@@ -12,7 +12,6 @@ pub mod autoscaling;
 pub mod state;
 
 pub mod server;
-pub mod utils;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

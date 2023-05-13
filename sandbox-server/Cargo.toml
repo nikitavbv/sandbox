@@ -39,3 +39,4 @@ rdkafka = "0.30.0"
 serde = "1.0.163"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 rpc = { path = "../rpc", features = ["server"] }
+sandbox-common = { path = "../sandbox-common" }
