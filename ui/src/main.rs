@@ -9,13 +9,17 @@ use {
     tracing_wasm::WASMLayerConfigBuilder,
     web_sys::{EventTarget, HtmlInputElement, window},
     wasm_bindgen::JsCast,
+    urlencoding::encode,
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
         GenerateImageRequest,
     },
     crate::{
         components::header::Header,
-        pages::task::TaskPage,
+        pages::{
+            task::TaskPage,
+            login::LoginPage,
+        },
         utils::{client, Route},
     },
 };
@@ -104,6 +108,7 @@ fn app() -> Html {
 fn router_switch(route: Route) -> Html {
     match route {
         Route::Home => html!(<Home />),
+        Route::Login => html!(<LoginPage />),
         Route::Task { id }=> html!(<TaskPage task_id={id} />),
     }
 }
@@ -152,18 +157,18 @@ fn home() -> Html {
         })
     };
 
-    let result = if let Some(result) = &state.result {
-        html!(<InferenceResultDisplay result={result.clone()} />)
-    } else {
-        html!(<div></div>)
-    };
+    let login = Callback::from(move |_| {
+        let current_location = window().unwrap().location();
+        let redirect_to = format!("{}//{}/login", current_location.protocol().unwrap(), current_location.host().unwrap());
+        window().unwrap().location().set_href(&format!("https://access.nikitavbv.com?redirect_to={}", encode(&redirect_to)));
+    });
 
     html!(
         <div>
+            <button onclick={login}>{"login"}</button>
             <h1>{"image generation"}</h1>
             <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
             <button onclick={run_inference}>{"run model"}</button>
-            { result }
         </div>
     )
 }

@@ -15,4 +15,6 @@ tracing-wasm = "0.2.1"
 web-sys = { version = "0.3.59", features = ["HtmlInputElement"] }
 wasm-bindgen = "0.2.82"
 base64 = "0.21.0"
+urlencoding = "2.1.2"
+serde = "1.0.163"
 rpc = { path = "../rpc", features = ["client"] }

@@ -12,6 +12,8 @@ use {
 pub enum Route {
     #[at("/")]
     Home,
+    #[at("/login")]
+    Login,
     #[at("/tasks/:id")]
     Task { id: String },
 }
