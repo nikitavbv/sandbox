@@ -12,6 +12,10 @@ use {
         utils::{init_logging, load_config},
         messages::TaskMessage,
     },
+    crate::{
+        model::StableDiffusionImageGenerationModel,
+        data::DataResolver,
+    },
 };
 
 pub mod data;
@@ -31,6 +35,11 @@ async fn main() -> anyhow::Result<()> {
     let config = load_config();
     
     info!("sandbox worker started");
+    let data_resolver = DataResolver::new(&config);
+
+    info!("loading model");
+    let model = StableDiffusionImageGenerationModel::new(&data_resolver).await;
+    info!("model loaded");
 
     let consumer: StreamConsumer<StreamingContext> = ClientConfig::new()
         .set("group.id", "sandbox-worker")
@@ -80,7 +89,9 @@ async fn main() -> anyhow::Result<()> {
                     }
                 };
 
-                info!("generate image for prompt: {}", payload.prompt);
+                info!("generating image for prompt: {}", payload.prompt);
+                let image = model.run(&payload.prompt);
+                info!("finished generating image");
 
                 if let Err(err) = consumer.commit_message(&v, CommitMode::Async) {
                     warn!("failed to commit offsets: {:?}", err);

@@ -24,10 +24,10 @@ struct ModelComponents {
 
 impl ModelComponents {
     async fn new(data_resolver: &DataResolver, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
-        let vocab_file = data_resolver.resolve_to_fs_path("bpe_simple_vocab_16e6.txt").await.unwrap();
-        let clip_weights = data_resolver.resolve_to_fs_path("clip_v2.1.ot").await.unwrap();
-        let vae_weights = data_resolver.resolve_to_fs_path("vae.ot").await.unwrap();
-        let unet_weights = data_resolver.resolve_to_fs_path("unet.ot").await.unwrap();
+        let vocab_file = data_resolver.load_model_file("bpe_simple_vocab_16e6.txt").await;
+        let clip_weights = data_resolver.load_model_file("clip_v2.1.ot").await;
+        let vae_weights = data_resolver.load_model_file("vae.ot").await;
+        let unet_weights = data_resolver.load_model_file("unet.ot").await;
 
         let tokenizer = clip::Tokenizer::create(&vocab_file, &sd_config.clip).unwrap();
         let text_model = sd_config.build_clip_transformer(&clip_weights, device).unwrap();
@@ -51,9 +51,7 @@ impl StableDiffusionImageGenerationModel {
     async fn init(data_resolver: &DataResolver) -> Self {
         let device = Device::cuda_if_available();
 
-        let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None);
-        sd_config.width = 512;
-        sd_config.height = 512;
+        let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None, Some(512), Some(512));
 
         let model = ModelComponents::new(data_resolver, &mut sd_config, device).await;
 
@@ -64,7 +62,7 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    fn run(&self, prompt: &str) -> Vec<u8> {
+    pub fn run(&self, prompt: &str) -> Vec<u8> {
         info!("using device: {:?}", self.device);
 
         let uncond_prompt = "";
@@ -121,9 +119,6 @@ impl StableDiffusionImageGenerationModel {
         let output_file = output_dir.path().join("output.png");
         tch::vision::image::save(&image, &output_file).unwrap();
 
-        let data = fs::read(output_file).unwrap();
-
-        ModelData::new()
-            .with_image("image".to_owned(), data)
+        fs::read(output_file).unwrap()
     }
 }
