@@ -1,5 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./sandbox-server/Cargo.toml"
+        "./sandbox-server/Cargo.toml",
+        "./ui/Cargo.toml"
     ]
 }

@@ -1,10 +1,8 @@
-use yew_router::navigator;
-
 use {
     std::{sync::{Arc, Mutex}, rc::Rc},
     tracing::info,
     yew::prelude::*,
-    yew_router::prelude::*,
+    yew_router::{prelude::*, navigator},
     tonic_web_wasm_client::Client,
     tonic::{Request, Status},
     wasm_bindgen_futures::spawn_local,
@@ -18,11 +16,13 @@ use {
     crate::{
         components::header::Header,
         pages::task::TaskPage,
+        utils::client,
     },
 };
 
 pub mod components;
 pub mod pages;
+pub mod utils;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -192,10 +192,6 @@ fn inference_result_display(props: &InferenceResultDisplayProps) -> Html {
             </div>
         ),
     }
-}
-
-fn client() -> MlSandboxServiceClient<Client> {
-    MlSandboxServiceClient::new(Client::new(format!("{}/api", window().unwrap().location().origin().unwrap())))
 }
 
 fn main() {

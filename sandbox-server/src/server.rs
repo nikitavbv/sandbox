@@ -11,8 +11,14 @@ use {
         FILE_DESCRIPTOR_SET,
         GenerateImageRequest,
         GenerateImageResponse,
+        TaskId,
+        TaskStatus,
     },
-    crate::state::{database::Database, queue::{Queue, TaskMessage}},
+    crate::state::{
+        database::Database, 
+        queue::{Queue, TaskMessage}, 
+        storage::Storage,
+    },
 };
 
 pub async fn run_axum_server(config: &Config) {
@@ -55,6 +61,7 @@ async fn grpc_router(config: &Config) -> Result<Router> {
 struct MlSandboxServiceHandler {
     database: Database,
     queue: Queue,
+    storage: Storage,
 }
 
 impl MlSandboxServiceHandler {
@@ -62,6 +69,7 @@ impl MlSandboxServiceHandler {
         Ok(Self {
             database: Database::new(&config.get_string("database.node")?).await?,
             queue: Queue::new(&config.get_string("queue.node")?),
+            storage: Storage::new(config),
         })
     }
 }
@@ -80,6 +88,24 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
         Ok(tonic::Response::new(GenerateImageResponse {
             id: task_id,
+        }))
+    }
+
+    async fn get_task_status(&self, req: Request<TaskId>) -> Result<Response<TaskStatus>, Status> {
+        let task_id = req.into_inner();
+
+        let task = self.database.get_task(&task_id.id).await;
+        let is_complete = task.status == "complete";
+        let image = if is_complete {
+            Some(self.storage.get_generated_image(&task_id.id).await)
+        } else {
+            None
+        };
+
+        Ok(tonic::Response::new(TaskStatus {
+            prompt: task.prompt,
+            is_complete,
+            image,
         }))
     }
 }

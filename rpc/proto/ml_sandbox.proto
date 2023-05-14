@@ -4,6 +4,7 @@ package ml_sandbox;
 
 service MLSandboxService {
     rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
+    rpc GetTaskStatus(TaskId) returns (TaskStatus) {}
 }
 
 message GenerateImageRequest {
@@ -12,4 +13,14 @@ message GenerateImageRequest {
 
 message GenerateImageResponse {
     string id = 1;
+}
+
+message TaskId {
+    string id = 1;
+}
+
+message TaskStatus {
+    string prompt = 1;
+    bool is_complete = 2;
+    optional bytes image = 3;
 }
