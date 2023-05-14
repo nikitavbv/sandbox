@@ -16,21 +16,13 @@ use {
     crate::{
         components::header::Header,
         pages::task::TaskPage,
-        utils::client,
+        utils::{client, Route},
     },
 };
 
 pub mod components;
 pub mod pages;
 pub mod utils;
-
-#[derive(Clone, Routable, PartialEq)]
-enum Route {
-    #[at("/")]
-    Home,
-    #[at("/tasks/:id")]
-    Task { id: String },
-}
 
 #[derive(Clone)]
 struct ModelState {
