@@ -14,12 +14,14 @@ use {
     },
     crate::{
         model::StableDiffusionImageGenerationModel,
-        data::DataResolver,
+        storage::Storage,
+        database::Database,
     },
 };
 
-pub mod data;
+pub mod database;
 pub mod model;
+pub mod storage;
 
 struct StreamingContext;
 
@@ -35,10 +37,12 @@ async fn main() -> anyhow::Result<()> {
     let config = load_config();
     
     info!("sandbox worker started");
-    let data_resolver = DataResolver::new(&config);
+    let storage = Storage::new(&config);
+    let database_node = config.get_string("database.node").unwrap();
+    let database = Database::new(&database_node).await.unwrap();
 
     info!("loading model");
-    let model = StableDiffusionImageGenerationModel::new(&data_resolver).await;
+    let model = StableDiffusionImageGenerationModel::new(&storage).await;
     info!("model loaded");
 
     let consumer: StreamConsumer<StreamingContext> = ClientConfig::new()
@@ -92,6 +96,8 @@ async fn main() -> anyhow::Result<()> {
                 info!("generating image for prompt: {}", payload.prompt);
                 let image = model.run(&payload.prompt);
                 info!("finished generating image");
+                storage.save_generated_image(&payload.id, &image).await;
+                database.mark_task_as_complete(&payload.id).await.unwrap();
 
                 if let Err(err) = consumer.commit_message(&v, CommitMode::Async) {
                     warn!("failed to commit offsets: {:?}", err);

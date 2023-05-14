@@ -4,11 +4,11 @@ use {
     config::Config,
 };
 
-pub struct DataResolver {
+pub struct Storage {
     bucket: s3::Bucket,
 }
 
-impl DataResolver {
+impl Storage {
     pub fn new(config: &Config) -> Self {
         let region = config.get_string("object_storage.region").unwrap();
         let endpoint = config.get_string("object_storage.endpoint").unwrap();
@@ -22,7 +22,7 @@ impl DataResolver {
                 endpoint,
             },
             Credentials::new(Some(&access_key), Some(&secret_key), None, None, None).unwrap(),
-        ).unwrap();
+        ).unwrap().with_path_style();
 
         Self {
             bucket,
@@ -48,6 +48,7 @@ impl DataResolver {
     }
 
     pub async fn save_generated_image(&self, task_id: &str, image: &[u8]) {
-        // TODO: implement this
+        let key = format!("output/images/{}", task_id);
+        self.bucket.put_object(&key, image).await.unwrap();
     }
 }

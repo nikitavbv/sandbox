@@ -2665,6 +2665,7 @@ dependencies = [
  "rdkafka",
  "rust-s3",
  "sandbox-common",
+ "scylla",
  "serde_json",
  "tch",
  "tempfile",

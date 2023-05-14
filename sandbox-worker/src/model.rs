@@ -1,10 +1,10 @@
 use {
-    std::{time::Instant, fs},
+    std::fs,
     tracing::info,
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
     tempfile::tempdir,
-    crate::data::DataResolver,
+    crate::storage::Storage,
 };
 
 const INPUT_PARAMETER_PROMPT: &str = "prompt";
@@ -23,7 +23,7 @@ struct ModelComponents {
 }
 
 impl ModelComponents {
-    async fn new(data_resolver: &DataResolver, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
+    async fn new(data_resolver: &Storage, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
         let vocab_file = data_resolver.load_model_file("bpe_simple_vocab_16e6.txt").await;
         let clip_weights = data_resolver.load_model_file("clip_v2.1.ot").await;
         let vae_weights = data_resolver.load_model_file("vae.ot").await;
@@ -44,16 +44,16 @@ impl ModelComponents {
 }
 
 impl StableDiffusionImageGenerationModel {
-    pub async fn new(data_resolver: &DataResolver) -> Self {
-        Self::init(data_resolver).await
+    pub async fn new(storage: &Storage) -> Self {
+        Self::init(storage).await
     }
 
-    async fn init(data_resolver: &DataResolver) -> Self {
+    async fn init(storage: &Storage) -> Self {
         let device = Device::cuda_if_available();
 
         let mut sd_config = stable_diffusion::StableDiffusionConfig::v2_1(None, Some(512), Some(512));
 
-        let model = ModelComponents::new(data_resolver, &mut sd_config, device).await;
+        let model = ModelComponents::new(storage, &mut sd_config, device).await;
 
         Self {
             device,
