@@ -10,6 +10,7 @@ use {
     web_sys::{EventTarget, HtmlInputElement, window},
     wasm_bindgen::JsCast,
     urlencoding::encode,
+    gloo_storage::{Storage, LocalStorage},
     rpc::{
         ml_sandbox_service_client::MlSandboxServiceClient,
         GenerateImageRequest,
@@ -19,8 +20,9 @@ use {
         pages::{
             task::TaskPage,
             login::LoginPage,
+            history::HistoryPage,
         },
-        utils::{client, Route},
+        utils::{client_with_token, Route},
     },
 };
 
@@ -110,14 +112,16 @@ fn router_switch(route: Route) -> Html {
         Route::Home => html!(<Home />),
         Route::Login => html!(<LoginPage />),
         Route::Task { id }=> html!(<TaskPage task_id={id} />),
+        Route::History => html!(<HistoryPage />),
     }
 }
 
 #[function_component(Home)]
 fn home() -> Html {
     let navigator = use_navigator().unwrap();
-    let client = Arc::new(Mutex::new(client()));
     let state = use_reducer(ModelState::default);
+    let token: UseStateHandle<Option<String>> = use_state(|| LocalStorage::get("access_token").ok());
+    let client = Arc::new(Mutex::new(client_with_token((*token).clone())));
 
     let on_prompt_change = {
         let state = state.clone();
@@ -160,12 +164,36 @@ fn home() -> Html {
     let login = Callback::from(move |_| {
         let current_location = window().unwrap().location();
         let redirect_to = format!("{}//{}/login", current_location.protocol().unwrap(), current_location.host().unwrap());
-        window().unwrap().location().set_href(&format!("https://access.nikitavbv.com?redirect_to={}", encode(&redirect_to)));
+        window().unwrap().location().set_href(&format!("https://access.nikitavbv.com?redirect_to={}", encode(&redirect_to))).unwrap();
     });
+
+    let logout = {
+        let token_setter = token.setter();
+        
+        Callback::from(move |_| {
+            LocalStorage::delete("access_token");
+            token_setter.set(None);
+        })
+    };
+
+    let open_history = Callback::from(move |_| {
+        navigator.push(&Route::History);
+    });
+
+    let account_ui = if token.is_some() {
+        html!(
+            <div>
+                <button onclick={open_history}>{"history"}</button>
+                <button onclick={logout}>{"logout"}</button>
+            </div>
+        )
+    } else {
+        html!(<button onclick={login}>{"login"}</button>)
+    };
 
     html!(
         <div>
-            <button onclick={login}>{"login"}</button>
+            { account_ui }      
             <h1>{"image generation"}</h1>
             <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
             <button onclick={run_inference}>{"run model"}</button>
