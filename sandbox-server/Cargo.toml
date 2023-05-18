@@ -11,9 +11,9 @@ npyz = { version = "0.7.3", features = ["npz"] }
 futures-util = "0.3.26"
 async-trait = "0.1.64"
 image = "0.24.5"
-tonic = "0.8.1"
+tonic = "0.9.2"
 tonic-reflection = "0.5.0"
-tonic-web = "0.4.0"
+tonic-web = "0.9.2"
 rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains significant changes compared to the version from crates.io
 aws-region = "0.25.1"
 config = "0.13.3"
