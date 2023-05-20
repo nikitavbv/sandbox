@@ -4,6 +4,7 @@ use {
 };
 
 pub struct Task {
+    pub id: String,
     pub prompt: String,
     pub status: String,
 }
@@ -29,14 +30,14 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        self.session.query("select prompt, status from sandbox.sandbox_tasks where user_id = ?", (user_id,))
+        self.session.query("select task_id, prompt, status from sandbox.sandbox_tasks where user_id = ? allow filtering", (user_id,))
             .await
             .unwrap()
             .rows()
             .unwrap()
             .into_iter()
-            .map(|v| v.into_typed::<(String, String)>().unwrap())
-            .map(|v| Task { prompt: v.0, status: v.1 })
+            .map(|v| v.into_typed::<(String, String, String)>().unwrap())
+            .map(|v| Task { id: v.0, prompt: v.1, status: v.2 })
             .collect()
     }
 
@@ -50,6 +51,7 @@ impl Database {
             .unwrap();
         
         Task {
+            id: id.to_owned(),
             prompt,
             status,
         }

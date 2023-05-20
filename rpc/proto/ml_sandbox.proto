@@ -24,6 +24,7 @@ message TaskStatus {
     string prompt = 1;
     bool is_complete = 2;
     optional bytes image = 3;
+    string id = 4;
 }
 
 message HistoryRequest {

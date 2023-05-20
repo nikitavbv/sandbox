@@ -36,7 +36,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         });
         
         || ()
-    }, (props.task_id.clone()));
+    }, props.task_id.clone());
 
     let return_home = Callback::from(move |_| {
         navigator.push(&Route::Home);

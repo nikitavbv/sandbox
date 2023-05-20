@@ -19,7 +19,7 @@ use {
         TaskHistory,
     },
     crate::state::{
-        database::Database, 
+        database::{Database, Task}, 
         queue::{Queue, TaskMessage}, 
         storage::Storage,
     },
@@ -88,6 +88,22 @@ impl MlSandboxServiceHandler {
     pub fn decode_token(&self, token: &str) -> String {
         jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
     }
+
+    pub async fn task_to_task_status(&self, task: Task) -> TaskStatus {
+        let is_complete = task.status == "complete";
+        let image = if is_complete {
+            Some(self.storage.get_generated_image(&task.id).await)
+        } else {
+            None
+        };
+
+        TaskStatus {
+            prompt: task.prompt,
+            is_complete,
+            image,
+            id: task.id,
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -114,20 +130,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
     async fn get_task_status(&self, req: Request<TaskId>) -> Result<Response<TaskStatus>, Status> {
         let task_id = req.into_inner();
-
-        let task = self.database.get_task(&task_id.id).await;
-        let is_complete = task.status == "complete";
-        let image = if is_complete {
-            Some(self.storage.get_generated_image(&task_id.id).await)
-        } else {
-            None
-        };
-
-        Ok(tonic::Response::new(TaskStatus {
-            prompt: task.prompt,
-            is_complete,
-            image,
-        }))
+        Ok(tonic::Response::new(self.task_to_task_status(self.database.get_task(&task_id.id).await).await))
     }
 
     async fn get_task_history(&self, req: Request<HistoryRequest>) -> Result<Response<TaskHistory>, Status> {
@@ -141,7 +144,12 @@ impl MlSandboxService for MlSandboxServiceHandler {
 
         let tasks = self.database.get_user_tasks(&user_id).await;
 
-        unimplemented!()
+        let mut result = Vec::new();
+        for task in tasks.into_iter() {
+            result.push(self.task_to_task_status(task).await);
+        }
+
+        Ok(tonic::Response::new(TaskHistory { tasks: result }))
     }
 }
 
