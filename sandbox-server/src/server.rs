@@ -15,6 +15,8 @@ use {
         GenerateImageResponse,
         TaskId,
         TaskStatus,
+        HistoryRequest,
+        TaskHistory,
     },
     crate::state::{
         database::Database, 
@@ -126,6 +128,20 @@ impl MlSandboxService for MlSandboxServiceHandler {
             is_complete,
             image,
         }))
+    }
+
+    async fn get_task_history(&self, req: Request<HistoryRequest>) -> Result<Response<TaskHistory>, Status> {
+        let headers = req.metadata().clone().into_headers();
+        let user_id = match headers.get("x-access-token")
+            .map(|v| v.to_str().unwrap().to_owned())
+            .map(|v| self.decode_token(&v)) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        let tasks = self.database.get_user_tasks(&user_id).await;
+
+        unimplemented!()
     }
 }
 

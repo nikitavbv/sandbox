@@ -28,6 +28,18 @@ impl Database {
         Ok(())
     }
 
+    pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
+        self.session.query("select prompt, status from sandbox.sandbox_tasks where user_id = ?", (user_id,))
+            .await
+            .unwrap()
+            .rows()
+            .unwrap()
+            .into_iter()
+            .map(|v| v.into_typed::<(String, String)>().unwrap())
+            .map(|v| Task { prompt: v.0, status: v.1 })
+            .collect()
+    }
+
     pub async fn get_task(&self, id: &str) -> Task {
         let (prompt, status) = self.session.query("select prompt, status from sandbox.sandbox_tasks where task_id = ?", (id,))
             .await

@@ -5,6 +5,7 @@ package ml_sandbox;
 service MLSandboxService {
     rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
     rpc GetTaskStatus(TaskId) returns (TaskStatus) {}
+    rpc GetTaskHistory(HistoryRequest) returns (TaskHistory) {}
 }
 
 message GenerateImageRequest {
@@ -23,4 +24,11 @@ message TaskStatus {
     string prompt = 1;
     bool is_complete = 2;
     optional bytes image = 3;
+}
+
+message HistoryRequest {
+}
+
+message TaskHistory {
+    repeated TaskStatus tasks = 1;
 }
