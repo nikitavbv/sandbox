@@ -41,7 +41,7 @@ impl Storage {
             return file_path_str;
         }
 
-        let res = self.bucket.get_object(&format!("data/model/stable-diffusion/{}", file_name)).await.unwrap();
+        let res = self.bucket.get_object(&format!("model/stable-diffusion/{}", file_name)).await.unwrap();
         tokio::fs::write(file_path, res.as_slice()).await.unwrap();
 
         file_path_str

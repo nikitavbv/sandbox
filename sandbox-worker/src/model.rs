@@ -7,8 +7,6 @@ use {
     crate::storage::Storage,
 };
 
-const INPUT_PARAMETER_PROMPT: &str = "prompt";
-
 pub struct StableDiffusionImageGenerationModel {
     device: Device,
     sd_config: stable_diffusion::StableDiffusionConfig,
