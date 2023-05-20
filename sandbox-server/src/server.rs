@@ -6,6 +6,8 @@ use {
     axum::{Router, routing::get},
     axum_tonic::{NestTonic, RestGrpcService},
     anyhow::Result,
+    jsonwebtoken::{DecodingKey, Validation, Algorithm},
+    serde::Deserialize,
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
@@ -20,6 +22,11 @@ use {
         storage::Storage,
     },
 };
+
+#[derive(Deserialize)]
+struct TokenClaims {
+    sub: String,
+}
 
 pub async fn run_axum_server(config: &Config) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
@@ -62,6 +69,8 @@ struct MlSandboxServiceHandler {
     database: Database,
     queue: Queue,
     storage: Storage,
+
+    token_decoding_key: DecodingKey,
 }
 
 impl MlSandboxServiceHandler {
@@ -70,13 +79,23 @@ impl MlSandboxServiceHandler {
             database: Database::new(&config.get_string("database.node")?).await?,
             queue: Queue::new(&config.get_string("queue.node")?),
             storage: Storage::new(config),
+            token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
         })
+    }
+
+    pub fn decode_token(&self, token: &str) -> String {
+        jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
     }
 }
 
 #[tonic::async_trait]
 impl MlSandboxService for MlSandboxServiceHandler {
     async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
+        let headers: http::HeaderMap = req.metadata().clone().into_headers();
+        let user_id = headers.get("x-access-token")
+            .map(|v| v.to_str().unwrap().to_owned())
+            .map(|v| self.decode_token(&v));
+
         let req = req.into_inner();
 
         let task_id = generate_task_id();
@@ -84,7 +103,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
             id: task_id.clone(),
             prompt: req.prompt.clone(),
         }).await;
-        self.database.new_task(&task_id, &req.prompt).await.unwrap();
+        self.database.new_task(user_id, &task_id, &req.prompt).await.unwrap();
 
         Ok(tonic::Response::new(GenerateImageResponse {
             id: task_id,
