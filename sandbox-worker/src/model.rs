@@ -75,10 +75,10 @@ impl StableDiffusionImageGenerationModel {
 
         let tokens = self.model.tokenizer.encode(&prompt).unwrap();
         let tokens: Vec<i64> = tokens.into_iter().map(|x| x as i64).collect();
-        let tokens = Tensor::of_slice(&tokens).view((1, -1)).to(self.device);
+        let tokens = Tensor::from_slice(&tokens).view((1, -1)).to(self.device);
         let uncond_tokens = self.model.tokenizer.encode(uncond_prompt).unwrap();
         let uncond_tokens: Vec<i64> = uncond_tokens.into_iter().map(|x| x as i64).collect();
-        let uncond_tokens = Tensor::of_slice(&uncond_tokens).view((1, -1)).to(self.device);
+        let uncond_tokens = Tensor::from_slice(&uncond_tokens).view((1, -1)).to(self.device);
 
         let no_grad_guard = tch::no_grad_guard();
 
