@@ -11,17 +11,12 @@ pub struct Task {
 }
 
 pub struct Database {
-    session: Session,
     pool: sqlx::postgres::PgPool,
 }
 
 impl Database {
-    pub async fn new(node: &str, connection_string: &str) -> Result<Self> {
+    pub async fn new(connection_string: &str) -> Result<Self> {
         Ok(Self {
-            session: SessionBuilder::new()
-                .known_node(node)
-                .build()
-                .await?,
             pool: PgPoolOptions::new()
                 .max_connections(2)
                 .connect(&connection_string)
@@ -30,13 +25,15 @@ impl Database {
     }
 
     pub async fn new_task(&self, user_id: Option<String>, id: &str, prompt: &str) -> Result<()> {
-        self.session.query("insert into sandbox.sandbox_tasks (user_id, task_id, prompt, status) values (?, ?, ?, 'new')", (user_id, id, prompt))
-            .await?;
+        sqlx::query!("insert into sandbox_tasks (user_id, task_id, prompt, status) values ($1, $2, $3, 'new')", user_id, id, prompt)
+            .execute(&self.pool)
+            .await
+            .unwrap();
         Ok(())
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        self.session.query("select task_id, prompt, status from sandbox.sandbox_tasks where user_id = ? allow filtering", (user_id,))
+        /*self.session.query("select task_id, prompt, status from sandbox.sandbox_tasks where user_id = ? allow filtering", (user_id,))
             .await
             .unwrap()
             .rows()
@@ -44,11 +41,12 @@ impl Database {
             .into_iter()
             .map(|v| v.into_typed::<(String, String, String)>().unwrap())
             .map(|v| Task { id: v.0, prompt: v.1, status: v.2 })
-            .collect()
+            .collect()*/
+        Vec::new()
     }
 
     pub async fn get_task(&self, id: &str) -> Task {
-        let (prompt, status) = self.session.query("select prompt, status from sandbox.sandbox_tasks where task_id = ?", (id,))
+        /*let (prompt, status) = self.session.query("select prompt, status from sandbox.sandbox_tasks where task_id = ?", (id,))
             .await
             .unwrap()
             .first_row()
@@ -60,6 +58,7 @@ impl Database {
             id: id.to_owned(),
             prompt,
             status,
-        }
+        }*/
+        unimplemented!()
     }
 }

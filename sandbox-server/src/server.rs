@@ -78,7 +78,7 @@ struct MlSandboxServiceHandler {
 impl MlSandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
-            database: Database::new(&config.get_string("database.node")?).await?,
+            database: Database::new( &config.get_string("database.connection_string")?).await?,
             queue: Queue::new(&config.get_string("queue.node")?),
             storage: Storage::new(config),
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
