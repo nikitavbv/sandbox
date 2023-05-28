@@ -1,6 +1,7 @@
 use {
     scylla::{Session, SessionBuilder},
     anyhow::Result,
+    sqlx::postgres::PgPoolOptions,
 };
 
 pub struct Task {
@@ -11,14 +12,19 @@ pub struct Task {
 
 pub struct Database {
     session: Session,
+    pool: sqlx::postgres::PgPool,
 }
 
 impl Database {
-    pub async fn new(node: &str) -> Result<Self> {
+    pub async fn new(node: &str, connection_string: &str) -> Result<Self> {
         Ok(Self {
             session: SessionBuilder::new()
                 .known_node(node)
                 .build()
+                .await?,
+            pool: PgPoolOptions::new()
+                .max_connections(2)
+                .connect(&connection_string)
                 .await?,
         })
     }
