@@ -29,6 +29,12 @@ jobs:
     - uses: arduino/setup-protoc@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - run: |
+        if ! command -v sqlx &> /dev/null
+        then
+          cargo install sqlx-cli
+        fi
+    - run: sqlx migrate run
     - uses: actions-rs/cargo@v1
       with:
         command: build
