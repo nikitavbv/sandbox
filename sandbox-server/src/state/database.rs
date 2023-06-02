@@ -59,6 +59,9 @@ impl Database {
             prompt,
             status,
         }*/
-        unimplemented!()
+        sqlx::query!("select prompt, status from sandbox.sandbox_tasks where task_id = $1", id)
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
     }
 }
