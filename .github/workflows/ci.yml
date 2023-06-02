@@ -35,6 +35,8 @@ jobs:
           cargo install sqlx-cli
         fi
     - run: sqlx migrate run
+      env:
+        DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
     - uses: actions-rs/cargo@v1
       with:
         command: build
