@@ -2665,7 +2665,6 @@ dependencies = [
  "rpc",
  "rust-s3",
  "sandbox-common",
- "scylla",
  "serde",
  "serde_json",
  "sqlx",

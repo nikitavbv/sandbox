@@ -1,5 +1,4 @@
 use {
-    scylla::{Session, SessionBuilder},
     anyhow::Result,
     sqlx::postgres::PgPoolOptions,
 };
@@ -8,6 +7,11 @@ pub struct Task {
     pub id: String,
     pub prompt: String,
     pub status: String,
+}
+
+pub struct PromptAndStatus {
+    prompt: String,
+    status: String,
 }
 
 pub struct Database {
@@ -33,35 +37,22 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        /*self.session.query("select task_id, prompt, status from sandbox.sandbox_tasks where user_id = ? allow filtering", (user_id,))
+        sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
+            .fetch_all(&self.pool)
             .await
             .unwrap()
-            .rows()
-            .unwrap()
-            .into_iter()
-            .map(|v| v.into_typed::<(String, String, String)>().unwrap())
-            .map(|v| Task { id: v.0, prompt: v.1, status: v.2 })
-            .collect()*/
-        Vec::new()
     }
 
     pub async fn get_task(&self, id: &str) -> Task {
-        /*let (prompt, status) = self.session.query("select prompt, status from sandbox.sandbox_tasks where task_id = ?", (id,))
-            .await
-            .unwrap()
-            .first_row()
-            .unwrap()
-            .into_typed::<(String, String)>()
-            .unwrap();
-        
-        Task {
-            id: id.to_owned(),
-            prompt,
-            status,
-        }*/
-        sqlx::query!("select prompt, status from sandbox.sandbox_tasks where task_id = $1", id)
+        let result = sqlx::query_as!(PromptAndStatus, "select prompt, status from sandbox_tasks where task_id = $1", id)
             .fetch_one(&self.pool)
             .await
-            .unwrap()
+            .unwrap();
+
+        Task {
+            id: id.to_owned(),
+            prompt: result.prompt,
+            status: result.status,
+        }
     }
 }
