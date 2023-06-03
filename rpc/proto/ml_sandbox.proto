@@ -3,6 +3,7 @@ syntax = "proto3";
 package ml_sandbox;
 
 service MLSandboxService {
+    // for ui
     rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
     rpc GetTaskStatus(TaskId) returns (TaskStatus) {}
     rpc GetTaskHistory(HistoryRequest) returns (TaskHistory) {}

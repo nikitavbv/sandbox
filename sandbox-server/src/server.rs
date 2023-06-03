@@ -20,7 +20,6 @@ use {
     },
     crate::state::{
         database::{Database, Task}, 
-        queue::{Queue, TaskMessage}, 
         storage::Storage,
     },
 };
@@ -69,7 +68,6 @@ async fn grpc_router(config: &Config) -> Result<Router> {
 
 struct MlSandboxServiceHandler {
     database: Database,
-    queue: Queue,
     storage: Storage,
 
     token_decoding_key: DecodingKey,
@@ -79,7 +77,6 @@ impl MlSandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
             database: Database::new( &config.get_string("database.connection_string")?).await?,
-            queue: Queue::new(&config.get_string("queue.node")?),
             storage: Storage::new(config),
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
         })
@@ -117,10 +114,6 @@ impl MlSandboxService for MlSandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
-        self.queue.publish_task_message(&TaskMessage {
-            id: task_id.clone(),
-            prompt: req.prompt.clone(),
-        }).await;
         self.database.new_task(user_id, &task_id, &req.prompt).await.unwrap();
 
         Ok(tonic::Response::new(GenerateImageResponse {
