@@ -17,6 +17,11 @@ use {
         TaskStatus,
         HistoryRequest,
         TaskHistory,
+        GetTaskToRunRequest,
+        GetTaskToRunResponse,
+        TaskToRun,
+        SubmitTaskResultRequest,
+        SubmitTaskResultResponse,
     },
     crate::state::{
         database::{Database, Task}, 
@@ -71,6 +76,7 @@ struct MlSandboxServiceHandler {
     storage: Storage,
 
     token_decoding_key: DecodingKey,
+    worker_token: String,
 }
 
 impl MlSandboxServiceHandler {
@@ -79,6 +85,7 @@ impl MlSandboxServiceHandler {
             database: Database::new( &config.get_string("database.connection_string")?).await?,
             storage: Storage::new(config),
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
+            worker_token: config.get_string("token.worker_token").unwrap(),
         })
     }
 
@@ -143,6 +150,42 @@ impl MlSandboxService for MlSandboxServiceHandler {
         }
 
         Ok(tonic::Response::new(TaskHistory { tasks: result }))
+    }
+
+    async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {
+        let headers = req.metadata().clone().into_headers();
+        let token = match headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned()) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        if token != self.worker_token {
+            return Err(Status::unauthenticated("wrong_token"));
+        }
+
+        let task_to_run = self.database.get_any_new_task().await;
+        Ok(tonic::Response::new(GetTaskToRunResponse {
+            task_to_run: task_to_run.map(|v| TaskToRun {
+                id: v.id,
+                prompt: v.prompt,
+            })
+        }))
+    }
+
+    async fn submit_task_result(&self, req: Request<SubmitTaskResultRequest>) -> Result<Response<SubmitTaskResultResponse>, Status> {
+        let headers = req.metadata().clone().into_headers();
+        let token = match headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned()) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        if token != self.worker_token {
+            return Err(Status::unauthenticated("wrong_token"));
+        }
+
+        // TODO: finish this
+        
+        unimplemented!()
     }
 }
 

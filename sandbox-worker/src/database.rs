@@ -16,10 +16,4 @@ impl Database {
                 .await?,
         })
     }
-
-    pub async fn mark_task_as_complete(&self, id: &str) -> Result<()> {
-        self.session.query("update sandbox.sandbox_tasks set status = 'complete' where task_id = ?", (id,))
-            .await?;
-        Ok(())
-    }
 }

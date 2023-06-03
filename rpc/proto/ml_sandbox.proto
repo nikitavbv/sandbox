@@ -7,6 +7,10 @@ service MLSandboxService {
     rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
     rpc GetTaskStatus(TaskId) returns (TaskStatus) {}
     rpc GetTaskHistory(HistoryRequest) returns (TaskHistory) {}
+
+    // for workers
+    rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
+    rpc SubmitTaskResult(SubmitTaskResultRequest) returns (SubmitTaskResultResponse) {}
 }
 
 message GenerateImageRequest {
@@ -33,4 +37,24 @@ message HistoryRequest {
 
 message TaskHistory {
     repeated TaskStatus tasks = 1;
+}
+
+message GetTaskToRunRequest {
+}
+
+message GetTaskToRunResponse {
+    optional TaskToRun task_to_run = 1;
+}
+
+message TaskToRun {
+    string id = 1;
+    string prompt = 2;
+}
+
+message SubmitTaskResultRequest {
+    string id = 1;
+    bytes image = 2;
+}
+
+message SubmitTaskResultResponse {
 }

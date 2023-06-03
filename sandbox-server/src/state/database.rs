@@ -55,4 +55,19 @@ impl Database {
             status: result.status,
         }
     }
+
+    pub async fn get_any_new_task(&self) -> Option<Task> {
+        sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where status = 'new' limit 1")
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap()
+    }
+
+    pub async fn mark_task_as_complete(&self, id: &str) -> Result<()> {
+        sqlx::query!("update sandbox_tasks set status = 'complete' where task_id = $1", id)
+            .execute(&self.pool)
+            .await
+            .unwrap();
+        Ok(())
+    }
 }
