@@ -8,6 +8,8 @@ use {
     anyhow::Result,
     jsonwebtoken::{DecodingKey, Validation, Algorithm},
     serde::Deserialize,
+    futures::join,
+    tonic::transport::Server,
     rpc::{
         ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
         FILE_DESCRIPTOR_SET,
@@ -34,6 +36,12 @@ struct TokenClaims {
     sub: String,
 }
 
+pub async fn run_server(config: &Config) {
+    let axum_server = run_axum_server(config);
+    let grpc_server = run_grpc_server(config);
+    join!(axum_server, grpc_server);
+}
+
 pub async fn run_axum_server(config: &Config) {
     let host = config.get_string("server.host").unwrap_or("0.0.0.0".to_owned());
     let port = config.get_int("server.port").unwrap_or(8080);
@@ -43,6 +51,16 @@ pub async fn run_axum_server(config: &Config) {
     
     axum::Server::bind(&addr)
         .serve(service(config).await.unwrap().into_make_service())
+        .await
+        .unwrap();
+}
+
+pub async fn run_grpc_server(config: &Config) {
+    let port = config.get_int("server.grpc_port").unwrap_or(8081);
+
+    Server::builder()
+        .add_service(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await.unwrap()))
+        .serve(format!("0.0.0.0:{}", port).parse().unwrap())
         .await
         .unwrap();
 }

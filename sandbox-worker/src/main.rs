@@ -6,7 +6,9 @@ use {
         codegen::InterceptedService,
         service::Interceptor,
         transport::ClientTlsConfig,
+        metadata::MetadataValue,
         Status,
+        Request,
     },
     sandbox_common::{
         utils::{init_logging, load_config},
@@ -33,14 +35,16 @@ async fn main() -> anyhow::Result<()> {
     
     info!("sandbox worker started");
     let mut client = MlSandboxServiceClient::with_interceptor(
-        tonic::transport::Channel::from_static("https://sandbox.nikitavbv.com/api")
-            .tls_config(ClientTlsConfig::new())
-            .unwrap()
+        tonic::transport::Channel::from_static("http://localhost:8080/api")
+            //.tls_config(ClientTlsConfig::new())
+            //.unwrap()
             .connect()
             .await
             .unwrap(),
         AuthTokenSetterInterceptor::new()
     );
+    let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap();
+    info!("res: {:?}", res);
     //let storage = Storage::new(&config);
 
     /*info!("loading model");
@@ -73,8 +77,8 @@ impl AuthTokenSetterInterceptor {
 
 impl Interceptor for AuthTokenSetterInterceptor {
     fn call(&mut self, mut req: Request<()>) -> Result<Request<()>, Status> {
-        let auth_header_value = MetadataValue::try_from(format!("Bearer token")).expect("failed to create metadata");
-        req.metadata_mut().insert("authorization", auth_header_value);
+        let auth_header_value: MetadataValue<tonic::metadata::Ascii> = MetadataValue::try_from("some token").expect("failed to create metadata");
+        req.metadata_mut().insert("x-access-token", auth_header_value);
         Ok(req)
     }
 }

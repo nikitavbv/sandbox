@@ -4,7 +4,7 @@ use {
     config::Config,
     sandbox_common::utils::{init_logging, load_config},
     crate::{
-        server::run_axum_server,
+        server::run_server,
     },
 };
 
@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
 
     let config = load_config();
 
-    run_axum_server(&config).await;
+    run_server(&config).await;
 
     info!("done");
     Ok(())
