@@ -46,9 +46,4 @@ impl Storage {
 
         file_path_str
     }
-
-    pub async fn save_generated_image(&self, task_id: &str, image: &[u8]) {
-        let key = format!("output/images/{}", task_id);
-        self.bucket.put_object(&key, image).await.unwrap();
-    }
 }

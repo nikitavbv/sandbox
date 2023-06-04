@@ -32,4 +32,9 @@ impl Storage {
         let key = format!("output/images/{}", task_id);
         self.bucket.get_object(&key).await.unwrap().to_vec()
     }
+
+    pub async fn save_generated_image(&self, task_id: &str, image: &[u8]) {
+        let key = format!("output/images/{}", task_id);
+        self.bucket.put_object(&key, image).await.unwrap();
+    }
 }

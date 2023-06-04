@@ -183,7 +183,10 @@ impl MlSandboxService for MlSandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
 
-        // TODO: finish this
+        let req = req.into_inner();
+
+        self.database.mark_task_as_complete(&req.id).await.unwrap();
+        self.storage.save_generated_image(&req.id, &req.image).await;
         
         unimplemented!()
     }
