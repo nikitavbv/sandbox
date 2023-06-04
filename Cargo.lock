@@ -2579,6 +2579,7 @@ dependencies = [
  "tch",
  "tempfile",
  "tokio",
+ "tonic",
  "tracing",
 ]
 
