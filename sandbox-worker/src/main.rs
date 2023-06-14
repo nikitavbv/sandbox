@@ -35,13 +35,13 @@ async fn main() -> anyhow::Result<()> {
     
     info!("sandbox worker started");
     let mut client = MlSandboxServiceClient::with_interceptor(
-        tonic::transport::Channel::from_static("http://localhost:8080/api")
+        tonic::transport::Channel::from_static("http://localhost:8081")
             //.tls_config(ClientTlsConfig::new())
             //.unwrap()
             .connect()
             .await
             .unwrap(),
-        AuthTokenSetterInterceptor::new()
+        AuthTokenSetterInterceptor::new(config.get_string("token.worker_token").unwrap()),
     );
     let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap();
     info!("res: {:?}", res);
@@ -66,18 +66,20 @@ async fn main() -> anyhow::Result<()> {
 }
 
 pub struct AuthTokenSetterInterceptor {
+    token: String,
 }
 
 impl AuthTokenSetterInterceptor {
-    pub fn new() -> Self {
+    pub fn new(token: String) -> Self {
         Self {
+            token,
         }
     }
 }
 
 impl Interceptor for AuthTokenSetterInterceptor {
     fn call(&mut self, mut req: Request<()>) -> Result<Request<()>, Status> {
-        let auth_header_value: MetadataValue<tonic::metadata::Ascii> = MetadataValue::try_from("some token").expect("failed to create metadata");
+        let auth_header_value: MetadataValue<tonic::metadata::Ascii> = MetadataValue::try_from(&self.token).expect("failed to create metadata");
         req.metadata_mut().insert("x-access-token", auth_header_value);
         Ok(req)
     }
