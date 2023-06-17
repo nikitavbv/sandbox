@@ -3,9 +3,7 @@ use {
     tracing::{info, warn},
     tokio::time::sleep,
     tonic::{
-        codegen::InterceptedService,
         service::Interceptor,
-        transport::ClientTlsConfig,
         metadata::MetadataValue,
         Status,
         Request,
@@ -43,7 +41,6 @@ async fn main() -> anyhow::Result<()> {
             .unwrap(),
         AuthTokenSetterInterceptor::new(config.get_string("token.worker_token").unwrap()),
     );
-    let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap();
     
     let storage = Storage::new(&config);
 
@@ -51,17 +48,31 @@ async fn main() -> anyhow::Result<()> {
     let model = StableDiffusionImageGenerationModel::new(&storage).await;
     info!("model loaded");
 
-    /*info!("generating image for prompt: {}", payload.prompt);
-    let image = model.run(&payload.prompt);
-    info!("finished generating image");
-    storage.save_generated_image(&payload.id, &image).await;
-    database.mark_task_as_complete(&payload.id).await.unwrap();
+    loop {
+        let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap().into_inner();
+    
+        let task = match res.task_to_run {
+            Some(v) => v,
+            None => {
+                info!("no tasks at this moment, waiting...");
+                sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+        };
 
-    if let Err(err) = consumer.commit_message(&v, CommitMode::Async) {
-        warn!("failed to commit offsets: {:?}", err);
-    }*/
+        let prompt = task.prompt;
+        let id = task.id;
+        info!("generating image for prompt: {}, task id: {}", prompt, id);
+        let image = model.run(&prompt);
+        info!("finished generating image");
+        
+        client.submit_task_result(SubmitTaskResultRequest {
+            id,
+            image,
+        }).await.unwrap();
 
-    Ok(())
+        info!("finished processing task");
+    }
 }
 
 pub struct AuthTokenSetterInterceptor {

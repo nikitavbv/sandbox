@@ -206,7 +206,8 @@ impl MlSandboxService for MlSandboxServiceHandler {
         self.database.mark_task_as_complete(&req.id).await.unwrap();
         self.storage.save_generated_image(&req.id, &req.image).await;
         
-        unimplemented!()
+        Ok(tonic::Response::new(SubmitTaskResultResponse {
+        }))
     }
 }
 
