@@ -4,6 +4,7 @@ use {
     diffusers::{transformers::clip, pipelines::stable_diffusion},
     tch::{Tensor, Device, nn::Module, Kind},
     tempfile::tempdir,
+    rand::Rng,
     crate::storage::Storage,
 };
 
@@ -65,7 +66,7 @@ impl StableDiffusionImageGenerationModel {
 
         let uncond_prompt = "";
         let num_samples = 1;
-        let seed = 40;
+        let seed: i64 = rand::thread_rng().gen();
         let n_steps = 20;
         let guidance_scale = 7.5;
 

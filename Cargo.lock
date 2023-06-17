@@ -2616,6 +2616,7 @@ dependencies = [
  "anyhow",
  "config",
  "diffusers",
+ "rand",
  "rdkafka",
  "rpc",
  "rust-s3",
