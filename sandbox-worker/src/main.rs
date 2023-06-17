@@ -34,25 +34,24 @@ async fn main() -> anyhow::Result<()> {
     let config = load_config();
     
     info!("sandbox worker started");
+    let endpoint = config.get_string("worker.endpoint").unwrap();
     let mut client = MlSandboxServiceClient::with_interceptor(
-        tonic::transport::Channel::from_static("http://localhost:8081")
-            //.tls_config(ClientTlsConfig::new())
-            //.unwrap()
+        tonic::transport::Channel::from_shared(endpoint)
+            .unwrap()
             .connect()
             .await
             .unwrap(),
         AuthTokenSetterInterceptor::new(config.get_string("token.worker_token").unwrap()),
     );
     let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap();
-    info!("res: {:?}", res);
-    //let storage = Storage::new(&config);
+    
+    let storage = Storage::new(&config);
 
-    /*info!("loading model");
+    info!("loading model");
     let model = StableDiffusionImageGenerationModel::new(&storage).await;
     info!("model loaded");
 
-
-    info!("generating image for prompt: {}", payload.prompt);
+    /*info!("generating image for prompt: {}", payload.prompt);
     let image = model.run(&payload.prompt);
     info!("finished generating image");
     storage.save_generated_image(&payload.id, &image).await;
