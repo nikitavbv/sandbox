@@ -1,4 +1,0 @@
-/.secrets
-.terraform
-terraform.tfstate
-terraform.tfstate.*
