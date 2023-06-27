@@ -8,7 +8,6 @@ use {
     },
 };
 
-pub mod autoscaling;
 pub mod state;
 
 pub mod server;
