@@ -1,5 +1,11 @@
-use crate::state::database::Database;
+use crate::{
+    entities::{TaskId, TaskStatus},
+    state::{
+        database::Database,
+        storage::Storage,
+    },
+};
 
-pub struct TasksService {
-    database: Database,
+async fn update_task_status(database: &Database, storage: &Storage, id: TaskId, status: TaskStatus) {
+    // TODO: implement this
 }
