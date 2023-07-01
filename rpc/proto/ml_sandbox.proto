@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ml_sandbox;
 
-service MLSandboxService {
+service SandboxService {
     // for ui
     rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {}
     rpc GetTaskStatus(TaskId) returns (TaskStatus) {}
@@ -10,7 +10,7 @@ service MLSandboxService {
 
     // for workers
     rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
-    rpc SubmitTaskResult(SubmitTaskResultRequest) returns (SubmitTaskResultResponse) {}
+    rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse) {}
 }
 
 message GenerateImageRequest {
@@ -51,10 +51,23 @@ message TaskToRun {
     string prompt = 2;
 }
 
-message SubmitTaskResultRequest {
+message UpdateTaskStatusRequest {
     string id = 1;
-    bytes image = 2;
+    Status status = 2;
+    StatusDetails details = 3;
 }
 
-message SubmitTaskResultResponse {
+enum Status {
+    PENDING = 0;
+    IN_PROGRESS = 1;
+    COMPLETED = 2;
+}
+
+message StatusDetails {
+    int32 current_step = 1;
+    int32 total_steps = 2;
+    bytes image = 3;
+}
+
+message UpdateTaskStatusResponse {
 }

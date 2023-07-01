@@ -11,7 +11,7 @@ use {
     futures::join,
     tonic::transport::Server,
     rpc::{
-        ml_sandbox_service_server::{MlSandboxService, MlSandboxServiceServer},
+        sandbox_service_server::{SandboxService, SandboxServiceServer},
         FILE_DESCRIPTOR_SET,
         GenerateImageRequest,
         GenerateImageResponse,
@@ -22,8 +22,8 @@ use {
         GetTaskToRunRequest,
         GetTaskToRunResponse,
         TaskToRun,
-        SubmitTaskResultRequest,
-        SubmitTaskResultResponse,
+        UpdateTaskStatusRequest,
+        UpdateTaskStatusResponse,
     },
     crate::state::{
         database::{Database, Task}, 
@@ -59,7 +59,7 @@ pub async fn run_grpc_server(config: &Config) {
     let port = config.get_int("server.grpc_port").unwrap_or(8081);
 
     Server::builder()
-        .add_service(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await.unwrap()))
+        .add_service(SandboxServiceServer::new(SandboxServiceHandler::new(config).await.unwrap()))
         .serve(format!("0.0.0.0:{}", port).parse().unwrap())
         .await
         .unwrap();
@@ -86,10 +86,10 @@ async fn grpc_router(config: &Config) -> Result<Router> {
                 .build()
                 .unwrap()
         )
-        .nest_tonic(tonic_web::enable(MlSandboxServiceServer::new(MlSandboxServiceHandler::new(config).await?))))
+        .nest_tonic(tonic_web::enable(SandboxServiceServer::new(SandboxServiceHandler::new(config).await?))))
 }
 
-struct MlSandboxServiceHandler {
+struct SandboxServiceHandler {
     database: Database,
     storage: Storage,
 
@@ -97,7 +97,7 @@ struct MlSandboxServiceHandler {
     worker_token: String,
 }
 
-impl MlSandboxServiceHandler {
+impl SandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
             database: Database::new( &config.get_string("database.connection_string")?).await?,
@@ -129,7 +129,7 @@ impl MlSandboxServiceHandler {
 }
 
 #[tonic::async_trait]
-impl MlSandboxService for MlSandboxServiceHandler {
+impl SandboxService for SandboxServiceHandler {
     async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
         let headers: http::HeaderMap = req.metadata().clone().into_headers();
         let user_id = headers.get("x-access-token")
@@ -190,7 +190,11 @@ impl MlSandboxService for MlSandboxServiceHandler {
         }))
     }
 
-    async fn submit_task_result(&self, req: Request<SubmitTaskResultRequest>) -> Result<Response<SubmitTaskResultResponse>, Status> {
+    async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
+        unimplemented!()
+    }
+
+    /*async fn submit_task_result(&self, req: Request<SubmitTaskResultRequest>) -> Result<Response<SubmitTaskResultResponse>, Status> {
         let headers = req.metadata().clone().into_headers();
         let token = match headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned()) {
             Some(v) => v,
@@ -208,7 +212,7 @@ impl MlSandboxService for MlSandboxServiceHandler {
         
         Ok(tonic::Response::new(SubmitTaskResultResponse {
         }))
-    }
+    }*/
 }
 
 fn generate_task_id() -> String {
