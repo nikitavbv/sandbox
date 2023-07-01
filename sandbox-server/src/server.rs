@@ -65,13 +65,8 @@ pub async fn run_grpc_server(config: &Config) {
 }
 
 pub async fn service(config: &Config) -> Result<RestGrpcService> {
-    let app = rest_router();
     let grpc = Router::new().nest("/api", grpc_router(config).await?);
-    Ok(RestGrpcService::new(app, grpc))
-}
-
-fn rest_router() -> Router {
-    Router::new()
+    Ok(RestGrpcService::new(Router::new(), grpc))
 }
 
 async fn grpc_router(config: &Config) -> Result<Router> {
