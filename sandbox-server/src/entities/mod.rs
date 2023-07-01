@@ -1,4 +1,10 @@
-pub struct StatusDetails {
-    current_step: i32,
-    total_steps: Option<i32>,
+pub enum TaskStatus {
+    Pending,
+    InProgress {
+        current_step: u32,
+        total_steps: u32,
+    },
+    Finished {
+        image: Vec<u8>,
+    },
 }
