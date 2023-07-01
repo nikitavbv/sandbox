@@ -8,6 +8,7 @@ use {
     },
 };
 
+pub mod entities;
 pub mod state;
 
 pub mod server;
