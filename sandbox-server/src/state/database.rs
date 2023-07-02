@@ -46,20 +46,18 @@ impl Database {
 
         Ok(Self {
             pool: PgPoolOptions::new()
-                .max_connections(2)
                 .connect(&connection_string)
                 .await?,
             bucket,
         })
     }
 
-    /*pub async fn new_task(&self, user_id: Option<String>, id: &str, prompt: &str) -> Result<()> {
-        sqlx::query!("insert into sandbox_tasks (user_id, task_id, prompt, status) values ($1, $2, $3, 'new')", user_id, id, prompt)
+    pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, prompt: &str) {
+        sqlx::query!("insert into sandbox_tasks (user_id, task_id, prompt, is_pending) values ($1, $2, $3, true)", user_id, id.as_str(), prompt)
             .execute(&self.pool)
             .await
             .unwrap();
-        Ok(())
-    }*/
+    }
 
     /*pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
         sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
@@ -68,18 +66,14 @@ impl Database {
             .unwrap()
     }*/
 
-    /*pub async fn get_task(&self, id: &str) -> Task {
-        let result = sqlx::query_as!(PromptAndStatus, "select prompt, status from sandbox_tasks where task_id = $1", id)
+    pub async fn get_task(&self, id: &TaskId) -> Task {
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where task_id = $1", id.as_str())
             .fetch_one(&self.pool)
             .await
             .unwrap();
 
-        Task {
-            id: id.to_owned(),
-            prompt: result.prompt,
-            status: result.status,
-        }
-    }*/
+        self.task_from_persisted_task(task).await        
+    }
 
     pub async fn get_any_new_task(&self) -> Option<Task> {
         let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where is_pending = true limit 1")
@@ -87,6 +81,10 @@ impl Database {
             .await
             .unwrap()?;
 
+        Some(self.task_from_persisted_task(task).await)
+    }
+
+    async fn task_from_persisted_task(&self, task: PersistedTask) -> Task {
         let id = TaskId::new(task.id);
         let status = match serde_json::from_value::<PersistedTaskStatus>(task.status).unwrap() {
             PersistedTaskStatus::Pending => TaskStatus::Pending,
@@ -94,11 +92,11 @@ impl Database {
             PersistedTaskStatus::Finished => TaskStatus::Finished { image: self.get_generated_image(&id).await },
         };
 
-        Some(Task {
+        Task {
             id,
             prompt: task.prompt,
             status,
-        })
+        }
     }
 
     /*pub async fn get_any_new_task(&self) -> Option<Task> {

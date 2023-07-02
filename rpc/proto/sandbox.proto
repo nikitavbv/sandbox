@@ -21,7 +21,7 @@ message TaskId {
 message Task {
     string prompt = 1;
 
-    oneof task_details {
+    oneof status {
         InProgressTaskDetails in_progress_details = 2;
         FinishedTaskDetails finished_details = 3;
     }
@@ -69,7 +69,7 @@ message GetTaskToRunResponse {
         string prompt = 2;
     }
 
-    TaskToRun task_to_run = 1;
+    optional TaskToRun task_to_run = 1;
 }
 
 message UpdateTaskStatusRequest {

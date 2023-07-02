@@ -50,28 +50,12 @@ impl SandboxServiceHandler {
     pub fn decode_token(&self, token: &str) -> String {
         jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
     }
-
-    /*pub async fn task_to_task_status(&self, task: Task) -> TaskStatus {
-        let is_complete = task.status == "complete";
-        let image = if is_complete {
-            Some(self.storage.get_generated_image(&task.id).await)
-        } else {
-            None
-        };
-
-        TaskStatus {
-            prompt: task.prompt,
-            is_complete,
-            image,
-            id: task.id,
-        }
-    }*/
 }
 
 #[tonic::async_trait]
 impl SandboxService for SandboxServiceHandler {
     async fn create_task(&self, req: Request<CreateTaskRequest>) -> Result<Response<CreateTaskResponse>, Status> {
-        /*let headers: http::HeaderMap = req.metadata().clone().into_headers();
+        let headers: http::HeaderMap = req.metadata().clone().into_headers();
         let user_id = headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v));
@@ -79,18 +63,32 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
-        self.database.new_task(user_id, &task_id, &req.prompt).await.unwrap();
+        self.database.new_task(user_id, &task_id, &req.prompt).await;
 
-        Ok(tonic::Response::new(GenerateImageResponse {
-            id: task_id,
-        }))*/
-        unimplemented!()
+        Ok(Response::new(CreateTaskResponse {
+            id: Some(rpc::TaskId::from(task_id)),
+        }))
     }
 
     async fn get_task(&self, req: Request<GetTaskRequest>) -> Result<Response<GetTaskResponse>, Status> {
-        /*let task_id = req.into_inner();
-        Ok(tonic::Response::new(self.task_to_task_status(self.database.get_task(&task_id.id).await).await))*/
-        unimplemented!()
+        let task_id = TaskId::from(req.into_inner().id.unwrap());
+        let task = self.database.get_task(&task_id).await;
+
+        Ok(Response::new(GetTaskResponse {
+            task: Some(rpc::Task {
+                prompt: task.prompt,
+                status: match task.status {
+                    TaskStatus::Pending => None,
+                    TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
+                        current_step,
+                        total_steps,
+                    })),
+                    TaskStatus::Finished { image } => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {
+                        image,
+                    })),
+                },
+            }),
+        }))
     }
 
     async fn get_all_tasks(&self, req: Request<GetAllTasksRequest>) -> Result<Response<GetAllTasksResponse>, Status> {
@@ -124,16 +122,14 @@ impl SandboxService for SandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
 
-        // let task_to_run = self.database.
+        let task_to_run = self.database.get_any_new_task().await;
 
-        /*let task_to_run = self.database.get_any_new_task().await;
-        Ok(tonic::Response::new(GetTaskToRunResponse {
-            task_to_run: task_to_run.map(|v| TaskToRun {
-                id: v.id,
+        Ok(Response::new(GetTaskToRunResponse {
+            task_to_run: task_to_run.map(|v| rpc::get_task_to_run_response::TaskToRun {
+                id: Some(rpc::TaskId::from(v.id)),
                 prompt: v.prompt,
-            })
-        }))*/
-        unimplemented!()
+            }),
+        }))
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
@@ -165,10 +161,10 @@ fn extract_access_token<T>(req: &Request<T>) -> Option<String> {
     headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned())
 }
 
-/*fn generate_task_id() -> String {
+fn generate_task_id() -> TaskId {
     let mut rng = rand::thread_rng();
-    Alphanumeric.sample_iter(&mut rng)
+    TaskId::new(Alphanumeric.sample_iter(&mut rng)
         .take(14)
         .map(char::from)
-        .collect()
-}*/
+        .collect())
+}

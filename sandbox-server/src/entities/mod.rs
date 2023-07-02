@@ -26,6 +26,12 @@ impl From<rpc::TaskId> for TaskId {
     }
 }
 
+impl From<TaskId> for rpc::TaskId {
+    fn from(value: TaskId) -> Self {
+        Self { id: value.id }
+    }
+}
+
 #[derive(Eq, PartialEq)]
 pub enum TaskStatus {
     Pending,
