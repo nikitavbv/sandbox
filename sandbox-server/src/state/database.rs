@@ -53,7 +53,13 @@ impl Database {
     }
 
     pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, prompt: &str) {
-        sqlx::query!("insert into sandbox_tasks (user_id, task_id, prompt, is_pending) values ($1, $2, $3, true)", user_id, id.as_str(), prompt)
+        sqlx::query!(
+            "insert into sandbox_tasks (user_id, task_id, prompt, is_pending, status) values ($1, $2, $3, true, $4)", 
+            user_id, 
+            id.as_str(),
+            prompt,
+            serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
+        )
             .execute(&self.pool)
             .await
             .unwrap();
@@ -106,21 +112,6 @@ impl Database {
             status,
         }
     }
-
-    /*pub async fn get_any_new_task(&self) -> Option<Task> {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt from sandbox_tasks where is_pending = true limit 1")
-            .fetch_optional(&self.pool)
-            .await
-            .unwrap()?;
-
-        Some(Task {
-            id: TaskId::new(task.id),
-            prompt: task.prompt,
-            status: match task.status {
-                PersistedTaskStatus::Pending => 
-            },
-        })
-    }*/
 
     pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
         let persisted_status = match status {
