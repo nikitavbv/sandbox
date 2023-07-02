@@ -13,24 +13,8 @@ use {
     rpc::{
         sandbox_service_server::{SandboxService, SandboxServiceServer},
         FILE_DESCRIPTOR_SET,
-        GenerateImageRequest,
-        GenerateImageResponse,
-        TaskId,
-        TaskStatus,
-        HistoryRequest,
-        TaskHistory,
-        GetTaskToRunRequest,
-        GetTaskToRunResponse,
-        TaskToRun,
-        UpdateTaskStatusRequest,
-        UpdateTaskStatusResponse,
-        Status as RpcStatus,
     },
     crate::{
-        state::{
-            database::{Database, Task}, 
-            storage::Storage,
-        },
         handlers::SandboxServiceHandler,
     },
 };

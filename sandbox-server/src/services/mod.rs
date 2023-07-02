@@ -6,6 +6,6 @@ use crate::{
     },
 };
 
-async fn update_task_status(database: &Database, storage: &Storage, id: TaskId, status: TaskStatus) {
-    // TODO: implement this
+pub async fn update_task_status(database: &Database, id: TaskId, status: TaskStatus) {
+    database.save_task_status(&id, &status).await;
 }

@@ -10,7 +10,7 @@ use {
         FILE_DESCRIPTOR_SET,
         GenerateImageRequest,
         GenerateImageResponse,
-        TaskId,
+        TaskId as RpcTaskId,
         TaskStatus,
         HistoryRequest,
         TaskHistory,
@@ -21,9 +21,13 @@ use {
         UpdateTaskStatusResponse,
         Status as RpcStatus,
     },
-    crate::state::{
-        database::{Database, Task},
-        storage::Storage,
+    crate::{
+        entities::TaskId,
+        state::{
+            database::Database,
+            storage::Storage,
+        },
+        services::update_task_status,
     },
 };
 
@@ -43,7 +47,7 @@ pub struct SandboxServiceHandler {
 impl SandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
-            database: Database::new( &config.get_string("database.connection_string")?).await?,
+            database: Database::new(config, &config.get_string("database.connection_string")?).await?,
             storage: Storage::new(config),
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
             worker_token: config.get_string("token.worker_token").unwrap(),
@@ -54,7 +58,7 @@ impl SandboxServiceHandler {
         jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
     }
 
-    pub async fn task_to_task_status(&self, task: Task) -> TaskStatus {
+    /*pub async fn task_to_task_status(&self, task: Task) -> TaskStatus {
         let is_complete = task.status == "complete";
         let image = if is_complete {
             Some(self.storage.get_generated_image(&task.id).await)
@@ -68,13 +72,13 @@ impl SandboxServiceHandler {
             image,
             id: task.id,
         }
-    }
+    }*/
 }
 
 #[tonic::async_trait]
 impl SandboxService for SandboxServiceHandler {
     async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
-        let headers: http::HeaderMap = req.metadata().clone().into_headers();
+        /*let headers: http::HeaderMap = req.metadata().clone().into_headers();
         let user_id = headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v));
@@ -86,16 +90,18 @@ impl SandboxService for SandboxServiceHandler {
 
         Ok(tonic::Response::new(GenerateImageResponse {
             id: task_id,
-        }))
+        }))*/
+        unimplemented!()
     }
 
-    async fn get_task_status(&self, req: Request<TaskId>) -> Result<Response<TaskStatus>, Status> {
-        let task_id = req.into_inner();
-        Ok(tonic::Response::new(self.task_to_task_status(self.database.get_task(&task_id.id).await).await))
+    async fn get_task_status(&self, req: Request<RpcTaskId>) -> Result<Response<TaskStatus>, Status> {
+        /*let task_id = req.into_inner();
+        Ok(tonic::Response::new(self.task_to_task_status(self.database.get_task(&task_id.id).await).await))*/
+        unimplemented!()
     }
 
     async fn get_task_history(&self, req: Request<HistoryRequest>) -> Result<Response<TaskHistory>, Status> {
-        let headers = req.metadata().clone().into_headers();
+        /*let headers = req.metadata().clone().into_headers();
         let user_id = match headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v)) {
@@ -110,11 +116,12 @@ impl SandboxService for SandboxServiceHandler {
             result.push(self.task_to_task_status(task).await);
         }
 
-        Ok(tonic::Response::new(TaskHistory { tasks: result }))
+        Ok(tonic::Response::new(TaskHistory { tasks: result }))*/
+        unimplemented!()
     }
 
     async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {
-        let headers = req.metadata().clone().into_headers();
+        /*let headers = req.metadata().clone().into_headers();
         let token = match headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned()) {
             Some(v) => v,
             None => return Err(Status::unauthenticated("unauthenticated")),
@@ -130,7 +137,8 @@ impl SandboxService for SandboxServiceHandler {
                 id: v.id,
                 prompt: v.prompt,
             })
-        }))
+        }))*/
+        unimplemented!()
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
@@ -144,15 +152,9 @@ impl SandboxService for SandboxServiceHandler {
         }
 
         let req = req.into_inner();
-        if req.status() == RpcStatus::Completed {
-            self.database.mark_task_as_complete(&req.id).await.unwrap();
-        }
+        let task_status = unimplemented!();
 
-        if let Some(details) = req.details {
-            if let Some(image) = details.image.as_ref() {
-                self.storage.save_generated_image(&req.id, &image).await;
-            }
-        }
+        update_task_status(&self.database, TaskId::new(req.id), task_status).await;
 
         Ok(Response::new(UpdateTaskStatusResponse {}))
     }
@@ -163,19 +165,10 @@ fn extract_access_token<T>(req: &Request<T>) -> Option<String> {
     headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned())
 }
 
-fn generate_task_id() -> String {
+/*fn generate_task_id() -> String {
     let mut rng = rand::thread_rng();
     Alphanumeric.sample_iter(&mut rng)
         .take(14)
         .map(char::from)
         .collect()
-}
-
-async fn root() -> &'static str {
-    "sandbox"
-}
-
-async fn healthz() -> &'static str {
-    "ok"
-}
-
+}*/

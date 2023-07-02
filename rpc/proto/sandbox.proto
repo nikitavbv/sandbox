@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package sandbox;
+
+service SandboxService {
+    // for ui
+    rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {}
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
+    rpc GetAllTasks(GetAllTasksRequest) returns (GetAllTasksResponse) {}
+
+    // for workers
+    rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
+    rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse) {}
+}
+
+/* common types */
+message TaskId {
+    string id = 1;
+}
+
+message Task {
+    string prompt = 1;
+
+    oneof task_details {
+        InProgressTaskDetails in_progress_details = 2;
+        FinishedTaskDetails finished_details = 3;
+    }
+}
+
+message InProgressTaskDetails {
+    uint32 current_step = 1;
+    uint32 total_steps = 2;
+}
+
+message FinishedTaskDetails {
+    bytes image = 1;
+}
+
+/* requests and responses */
+message CreateTaskRequest {
+    string prompt = 1;
+}
+
+message CreateTaskResponse {
+    TaskId id = 1;
+}
+
+message GetTaskRequest {
+    TaskId id = 1;
+}
+
+message GetTaskResponse {
+    Task task = 1;
+}
+
+message GetAllTasksRequest {
+}
+
+message GetAllTasksResponse {
+    repeated Task tasks = 1;
+}
+
+message GetTaskToRunRequest {
+}
+
+message GetTaskToRunResponse {
+    message TaskToRun {
+        TaskId id = 1;
+        string prompt = 2;
+    }
+
+    TaskToRun task_to_run = 1;
+}
+
+message UpdateTaskStatusRequest {
+    TaskId id = 1;
+
+    oneof task_status {
+        InProgressTaskDetails in_progress = 2;
+        FinishedTaskDetails finished_details = 3;
+    }
+}
+
+message UpdateTaskStatusResponse {
+}

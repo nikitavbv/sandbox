@@ -5,8 +5,8 @@ fn main() -> Result<()> {
     tonic_build::configure()
         .build_server(is_server_generation_enabled())
         .build_client(is_client_generation_enabled())
-        .file_descriptor_set_path(out_dir.join("ml_sandbox_descriptor.bin"))
-        .compile(&["proto/ml_sandbox.proto"], &["proto"])?;
+        .file_descriptor_set_path(out_dir.join("sandbox_descriptor.bin"))
+        .compile(&["proto/sandbox.proto"], &["proto"])?;
     Ok(())
 }
 

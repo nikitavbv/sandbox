@@ -1,30 +1,57 @@
 use {
     anyhow::Result,
     sqlx::postgres::PgPoolOptions,
+    config::Config,
+    serde::{Serialize, Deserialize},
+    s3::{Bucket, creds::Credentials, region::Region},
+    crate::entities::{TaskId, TaskStatus, Task},
 };
-
-pub struct Task {
-    pub id: String,
-    pub prompt: String,
-    pub status: String,
-}
 
 pub struct PromptAndStatus {
     prompt: String,
     status: String,
 }
 
+struct PersistedTask {
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+enum PersistedTaskStatus {
+    Pending,
+    InProgress {
+        current_step: u32,
+        total_steps: Option<u32>,
+    },
+    Finished,
+}
+
 pub struct Database {
     pool: sqlx::postgres::PgPool,
+    bucket: s3::Bucket,
 }
 
 impl Database {
-    pub async fn new(connection_string: &str) -> Result<Self> {
+    pub async fn new(config: &Config, connection_string: &str) -> Result<Self> {
+        let region = config.get_string("object_storage.region").unwrap();
+        let endpoint = config.get_string("object_storage.endpoint").unwrap();
+        let access_key = config.get_string("object_storage.access_key").unwrap();
+        let secret_key = config.get_string("object_storage.secret_key").unwrap();
+
+        let bucket = Bucket::new(
+            "sandbox",
+            Region::Custom {
+                region,
+                endpoint,
+            },
+            Credentials::new(Some(&access_key), Some(&secret_key), None, None, None).unwrap(),
+        ).unwrap().with_path_style();
+
         Ok(Self {
             pool: PgPoolOptions::new()
                 .max_connections(2)
                 .connect(&connection_string)
                 .await?,
+            bucket,
         })
     }
 
@@ -36,14 +63,14 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
+    /*pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
         sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap()
-    }
+    }*/
 
-    pub async fn get_task(&self, id: &str) -> Task {
+    /*pub async fn get_task(&self, id: &str) -> Task {
         let result = sqlx::query_as!(PromptAndStatus, "select prompt, status from sandbox_tasks where task_id = $1", id)
             .fetch_one(&self.pool)
             .await
@@ -54,20 +81,46 @@ impl Database {
             prompt: result.prompt,
             status: result.status,
         }
-    }
+    }*/
 
-    pub async fn get_any_new_task(&self) -> Option<Task> {
-        sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where status = 'new' limit 1")
+    /*pub async fn get_any_new_task(&self) -> Option<Task> {
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
             .await
-            .unwrap()
-    }
+            .unwrap()?;
 
-    pub async fn mark_task_as_complete(&self, id: &str) -> Result<()> {
-        sqlx::query!("update sandbox_tasks set status = 'complete' where task_id = $1", id)
+        Some(Task {
+            id: TaskId::new(task.id),
+            prompt: task.prompt,
+            status: match task.status {
+                PersistedTaskStatus::Pending => 
+            },
+        })
+    }*/
+
+    pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
+        let persisted_status = match status {
+            TaskStatus::Pending => PersistedTaskStatus::Pending,
+            TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: total_steps.clone() },
+            TaskStatus::Finished { image: _ } => PersistedTaskStatus::Finished,
+        };
+
+        let is_pending = TaskStatus::Pending == *status;
+
+        sqlx::query!(
+            "update sandbox_tasks set status_details = $1::jsonb, is_pending = $2 where task_id = $3", 
+            serde_json::to_value(&persisted_status).unwrap(),
+            is_pending,
+            id.as_str()
+        )
             .execute(&self.pool)
             .await
             .unwrap();
-        Ok(())
+
+        if let TaskStatus::Finished { image } = status {
+            self.bucket.put_object(&format!("output/images/{}", id.as_str()), image).await.unwrap();
+        }
+
+        unimplemented!()
     }
 }
