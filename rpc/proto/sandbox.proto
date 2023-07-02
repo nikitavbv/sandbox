@@ -77,7 +77,7 @@ message UpdateTaskStatusRequest {
 
     oneof task_status {
         InProgressTaskDetails in_progress = 2;
-        FinishedTaskDetails finished_details = 3;
+        FinishedTaskDetails finished = 3;
     }
 }
 

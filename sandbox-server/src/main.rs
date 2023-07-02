@@ -8,11 +8,8 @@ use {
     },
 };
 
-// All logic lives in services and handlers are connecting it to the outside world using data structures defined in entities.
-
 pub mod entities;
 pub mod handlers;
-pub mod services;
 pub mod state;
 pub mod server;
 

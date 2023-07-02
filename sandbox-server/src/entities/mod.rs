@@ -1,7 +1,7 @@
 pub struct Task {
-    id: TaskId,
-    prompt: String,
-    status: TaskStatus,
+    pub id: TaskId,
+    pub prompt: String,
+    pub status: TaskStatus,
 }
 
 pub struct TaskId {
@@ -20,12 +20,18 @@ impl TaskId {
     }   
 }
 
+impl From<rpc::TaskId> for TaskId {
+    fn from(value: rpc::TaskId) -> Self {
+        Self::new(value.id)
+    }
+}
+
 #[derive(Eq, PartialEq)]
 pub enum TaskStatus {
     Pending,
     InProgress {
         current_step: u32,
-        total_steps: Option<u32>,
+        total_steps: u32,
     },
     Finished {
         image: Vec<u8>,

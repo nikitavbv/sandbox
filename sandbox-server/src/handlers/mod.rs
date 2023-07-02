@@ -7,27 +7,22 @@ use {
     rand::distributions::{Alphanumeric, Distribution},
     rpc::{
         sandbox_service_server::{SandboxService, SandboxServiceServer},
-        FILE_DESCRIPTOR_SET,
-        GenerateImageRequest,
-        GenerateImageResponse,
-        TaskId as RpcTaskId,
-        TaskStatus,
-        HistoryRequest,
-        TaskHistory,
         GetTaskToRunRequest,
         GetTaskToRunResponse,
-        TaskToRun,
         UpdateTaskStatusRequest,
         UpdateTaskStatusResponse,
-        Status as RpcStatus,
+        CreateTaskRequest,
+        CreateTaskResponse,
+        GetTaskRequest,
+        GetTaskResponse,
+        GetAllTasksRequest,
+        GetAllTasksResponse,
     },
     crate::{
-        entities::TaskId,
+        entities::{TaskId, TaskStatus},
         state::{
             database::Database,
-            storage::Storage,
         },
-        services::update_task_status,
     },
 };
 
@@ -38,7 +33,6 @@ struct TokenClaims {
 
 pub struct SandboxServiceHandler {
     database: Database,
-    storage: Storage,
 
     token_decoding_key: DecodingKey,
     worker_token: String,
@@ -48,7 +42,6 @@ impl SandboxServiceHandler {
     pub async fn new(config: &Config) -> Result<Self> {
         Ok(Self {
             database: Database::new(config, &config.get_string("database.connection_string")?).await?,
-            storage: Storage::new(config),
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
             worker_token: config.get_string("token.worker_token").unwrap(),
         })
@@ -77,7 +70,7 @@ impl SandboxServiceHandler {
 
 #[tonic::async_trait]
 impl SandboxService for SandboxServiceHandler {
-    async fn generate_image(&self, req: Request<GenerateImageRequest>) -> Result<Response<GenerateImageResponse>, Status> {
+    async fn create_task(&self, req: Request<CreateTaskRequest>) -> Result<Response<CreateTaskResponse>, Status> {
         /*let headers: http::HeaderMap = req.metadata().clone().into_headers();
         let user_id = headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
@@ -94,13 +87,13 @@ impl SandboxService for SandboxServiceHandler {
         unimplemented!()
     }
 
-    async fn get_task_status(&self, req: Request<RpcTaskId>) -> Result<Response<TaskStatus>, Status> {
+    async fn get_task(&self, req: Request<GetTaskRequest>) -> Result<Response<GetTaskResponse>, Status> {
         /*let task_id = req.into_inner();
         Ok(tonic::Response::new(self.task_to_task_status(self.database.get_task(&task_id.id).await).await))*/
         unimplemented!()
     }
 
-    async fn get_task_history(&self, req: Request<HistoryRequest>) -> Result<Response<TaskHistory>, Status> {
+    async fn get_all_tasks(&self, req: Request<GetAllTasksRequest>) -> Result<Response<GetAllTasksResponse>, Status> {
         /*let headers = req.metadata().clone().into_headers();
         let user_id = match headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
@@ -121,7 +114,7 @@ impl SandboxService for SandboxServiceHandler {
     }
 
     async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {
-        /*let headers = req.metadata().clone().into_headers();
+        let headers = req.metadata().clone().into_headers();
         let token = match headers.get("x-access-token").map(|v| v.to_str().unwrap().to_owned()) {
             Some(v) => v,
             None => return Err(Status::unauthenticated("unauthenticated")),
@@ -131,7 +124,9 @@ impl SandboxService for SandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
 
-        let task_to_run = self.database.get_any_new_task().await;
+        // let task_to_run = self.database.
+
+        /*let task_to_run = self.database.get_any_new_task().await;
         Ok(tonic::Response::new(GetTaskToRunResponse {
             task_to_run: task_to_run.map(|v| TaskToRun {
                 id: v.id,
@@ -152,9 +147,14 @@ impl SandboxService for SandboxServiceHandler {
         }
 
         let req = req.into_inner();
-        let task_status = unimplemented!();
+        let task_status = match req.task_status.unwrap() {
+            rpc::update_task_status_request::TaskStatus::InProgress(in_progress) => TaskStatus::InProgress { current_step: in_progress.current_step, total_steps: in_progress.total_steps },
+            rpc::update_task_status_request::TaskStatus::Finished(finished) => TaskStatus::Finished { image: finished.image },
+        };
 
-        update_task_status(&self.database, TaskId::new(req.id), task_status).await;
+        let task_id = TaskId::from(req.id.unwrap());
+
+        self.database.save_task_status(&task_id, &task_status).await;
 
         Ok(Response::new(UpdateTaskStatusResponse {}))
     }

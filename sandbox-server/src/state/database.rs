@@ -7,20 +7,18 @@ use {
     crate::entities::{TaskId, TaskStatus, Task},
 };
 
-pub struct PromptAndStatus {
-    prompt: String,
-    status: String,
-}
-
 struct PersistedTask {
+    id: String,
+    prompt: String,
+    status: sqlx::types::JsonValue,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 enum PersistedTaskStatus {
     Pending,
     InProgress {
         current_step: u32,
-        total_steps: Option<u32>,
+        total_steps: u32,
     },
     Finished,
 }
@@ -55,13 +53,13 @@ impl Database {
         })
     }
 
-    pub async fn new_task(&self, user_id: Option<String>, id: &str, prompt: &str) -> Result<()> {
+    /*pub async fn new_task(&self, user_id: Option<String>, id: &str, prompt: &str) -> Result<()> {
         sqlx::query!("insert into sandbox_tasks (user_id, task_id, prompt, status) values ($1, $2, $3, 'new')", user_id, id, prompt)
             .execute(&self.pool)
             .await
             .unwrap();
         Ok(())
-    }
+    }*/
 
     /*pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
         sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
@@ -83,6 +81,26 @@ impl Database {
         }
     }*/
 
+    pub async fn get_any_new_task(&self) -> Option<Task> {
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where is_pending = true limit 1")
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap()?;
+
+        let id = TaskId::new(task.id);
+        let status = match serde_json::from_value::<PersistedTaskStatus>(task.status).unwrap() {
+            PersistedTaskStatus::Pending => TaskStatus::Pending,
+            PersistedTaskStatus::InProgress { current_step, total_steps } => TaskStatus::InProgress { current_step, total_steps },
+            PersistedTaskStatus::Finished => TaskStatus::Finished { image: self.get_generated_image(&id).await },
+        };
+
+        Some(Task {
+            id,
+            prompt: task.prompt,
+            status,
+        })
+    }
+
     /*pub async fn get_any_new_task(&self) -> Option<Task> {
         let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
@@ -101,14 +119,14 @@ impl Database {
     pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
         let persisted_status = match status {
             TaskStatus::Pending => PersistedTaskStatus::Pending,
-            TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: total_steps.clone() },
+            TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: *total_steps },
             TaskStatus::Finished { image: _ } => PersistedTaskStatus::Finished,
         };
 
         let is_pending = TaskStatus::Pending == *status;
 
         sqlx::query!(
-            "update sandbox_tasks set status_details = $1::jsonb, is_pending = $2 where task_id = $3", 
+            "update sandbox_tasks set status = $1::jsonb, is_pending = $2 where task_id = $3", 
             serde_json::to_value(&persisted_status).unwrap(),
             is_pending,
             id.as_str()
@@ -122,5 +140,10 @@ impl Database {
         }
 
         unimplemented!()
+    }
+
+    pub async fn get_generated_image(&self, task_id: &TaskId) -> Vec<u8> {
+        let key = format!("output/images/{}", task_id.as_str());
+        self.bucket.get_object(&key).await.unwrap().to_vec()
     }
 }
