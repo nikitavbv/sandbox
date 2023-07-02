@@ -135,8 +135,6 @@ impl Database {
         if let TaskStatus::Finished { image } = status {
             self.bucket.put_object(&format!("output/images/{}", id.as_str()), image).await.unwrap();
         }
-
-        unimplemented!()
     }
 
     pub async fn get_generated_image(&self, task_id: &TaskId) -> Vec<u8> {
