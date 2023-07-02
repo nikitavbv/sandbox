@@ -1,7 +1,5 @@
 use {
-    std::env::var,
-    tracing::{info, error},
-    config::Config,
+    tracing::info,
     sandbox_common::utils::{init_logging, load_config},
     crate::{
         server::run_server,

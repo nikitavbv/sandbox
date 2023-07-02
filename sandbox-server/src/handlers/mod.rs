@@ -6,7 +6,7 @@ use {
     jsonwebtoken::{DecodingKey, Validation, Algorithm},
     rand::distributions::{Alphanumeric, Distribution},
     rpc::{
-        sandbox_service_server::{SandboxService, SandboxServiceServer},
+        sandbox_service_server::SandboxService,
         GetTaskToRunRequest,
         GetTaskToRunResponse,
         UpdateTaskStatusRequest,
@@ -19,7 +19,7 @@ use {
         GetAllTasksResponse,
     },
     crate::{
-        entities::{TaskId, TaskStatus},
+        entities::{Task, TaskId, TaskStatus},
         state::{
             database::Database,
         },
@@ -47,8 +47,24 @@ impl SandboxServiceHandler {
         })
     }
 
-    pub fn decode_token(&self, token: &str) -> String {
+    fn decode_token(&self, token: &str) -> String {
         jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
+    }
+
+    fn task_to_rpc_task(&self, task: Task) -> rpc::Task {
+        rpc::Task {
+            prompt: task.prompt,
+            status: match task.status {
+                TaskStatus::Pending => None,
+                TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
+                    current_step,
+                    total_steps,
+                })),
+                TaskStatus::Finished { image } => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {
+                    image,
+                })),
+            },
+        }
     }
 }
 
@@ -75,24 +91,12 @@ impl SandboxService for SandboxServiceHandler {
         let task = self.database.get_task(&task_id).await;
 
         Ok(Response::new(GetTaskResponse {
-            task: Some(rpc::Task {
-                prompt: task.prompt,
-                status: match task.status {
-                    TaskStatus::Pending => None,
-                    TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
-                        current_step,
-                        total_steps,
-                    })),
-                    TaskStatus::Finished { image } => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {
-                        image,
-                    })),
-                },
-            }),
+            task: Some(self.task_to_rpc_task(task)),
         }))
     }
 
     async fn get_all_tasks(&self, req: Request<GetAllTasksRequest>) -> Result<Response<GetAllTasksResponse>, Status> {
-        /*let headers = req.metadata().clone().into_headers();
+        let headers = req.metadata().clone().into_headers();
         let user_id = match headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v)) {
@@ -100,15 +104,8 @@ impl SandboxService for SandboxServiceHandler {
             None => return Err(Status::unauthenticated("unauthenticated")),
         };
 
-        let tasks = self.database.get_user_tasks(&user_id).await;
-
-        let mut result = Vec::new();
-        for task in tasks.into_iter() {
-            result.push(self.task_to_task_status(task).await);
-        }
-
-        Ok(tonic::Response::new(TaskHistory { tasks: result }))*/
-        unimplemented!()
+        let tasks = self.database.get_user_tasks(&user_id).await.into_iter().map(|v| self.task_to_rpc_task(v)).collect();
+        Ok(Response::new(GetAllTasksResponse { tasks }))
     }
 
     async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {

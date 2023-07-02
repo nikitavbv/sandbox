@@ -59,12 +59,20 @@ impl Database {
             .unwrap();
     }
 
-    /*pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        sqlx::query_as!(Task, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
+    pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
             .fetch_all(&self.pool)
             .await
-            .unwrap()
-    }*/
+            .unwrap();
+
+        let mut result = Vec::new();
+
+        for task in tasks {
+            result.push(self.task_from_persisted_task(task).await);
+        }
+
+        result
+    }
 
     pub async fn get_task(&self, id: &TaskId) -> Task {
         let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where task_id = $1", id.as_str())
