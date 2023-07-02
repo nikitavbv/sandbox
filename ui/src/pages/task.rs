@@ -4,7 +4,7 @@ use {
     yew_router::prelude::*,
     tracing::info,
     wasm_bindgen_futures::spawn_local,
-    rpc::{TaskId, TaskStatus},
+    rpc::{TaskId, Task, GetTaskRequest},
     crate::utils::{client, Route},
 };
 
@@ -18,7 +18,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
     let navigator = use_navigator().unwrap();
 
     let client = Arc::new(Mutex::new(client()));
-    let state = use_state(|| None::<TaskStatus>);
+    let state = use_state(|| None::<Task>);
     let state_setter = state.setter();
 
     use_effect_with_deps(move |id| {
@@ -29,10 +29,12 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         spawn_local(async move {
             let mut client = client.lock().unwrap();
         
-            let status = client.get_task_status(TaskId {
-                id,
+            let res = client.get_task(GetTaskRequest {
+                id: Some(TaskId {
+                    id,
+                }),
             }).await.unwrap().into_inner();
-            state_setter.set(Some(status));
+            state_setter.set(Some(res.task.unwrap()));
         });
         
         || ()
@@ -44,10 +46,10 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
     let rendered = match &*state {
         None => html!(<div>{"loading task status..."}</div>),
-        Some(v) => if v.is_complete {
+        Some(v) => if let rpc::task::Status::FinishedDetails(finished) = v.status.as_ref().unwrap() {
             html!(
                 <div>
-                    <img src={format!("data:image/png;base64, {}", base64::encode(v.image.as_ref().unwrap()))} style={"display: block;"} />
+                    <img src={format!("data:image/png;base64, {}", base64::encode(&finished.image))} style={"display: block;"} />
                     <p style="font-style: italic;">{ v.prompt.clone() }</p>
                 </div>
             )

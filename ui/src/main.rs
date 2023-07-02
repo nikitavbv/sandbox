@@ -12,8 +12,8 @@ use {
     urlencoding::encode,
     gloo_storage::{Storage, LocalStorage},
     rpc::{
-        ml_sandbox_service_client::MlSandboxServiceClient,
-        GenerateImageRequest,
+        sandbox_service_client::SandboxServiceClient,
+        CreateTaskRequest,
     },
     crate::{
         components::header::Header,
@@ -151,11 +151,11 @@ fn home() -> Html {
 
             spawn_local(async move {
                 let mut client = client.lock().unwrap();
-                let res = client.generate_image(GenerateImageRequest {
+                let res = client.create_task(CreateTaskRequest {
                     prompt,
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
-                    id: res.id,
+                    id: res.id.unwrap().id,
                 });
             });
         })

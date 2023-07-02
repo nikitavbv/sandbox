@@ -19,6 +19,7 @@ message TaskId {
 }
 
 message Task {
+    TaskId id = 4;
     string prompt = 1;
 
     oneof status {

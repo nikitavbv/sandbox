@@ -3,7 +3,7 @@ use {
     yew::prelude::*,
     yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
-    rpc::{TaskStatus, HistoryRequest},
+    rpc::{self, Task, GetAllTasksRequest},
     crate::utils::{Route, client},
 };
 
@@ -23,7 +23,7 @@ pub fn history_page() -> Html {
     });
 
     let client = Arc::new(Mutex::new(client()));
-    let state = use_state(|| None::<Vec<TaskStatus>>);
+    let state = use_state(|| None::<Vec<Task>>);
     let state_setter = state.setter();
 
     use_effect(move || {
@@ -32,14 +32,18 @@ pub fn history_page() -> Html {
 
         spawn_local(async move {
             let mut client = client.lock().unwrap();
-            let tasks = client.get_task_history(HistoryRequest {}).await.unwrap().into_inner();
+            let tasks = client.get_all_tasks(GetAllTasksRequest {}).await.unwrap().into_inner();
             state_setter.set(Some(tasks.tasks));
         })
     });
 
     let tasks: Vec<_> = state.iter()
         .flat_map(|v| v.iter())
-        .map(|v| html!(<HistoryEntry id={v.id.clone()} prompt={v.prompt.clone()} image={v.image.clone()} />))
+        .map(|v| html!(<HistoryEntry 
+            id={v.id.as_ref().unwrap().id.clone()} 
+            prompt={v.prompt.clone()} 
+            image={image_from_task(v)} />
+        ))
         .collect();
 
     html!(
@@ -75,4 +79,10 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
             { image }
         </div>
     )
+}
+
+fn image_from_task(task: &Task) -> Option<Vec<u8>> {
+    task.status.as_ref()
+        .and_then(|v| if let rpc::task::Status::FinishedDetails(finished) = v { Some(finished) } else { None })
+        .map(|v| v.image.clone())
 }

@@ -10,12 +10,10 @@ use {
         service::Interceptor,
         codegen::InterceptedService,
     },
-    rpc::{
-        ml_sandbox_service_client::MlSandboxServiceClient,
-    },
+    rpc::sandbox_service_client::SandboxServiceClient,
 };
 
-pub type SandboxClient = MlSandboxServiceClient<InterceptedService<Client, AuthTokenSetterInterceptor>>;
+pub type SandboxClient = SandboxServiceClient<InterceptedService<Client, AuthTokenSetterInterceptor>>;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -34,7 +32,7 @@ pub fn client() -> SandboxClient {
 }
 
 pub fn client_with_token(token: Option<String>) -> SandboxClient {
-    MlSandboxServiceClient::with_interceptor(
+    SandboxServiceClient::with_interceptor(
         Client::new(format!("{}/api", window().unwrap().location().origin().unwrap())),
         AuthTokenSetterInterceptor::new(token),
     )
