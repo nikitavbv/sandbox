@@ -65,7 +65,6 @@ impl StableDiffusionImageGenerationModel {
         info!("using device: {:?}", self.device);
 
         let uncond_prompt = "";
-        let num_samples = 1;
         let seed: i64 = rand::thread_rng().gen();
         let n_steps = 20;
         let guidance_scale = 7.5;
@@ -79,7 +78,7 @@ impl StableDiffusionImageGenerationModel {
         let uncond_tokens: Vec<i64> = uncond_tokens.into_iter().map(|x| x as i64).collect();
         let uncond_tokens = Tensor::from_slice(&uncond_tokens).view((1, -1)).to(self.device);
 
-        let no_grad_guard = tch::no_grad_guard();
+        let _no_grad_guard = tch::no_grad_guard();
 
         let text_embeddings = self.model.text_model.forward(&tokens);
         let uncond_embeddings = self.model.text_model.forward(&uncond_tokens);

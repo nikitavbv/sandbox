@@ -1,6 +1,6 @@
 use {
     std::time::Duration,
-    tracing::{info, warn},
+    tracing::info,
     tokio::time::sleep,
     tonic::{
         service::Interceptor,
@@ -8,14 +8,12 @@ use {
         Status,
         Request,
     },
-    sandbox_common::{
-        utils::{init_logging, load_config},
-        messages::TaskMessage,
-    },
+    sandbox_common::utils::{init_logging, load_config},
     rpc::{
-        ml_sandbox_service_client::MlSandboxServiceClient,
+        self,
+        sandbox_service_client::SandboxServiceClient,
         GetTaskToRunRequest,
-        SubmitTaskResultRequest,
+        UpdateTaskStatusRequest,
     },
     crate::{
         model::StableDiffusionImageGenerationModel,
@@ -33,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
     
     info!("sandbox worker started");
     let endpoint = config.get_string("worker.endpoint").unwrap();
-    let mut client = MlSandboxServiceClient::with_interceptor(
+    let mut client = SandboxServiceClient::with_interceptor(
         tonic::transport::Channel::from_shared(endpoint)
             .unwrap()
             .connect()
@@ -61,14 +59,16 @@ async fn main() -> anyhow::Result<()> {
         };
 
         let prompt = task.prompt;
-        let id = task.id;
-        info!("generating image for prompt: {}, task id: {}", prompt, id);
+        let id = task.id.unwrap();
+        info!("generating image for prompt: {}, task id: {}", prompt, id.id);
         let image = model.run(&prompt);
         info!("finished generating image");
         
-        client.submit_task_result(SubmitTaskResultRequest {
-            id,
-            image,
+        client.update_task_status(UpdateTaskStatusRequest {
+            id: Some(id),
+            task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {
+                image,
+            })),
         }).await.unwrap();
 
         info!("finished processing task");
