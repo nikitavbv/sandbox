@@ -1,7 +1,7 @@
 use {
-    std::time::Duration,
+    std::{time::Duration, sync::Arc},
     tracing::info,
-    tokio::time::sleep,
+    tokio::{time::sleep, sync::Mutex},
     tonic::{
         service::Interceptor,
         metadata::MetadataValue,
@@ -16,7 +16,7 @@ use {
         UpdateTaskStatusRequest,
     },
     crate::{
-        model::StableDiffusionImageGenerationModel,
+        model::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
         storage::Storage,
     },
 };
@@ -31,14 +31,14 @@ async fn main() -> anyhow::Result<()> {
     
     info!("sandbox worker started");
     let endpoint = config.get_string("worker.endpoint").unwrap();
-    let mut client = SandboxServiceClient::with_interceptor(
+    let client = Arc::new(Mutex::new(SandboxServiceClient::with_interceptor(
         tonic::transport::Channel::from_shared(endpoint)
             .unwrap()
             .connect()
             .await
             .unwrap(),
         AuthTokenSetterInterceptor::new(config.get_string("token.worker_token").unwrap()),
-    );
+    )));
     
     let storage = Storage::new(&config);
 
@@ -47,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
     info!("model loaded");
 
     loop {
-        let res = client.get_task_to_run(GetTaskToRunRequest {}).await.unwrap().into_inner();
+        let res = client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await.unwrap().into_inner();
     
         let task = match res.task_to_run {
             Some(v) => v,
@@ -60,12 +60,36 @@ async fn main() -> anyhow::Result<()> {
 
         let prompt = task.prompt;
         let id = task.id.unwrap();
+    
         info!("generating image for prompt: {}, task id: {}", prompt, id.id);
-        let image = model.run(&prompt);
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        {
+            let id = id.clone();
+            let client = client.clone();
+
+            tokio::spawn(async move {
+                while let Some(update) = rx.recv().await {
+                    match update {
+                        ImageGenerationStatus::Finished => break,
+                        ImageGenerationStatus::InProgress { current_step, total_steps } => {
+                            client.lock().await.update_task_status(UpdateTaskStatusRequest {
+                                id: Some(id.clone()),
+                                task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails {
+                                    current_step,
+                                    total_steps,
+                                })),
+                            }).await.unwrap();
+                        },
+                    }
+                }
+            });
+        }
+        
+        let image = model.run(&prompt, tx);
         info!("finished generating image");
         
-        client.update_task_status(UpdateTaskStatusRequest {
-            id: Some(id),
+        client.lock().await.update_task_status(UpdateTaskStatusRequest {
+            id: Some(id.clone()),
             task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {
                 image,
             })),

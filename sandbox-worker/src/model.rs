@@ -21,6 +21,15 @@ struct ModelComponents {
     unet: diffusers::models::unet_2d::UNet2DConditionModel,
 }
 
+#[derive(Debug)]
+pub enum ImageGenerationStatus {
+    InProgress {
+        current_step: u32,
+        total_steps: u32,
+    },
+    Finished,
+}
+
 impl ModelComponents {
     async fn new(data_resolver: &Storage, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
         let vocab_file = data_resolver.load_model_file("bpe_simple_vocab_16e6.txt").await;
@@ -61,7 +70,7 @@ impl StableDiffusionImageGenerationModel {
         }
     }
 
-    pub fn run(&self, prompt: &str) -> Vec<u8> {
+    pub fn run(&self, prompt: &str, updates_callback: tokio::sync::mpsc::UnboundedSender<ImageGenerationStatus>) -> Vec<u8> {
         info!("using device: {:?}", self.device);
 
         let uncond_prompt = "";
@@ -97,6 +106,7 @@ impl StableDiffusionImageGenerationModel {
 
         for (timestep_index, &timestep) in scheduler.timesteps().iter().enumerate() {
             info!("running timestep index: {}", timestep_index);
+            updates_callback.send(ImageGenerationStatus::InProgress { current_step: timestep_index as u32, total_steps: n_steps as u32 }).unwrap();
 
             let latent_model_input = Tensor::cat(&[&latents, &latents], 0);
 
@@ -117,6 +127,9 @@ impl StableDiffusionImageGenerationModel {
         let output_file = output_dir.path().join("output.png");
         tch::vision::image::save(&image, &output_file).unwrap();
 
-        fs::read(output_file).unwrap()
+        let result = fs::read(output_file).unwrap();
+        updates_callback.send(ImageGenerationStatus::Finished).unwrap();
+
+        result
     }
 }
