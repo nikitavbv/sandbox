@@ -18,4 +18,5 @@ base64 = "0.21.0"
 urlencoding = "2.1.2"
 serde = "1.0.163"
 gloo-storage = "0.2.2"
+yew-hooks = "0.2.0"
 rpc = { path = "../rpc", features = ["client"] }

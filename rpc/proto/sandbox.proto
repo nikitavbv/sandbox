@@ -23,9 +23,13 @@ message Task {
     string prompt = 1;
 
     oneof status {
+        PendingTaskDetails pending_details = 5;
         InProgressTaskDetails in_progress_details = 2;
         FinishedTaskDetails finished_details = 3;
     }
+}
+
+message PendingTaskDetails {
 }
 
 message InProgressTaskDetails {

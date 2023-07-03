@@ -56,7 +56,7 @@ impl SandboxServiceHandler {
             prompt: task.prompt,
             id: Some(rpc::TaskId::from(task.id)),
             status: match task.status {
-                TaskStatus::Pending => None,
+                TaskStatus::Pending => Some(rpc::task::Status::PendingDetails(rpc::PendingTaskDetails {})),
                 TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
                     current_step,
                     total_steps,

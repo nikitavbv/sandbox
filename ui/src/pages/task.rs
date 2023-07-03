@@ -1,8 +1,8 @@
 use {
     std::sync::{Arc, Mutex},
+    tracing::info,
     yew::prelude::*,
     yew_router::prelude::*,
-    tracing::info,
     wasm_bindgen_futures::spawn_local,
     rpc::{TaskId, Task, GetTaskRequest},
     crate::utils::{client, Route},
@@ -34,7 +34,13 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                     id,
                 }),
             }).await.unwrap().into_inner();
-            state_setter.set(Some(res.task.unwrap()));
+
+            let task = res.task.unwrap();
+            if !is_finished_task(&task) {
+                info!("not finished task");
+            }
+
+            state_setter.set(Some(task));
         });
         
         || ()
@@ -65,4 +71,11 @@ pub fn task_page(props: &TaskPageProps) -> Html {
             { rendered }
         </div>
     )
+}
+
+fn is_finished_task(task: &Task) -> bool {
+    match task.status.as_ref().unwrap() {
+        rpc::task::Status::FinishedDetails(_) => true,
+        _ => false,
+    }
 }
