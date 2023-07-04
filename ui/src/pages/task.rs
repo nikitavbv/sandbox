@@ -4,6 +4,7 @@ use {
     yew::prelude::*,
     yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
+    gloo_timers::callback::Interval,
     rpc::{TaskId, Task, GetTaskRequest},
     crate::utils::{client, Route},
 };
@@ -45,6 +46,45 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         
         || ()
     }, props.task_id.clone());
+
+    {
+        let state = state.clone();
+
+        use_effect(move || {
+            let state = state.clone();
+            let interval = Arc::new(Mutex::new(None::<Interval>));
+
+            let new_interval = {
+                let interval = interval.clone();
+                let refresh_in_progress = Arc::new(Mutex::new(false));
+
+                Interval::new(100, move || {
+                    let state = match &*state {
+                        Some(v) => v,
+                        None => {
+                            info!("no informating about the task has been received yet");
+                            return;
+                        }
+                    };
+
+                    // TODO: refresh status
+
+                    if let rpc::task::Status::FinishedDetails(_) = state.status.as_ref().unwrap() {
+                        info!("task is ready, there is no reason to refresh it all the time");
+                        interval.lock().unwrap().take().unwrap().cancel();
+                        return;
+                    }
+
+                    info!("waiting for task");
+                })
+            };
+            *interval.lock().unwrap() = Some(new_interval);
+
+            move || {
+                interval.lock().unwrap().take().unwrap().cancel();
+            }
+        });
+    }
 
     let return_home = Callback::from(move |_| {
         navigator.push(&Route::Home);

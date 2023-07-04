@@ -1057,6 +1057,7 @@ dependencies = [
  "base64",
  "console_error_panic_hook",
  "gloo-storage",
+ "gloo-timers",
  "rpc",
  "serde",
  "tonic",
@@ -1067,8 +1068,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "yew 0.20.0 (git+https://github.com/yewstack/yew/)",
- "yew-hooks",
+ "yew",
  "yew-router",
 ]
 
@@ -1272,31 +1272,6 @@ checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"
 [[package]]
 name = "yew"
 version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dbecfe44343b70cc2932c3eb445425969ae21754a8ab3a0966981c1cf7af1cc"
-dependencies = [
- "console_error_panic_hook",
- "futures",
- "gloo",
- "implicit-clone",
- "indexmap",
- "js-sys",
- "prokio",
- "rustversion",
- "serde",
- "slab",
- "thiserror",
- "tokio",
- "tracing",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "yew-macro 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "yew"
-version = "0.20.0"
 source = "git+https://github.com/yewstack/yew/#47b60ec7a2abe757a08e22cddace81c337aae0e7"
 dependencies = [
  "console_error_panic_hook",
@@ -1315,38 +1290,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "yew-macro 0.20.0 (git+https://github.com/yewstack/yew/)",
-]
-
-[[package]]
-name = "yew-hooks"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "268e2367720311f19582235f5c021702d6be8ded13b7ee8dcacc71019d055d15"
-dependencies = [
- "gloo",
- "js-sys",
- "log",
- "serde",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "yew 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "yew-macro"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64c253c1d401f1ea868ca9988db63958cfa15a69f739101f338d6f05eea8301"
-dependencies = [
- "boolinator",
- "once_cell",
- "prettyplease",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.107",
+ "yew-macro",
 ]
 
 [[package]]
@@ -1376,7 +1320,7 @@ dependencies = [
  "tracing",
  "wasm-bindgen",
  "web-sys",
- "yew 0.20.0 (git+https://github.com/yewstack/yew/)",
+ "yew",
  "yew-router-macro",
 ]
 
