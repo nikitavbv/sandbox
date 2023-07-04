@@ -112,26 +112,24 @@ pub fn task_page(props: &TaskPageProps) -> Html {
     use_effect_with_deps(|(task_id, status)| {
         if status.is_none() {
             info!("no info about task yet");
-            return;
-        }
-
-        if let Some(rpc::task::Status::FinishedDetails(_)) = status {
+        } else if let Some(rpc::task::Status::FinishedDetails(_)) = status {
             info!("task is finished");
-            return;
+        } else {
+            info!("task is not finished yet");
+
+            let id = task_id.clone();
+            spawn_local(async move {
+                let mut client = client.lock().unwrap();
+
+                let res = client.get_task(GetTaskRequest {
+                    id: Some(TaskId { id }),
+                }).await.unwrap();
+
+                info!("res: {:?}", res);
+            });
         }
 
-        info!("task is not finished yet");
-
-        let id = task_id.clone();
-        spawn_local(async move {
-            let mut client = client.lock().unwrap();
-
-            let res = client.get_task(GetTaskRequest {
-                id: Some(TaskId { id }),
-            }).await.unwrap();
-
-            info!("res: {:?}", res);
-        });
+        || {}
     }, (props.task_id.clone(), state.as_ref().and_then(|v| v.status.clone())));
 
     let return_home = Callback::from(move |_| {

@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
-yew-router = { git = "https://github.com/yewstack/yew.git" }
+yew = { version = "0.20.0", features = ["csr"] }
+yew-router = "0.17.0"
 tonic = { version = "0.9.2", default-features=false }
 tonic-web-wasm-client = "0.4.0"
 tracing = "0.1.37"
