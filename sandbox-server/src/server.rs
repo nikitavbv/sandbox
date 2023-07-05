@@ -11,7 +11,7 @@ use {
         FILE_DESCRIPTOR_SET,
     },
     crate::{
-        handlers::SandboxServiceHandler,
+        handlers::{SandboxServiceHandler, rest::rest_router},
     },
 };
 
@@ -46,7 +46,8 @@ pub async fn run_grpc_server(config: &Config) {
 
 pub async fn service(config: &Config) -> Result<RestGrpcService> {
     let grpc = Router::new().nest("/api", grpc_router(config).await?);
-    Ok(RestGrpcService::new(Router::new(), grpc))
+    let rest = rest_router();
+    Ok(RestGrpcService::new(rest, grpc))
 }
 
 async fn grpc_router(config: &Config) -> Result<Router> {

@@ -26,6 +26,8 @@ use {
     },
 };
 
+pub mod rest;
+
 #[derive(Deserialize)]
 struct TokenClaims {
     sub: String,
