@@ -3,7 +3,7 @@ use {
     axum::{Router, extract::Path, routing::get},
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct AssetID {
     pub asset_id: String,
 }
@@ -14,5 +14,5 @@ pub fn rest_router() -> Router {
 }
 
 async fn serve_asset(Path(asset_id): Path<AssetID>) -> Vec<u8> {
-    unimplemented!()
+    format!("here is your asset: {:?}", asset_id).as_bytes().to_vec()
 }
