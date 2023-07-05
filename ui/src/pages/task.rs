@@ -103,16 +103,19 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
     let rendered = match &*state {
         None => html!(<div>{"loading task status..."}</div>),
-        Some(v) => if let rpc::task::Status::FinishedDetails(finished) = v.status.as_ref().unwrap() {
-            html!(
-                <div>
-                    <img src={format!("data:image/png;base64, {}", base64::encode(&finished.image))} style={"display: block;"} />
-                    <p style="font-style: italic;">{ v.prompt.clone() }</p>
-                </div>
-            )
-        } else {
-            html!(<div>{"task is not complete yet"}</div>)
-        },
+        Some(v) => {
+            match &v.status {
+                Some(rpc::task::Status::PendingDetails(_)) => html!(<div>{"waiting for task to be picked by worker..."}</div>),
+                Some(rpc::task::Status::InProgressDetails(in_progress)) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
+                Some(rpc::task::Status::FinishedDetails(finished)) => html!(
+                    <div>
+                        <img src={format!("data:image/png;base64, {}", base64::encode(&finished.image))} style={"display: block;"} />
+                        <p style="font-style: italic;">{ v.prompt.clone() }</p>
+                    </div>
+                ),
+                None => html!(<div>{"refreshing task state..."}</div>),
+            }
+        }
     };
 
     html!(
