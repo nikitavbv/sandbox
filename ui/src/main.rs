@@ -153,6 +153,7 @@ fn home() -> Html {
                 let mut client = client.lock().unwrap();
                 let res = client.create_task(CreateTaskRequest {
                     prompt,
+                    iterations: 20,
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
                     id: res.id.unwrap().id,

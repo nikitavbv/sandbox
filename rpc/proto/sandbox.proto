@@ -44,6 +44,8 @@ message FinishedTaskDetails {
 /* requests and responses */
 message CreateTaskRequest {
     string prompt = 1;
+
+    uint32 iterations = 2;
 }
 
 message CreateTaskResponse {
