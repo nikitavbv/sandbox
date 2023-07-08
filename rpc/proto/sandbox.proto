@@ -38,7 +38,6 @@ message InProgressTaskDetails {
 }
 
 message FinishedTaskDetails {
-    bytes image = 1;
 }
 
 /* requests and responses */
@@ -86,6 +85,8 @@ message UpdateTaskStatusRequest {
         InProgressTaskDetails in_progress = 2;
         FinishedTaskDetails finished = 3;
     }
+
+    optional bytes image = 4;
 }
 
 message UpdateTaskStatusResponse {

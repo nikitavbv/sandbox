@@ -62,9 +62,7 @@ impl SandboxServiceHandler {
                     current_step,
                     total_steps,
                 })),
-                TaskStatus::Finished { image } => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {
-                    image,
-                })),
+                TaskStatus::Finished => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {})),
             },
         }
     }
@@ -144,12 +142,12 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
         let task_status = match req.task_status.unwrap() {
             rpc::update_task_status_request::TaskStatus::InProgress(in_progress) => TaskStatus::InProgress { current_step: in_progress.current_step, total_steps: in_progress.total_steps },
-            rpc::update_task_status_request::TaskStatus::Finished(finished) => TaskStatus::Finished { image: finished.image },
+            rpc::update_task_status_request::TaskStatus::Finished(_) => TaskStatus::Finished,
         };
 
         let task_id = TaskId::from(req.id.unwrap());
 
-        self.database.save_task_status(&task_id, &task_status).await;
+        self.database.save_task_status(&task_id, &task_status, req.image).await;
 
         Ok(Response::new(UpdateTaskStatusResponse {}))
     }

@@ -107,9 +107,9 @@ pub fn task_page(props: &TaskPageProps) -> Html {
             match &v.status {
                 Some(rpc::task::Status::PendingDetails(_)) => html!(<div>{"waiting for task to be picked by worker..."}</div>),
                 Some(rpc::task::Status::InProgressDetails(in_progress)) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
-                Some(rpc::task::Status::FinishedDetails(finished)) => html!(
+                Some(rpc::task::Status::FinishedDetails(_)) => html!(
                     <div>
-                        <img src={format!("data:image/png;base64, {}", base64::encode(&finished.image))} style={"display: block;"} />
+                        <img src={format!("/storage/{}", v.id.as_ref().unwrap().id)} style={"display: block;"} />
                         <p style="font-style: italic;">{ v.prompt.clone() }</p>
                     </div>
                 ),

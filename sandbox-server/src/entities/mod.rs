@@ -39,7 +39,5 @@ pub enum TaskStatus {
         current_step: u32,
         total_steps: u32,
     },
-    Finished {
-        image: Vec<u8>,
-    },
+    Finished,
 }

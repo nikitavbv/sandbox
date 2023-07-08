@@ -103,7 +103,7 @@ impl Database {
         let status = match serde_json::from_value::<PersistedTaskStatus>(task.status).unwrap() {
             PersistedTaskStatus::Pending => TaskStatus::Pending,
             PersistedTaskStatus::InProgress { current_step, total_steps } => TaskStatus::InProgress { current_step, total_steps },
-            PersistedTaskStatus::Finished => TaskStatus::Finished { image: self.get_generated_image(&id).await },
+            PersistedTaskStatus::Finished => TaskStatus::Finished,
         };
 
         Task {
@@ -113,11 +113,11 @@ impl Database {
         }
     }
 
-    pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
+    pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus, image: Option<Vec<u8>>) {
         let persisted_status = match status {
             TaskStatus::Pending => PersistedTaskStatus::Pending,
             TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: *total_steps },
-            TaskStatus::Finished { image: _ } => PersistedTaskStatus::Finished,
+            TaskStatus::Finished => PersistedTaskStatus::Finished,
         };
 
         let is_pending = TaskStatus::Pending == *status;
@@ -132,8 +132,8 @@ impl Database {
             .await
             .unwrap();
 
-        if let TaskStatus::Finished { image } = status {
-            self.bucket.put_object(&format!("output/images/{}", id.as_str()), image).await.unwrap();
+        if let Some(image) = image {
+            self.bucket.put_object(&format!("output/images/{}", id.as_str()), &image).await.unwrap();
         }
     }
 

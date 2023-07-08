@@ -11,7 +11,7 @@ use {
 pub struct HistoryEntryProps {
     id: String,
     prompt: String,
-    image: Option<Vec<u8>>,
+    finished: bool,
 }
 
 #[function_component(HistoryPage)]
@@ -41,8 +41,8 @@ pub fn history_page() -> Html {
         .flat_map(|v| v.iter())
         .map(|v| html!(<HistoryEntry 
             id={v.id.as_ref().unwrap().id.clone()} 
-            prompt={v.prompt.clone()} 
-            image={image_from_task(v)} />
+            prompt={v.prompt.clone()}
+            finished={is_finished(v)} />
         ))
         .collect();
 
@@ -59,9 +59,10 @@ pub fn history_page() -> Html {
 pub fn history_entry(props: &HistoryEntryProps) -> Html {
     let navigator = use_navigator().unwrap();
 
-    let image = match props.image.as_ref() {
-        Some(v) => html!(<img src={format!("data:image/png;base64, {}", base64::encode(v))} style={"width: 128px; height: 128px;"} />),
-        None => html!(<span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{"in progress..."}</span>),
+    let image = if props.finished {
+        html!(<img src={format!("/storage/{}", props.id)} style={"width: 128px; height: 128px;"} />)
+    } else {
+        html!(<span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{"in progress..."}</span>)
     };
 
     let open_task = {
@@ -81,8 +82,10 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
     )
 }
 
-fn image_from_task(task: &Task) -> Option<Vec<u8>> {
-    task.status.as_ref()
-        .and_then(|v| if let rpc::task::Status::FinishedDetails(finished) = v { Some(finished) } else { None })
-        .map(|v| v.image.clone())
+fn is_finished(task: &Task) -> bool {
+    if let rpc::task::Status::FinishedDetails(_) = task.status.as_ref().unwrap() {
+        return true;
+    }
+
+    false
 }
