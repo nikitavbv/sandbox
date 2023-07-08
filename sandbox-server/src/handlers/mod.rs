@@ -1,4 +1,5 @@
 use {
+    std::sync::Arc,
     tonic::{Status, Request, Response},
     serde::Deserialize,
     anyhow::Result,
@@ -20,9 +21,7 @@ use {
     },
     crate::{
         entities::{Task, TaskId, TaskStatus},
-        state::{
-            database::Database,
-        },
+        state::database::Database,
     },
 };
 
@@ -34,16 +33,16 @@ struct TokenClaims {
 }
 
 pub struct SandboxServiceHandler {
-    database: Database,
+    database: Arc<Database>,
 
     token_decoding_key: DecodingKey,
     worker_token: String,
 }
 
 impl SandboxServiceHandler {
-    pub async fn new(config: &Config) -> Result<Self> {
+    pub async fn new(config: &Config, database: Arc<Database>) -> Result<Self> {
         Ok(Self {
-            database: Database::new(config, &config.get_string("database.connection_string")?).await?,
+            database,
             token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
             worker_token: config.get_string("token.worker_token").unwrap(),
         })
