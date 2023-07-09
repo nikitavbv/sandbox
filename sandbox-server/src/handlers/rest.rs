@@ -1,11 +1,11 @@
 use {
-    std::sync::Arc,
+    std::{sync::Arc, collections::HashMap},
     serde::{Serialize, Deserialize},
-    tracing::error,
+    tracing::{info, error},
     axum::{
         Router, 
         Extension,
-        response::{Response, IntoResponse}, 
+        response::{Response, IntoResponse, Redirect}, 
         extract::{Path, Query}, 
         routing::get, 
         http::header::{CONTENT_TYPE, HeaderValue}, 
@@ -32,6 +32,7 @@ pub struct OAuthClientSecret {
 #[derive(Deserialize)]
 pub struct OAuthCallbackData {
     code: String,
+    state: String,
 }
 
 #[derive(Deserialize)]
@@ -74,10 +75,16 @@ async fn serve_asset(Extension(database): Extension<Arc<Database>>, Path(asset_i
 async fn auth_callback(
     Extension(client_secret): Extension<OAuthClientSecret>, 
     Extension(encoding_key): Extension<jsonwebtoken::EncodingKey>,
-    data: Query<OAuthCallbackData>) -> impl IntoResponse {
+    data: Query<OAuthCallbackData>
+) -> impl IntoResponse {
+    let endpoint = if data.state.contains("local") {
+        "http://localhost:8080"
+    } else {
+        "https://sandbox.nikitavbv.com"
+    }.to_owned();
+
     let client = reqwest::Client::new();
 
-    // TODO: finish this
     let res = client
         .post("https://oauth2.googleapis.com/token")
         .form(&[
@@ -85,6 +92,7 @@ async fn auth_callback(
             ("client_secret", &client_secret.client_secret),
             ("code", &data.code),
             ("grant_type", "authorization_code"),
+            ("redirect_uri", &format!("{}/v1/auth/callback", endpoint)),
         ])
         .send()
         .await;
@@ -97,10 +105,12 @@ async fn auth_callback(
         }
     };
 
-    let res: OAuthCodeExchangeResponse = match res.json().await {
+    let res = res.text().await.unwrap();
+
+    let res: OAuthCodeExchangeResponse = match serde_json::from_str(&res) {
         Ok(v) => v,
         Err(err) => {
-            error!("failed to get code exchange response: {:?}", err);
+            error!("failed to get code exchange response: {:?} for response {:?}", err, res);
             return "failed to get token exchange response".into_response();
         }
     };
@@ -128,11 +138,18 @@ async fn auth_callback(
     };
 
     let token = issue_token(encoding_key, &res.id, &res.email, &res.name);
+    info!("issued token for {}", res.email);
 
-    // TODO: redirect with issued token
-    // let mut redirect_to = Url::parse("https://sandbox.nikitavbv.com/");
+    let mut query_params = HashMap::new();
+    query_params.insert("token", token);
 
-    unimplemented!()
+    let query_string = form_urlencoded::Serializer::new("".to_owned())
+        .extend_pairs(query_params)
+        .finish();
+
+    let redirect = format!("{}/login?{}", endpoint, query_string);
+
+    Redirect::to(&redirect).into_response()
 }
 
 fn issue_token(encoding_key: jsonwebtoken::EncodingKey, id: &str, email: &str, name: &str) -> String {
