@@ -14,7 +14,13 @@ image = "0.24.5"
 tonic = "0.9.2"
 tonic-reflection = "0.9.2"
 tonic-web = "0.9.2"
-rust-s3 = { git = "https://github.com/durch/rust-s3" } # master contains significant changes compared to the version from crates.io
+
+# master contains significant changes compared to the version from crates.io
+# Also, this fork contains the following PR merged:
+# https://github.com/durch/rust-s3/pull/343
+# to fix locks
+rust-s3 = { git = "https://github.com/nikitavbv/rust-s3" }
+
 aws-region = "0.25.1"
 config = "0.13.3"
 tempfile = "3.3.0"

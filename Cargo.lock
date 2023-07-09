@@ -2322,6 +2322,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-s3"
+version = "0.34.0-beta3"
+source = "git+https://github.com/nikitavbv/rust-s3#89061f5b612abc44d62f1c704690a5b49d3f36f1"
+dependencies = [
+ "async-trait",
+ "aws-creds",
+ "aws-region",
+ "base64 0.21.0",
+ "bytes",
+ "cfg-if",
+ "futures",
+ "hex",
+ "hmac",
+ "http",
+ "hyper",
+ "hyper-tls",
+ "log",
+ "maybe-async",
+ "md5",
+ "minidom",
+ "native-tls",
+ "percent-encoding",
+ "quick-xml",
+ "serde",
+ "serde_derive",
+ "sha2",
+ "thiserror",
+ "time",
+ "tokio",
+ "tokio-native-tls",
+ "tokio-stream",
+ "url",
+]
+
+[[package]]
 name = "rustdct"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2489,7 +2524,7 @@ dependencies = [
  "rand",
  "rdkafka",
  "rpc",
- "rust-s3",
+ "rust-s3 0.34.0-beta3 (git+https://github.com/nikitavbv/rust-s3)",
  "sandbox-common",
  "serde",
  "serde_json",
@@ -2514,7 +2549,7 @@ dependencies = [
  "rand",
  "rdkafka",
  "rpc",
- "rust-s3",
+ "rust-s3 0.34.0-beta3 (git+https://github.com/durch/rust-s3)",
  "sandbox-common",
  "serde_json",
  "tch",

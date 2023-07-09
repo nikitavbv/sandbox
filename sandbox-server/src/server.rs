@@ -39,10 +39,13 @@ pub async fn run_axum_server(config: &Config, database: Arc<Database>) {
 
 pub async fn run_grpc_server(config: &Config, database: Arc<Database>) {
     let port = config.get_int("server.grpc_port").unwrap_or(8082);
+    let addr = format!("0.0.0.0:{}", port).parse().unwrap();
+
+    info!("starting grpc server on port {:?}", addr);
 
     Server::builder()
         .add_service(SandboxServiceServer::new(SandboxServiceHandler::new(config, database).await.unwrap()))
-        .serve(format!("0.0.0.0:{}", port).parse().unwrap())
+        .serve(addr)
         .await
         .unwrap();
 }
