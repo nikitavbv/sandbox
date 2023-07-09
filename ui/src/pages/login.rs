@@ -1,8 +1,6 @@
 use {
     yew::prelude::*,
     yew_router::prelude::*,
-    web_sys::window,
-    tracing::info,
     serde::Deserialize,
     gloo_storage::{LocalStorage, Storage},
     crate::utils::Route,

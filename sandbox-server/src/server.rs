@@ -51,7 +51,7 @@ pub async fn run_grpc_server(config: &Config, database: Arc<Database>) {
 }
 
 pub async fn service(config: &Config, database: Arc<Database>) -> Result<RestGrpcService> {
-    let grpc = Router::new().nest("/api", grpc_router(config, database.clone()).await?);
+    let grpc = Router::new().nest("/v1/rpc", grpc_router(config, database.clone()).await?);
     let rest = rest_router(database);
     Ok(RestGrpcService::new(rest, grpc))
 }

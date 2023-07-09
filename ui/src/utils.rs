@@ -33,7 +33,7 @@ pub fn client() -> SandboxClient {
 
 pub fn client_with_token(token: Option<String>) -> SandboxClient {
     SandboxServiceClient::with_interceptor(
-        Client::new(format!("{}/api", window().unwrap().location().origin().unwrap())),
+        Client::new(format!("{}/v1/rpc", window().unwrap().location().origin().unwrap())),
         AuthTokenSetterInterceptor::new(token),
     )
 }

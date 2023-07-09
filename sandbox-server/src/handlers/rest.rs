@@ -15,7 +15,7 @@ pub struct AssetID {
 
 pub fn rest_router(database: Arc<Database>) -> Router {
     Router::new()
-        .route("/storage/:asset_id", get(serve_asset))
+        .route("/v1/storage/:asset_id", get(serve_asset))
         .layer(Extension(database))
 }
 
