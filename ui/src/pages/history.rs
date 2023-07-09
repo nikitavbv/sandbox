@@ -60,7 +60,7 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
     let navigator = use_navigator().unwrap();
 
     let image = if props.finished {
-        html!(<img src={format!("/storage/{}", props.id)} style={"width: 128px; height: 128px;"} />)
+        html!(<img src={format!("/v1/storage/{}", props.id)} style={"width: 128px; height: 128px;"} />)
     } else {
         html!(<span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{"in progress..."}</span>)
     };

@@ -109,7 +109,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 Some(rpc::task::Status::InProgressDetails(in_progress)) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
                 Some(rpc::task::Status::FinishedDetails(_)) => html!(
                     <div>
-                        <img src={format!("/storage/{}", v.id.as_ref().unwrap().id)} style={"display: block;"} />
+                        <img src={format!("/v1/storage/{}", v.id.as_ref().unwrap().id)} style={"display: block;"} />
                         <p style="font-style: italic;">{ v.prompt.clone() }</p>
                     </div>
                 ),
