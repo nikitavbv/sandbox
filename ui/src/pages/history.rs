@@ -26,7 +26,7 @@ pub fn history_page() -> Html {
     let state = use_state(|| None::<Vec<Task>>);
     let state_setter = state.setter();
 
-    use_effect(move || {
+    use_effect_with_deps(move |_| {
         let client = client.clone();
         let state_setter = state_setter.clone();
 
@@ -35,7 +35,7 @@ pub fn history_page() -> Html {
             let tasks = client.get_all_tasks(GetAllTasksRequest {}).await.unwrap().into_inner();
             state_setter.set(Some(tasks.tasks));
         })
-    });
+    }, [None::<String>]);
 
     let tasks: Vec<_> = state.iter()
         .flat_map(|v| v.iter())
