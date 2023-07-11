@@ -75,7 +75,7 @@ impl StableDiffusionImageGenerationModel {
 
         let uncond_prompt = "";
         let seed: i64 = rand::thread_rng().gen();
-        let n_steps = 20;
+        let n_steps = 30;
         let guidance_scale = 7.5;
 
         let scheduler = self.sd_config.build_scheduler(n_steps);
