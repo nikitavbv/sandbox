@@ -3,7 +3,6 @@ use {
     tracing::info,
     yew::prelude::*,
     yew_router::{prelude::*, navigator},
-    tonic_web_wasm_client::Client,
     tonic::{Request, Status},
     wasm_bindgen_futures::spawn_local,
     tracing_wasm::WASMLayerConfigBuilder,
