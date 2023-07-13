@@ -4,6 +4,7 @@ package sandbox;
 
 service SandboxService {
     // for ui
+    rpc OAuthLogin(OAuthLoginRequest) returns (OAuthLoginResponse) {}
     rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {}
     rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
     rpc GetAllTasks(GetAllTasksRequest) returns (GetAllTasksResponse) {}
@@ -41,6 +42,15 @@ message FinishedTaskDetails {
 }
 
 /* requests and responses */
+message OAuthLoginRequest {
+    string code = 1;
+    string redirect_uri = 2;
+}
+
+message OAuthLoginResponse {
+    string token = 1;
+}
+
 message CreateTaskRequest {
     string prompt = 1;
 

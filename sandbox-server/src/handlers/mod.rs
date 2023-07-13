@@ -1,5 +1,8 @@
+use axum::response::IntoResponse;
+
 use {
     std::sync::Arc,
+    tracing::error,
     tonic::{Status, Request, Response},
     serde::Deserialize,
     anyhow::Result,
@@ -18,6 +21,8 @@ use {
         GetTaskResponse,
         GetAllTasksRequest,
         GetAllTasksResponse,
+        OAuthLoginRequest,
+        OAuthLoginResponse,
     },
     crate::{
         entities::{Task, TaskId, TaskStatus},
@@ -70,6 +75,56 @@ impl SandboxServiceHandler {
 
 #[tonic::async_trait]
 impl SandboxService for SandboxServiceHandler {
+    async fn o_auth_login(&self, req: Request<OAuthLoginRequest>) -> Result<Response<OAuthLoginResponse>, Status> {
+        let req = req.into_inner();
+        
+        /*let client = reqwest::Client::new();
+        let res = client
+            .post("https://oauth2.googleapis.com/token")
+            .form(&[
+                ("client_id", "916750455653-biu6q4c7llj7q1k14h3qaquktcdlkeo4.apps.googleusercontent.com"),
+                ("client_secret", &self.oauth_secret),
+                ("code", &req.code),
+                ("grant_type", "authorization_code"),
+                ("redirect_uri", &req.redirect_uri),
+            ])
+            .send()
+            .await;
+
+        let res = match res {
+            Ok(v) => v,
+            Err(err) => {
+                error!("failed to run code exchange request: {:?}", err);
+                return Err(Status::internal("something went wrong"));
+            }
+        };
+
+        let res: OAuthCodeExchangeResponse = match serde_json::from_str(&res) {
+            Ok(v) => v,
+            Err(err) => {
+                error!("failed to get code exchange response: {:?} for response {:?}", err, res);
+                return Err(Status::internal("failed to get token exchange response"));
+            }
+        };
+
+        let res = client
+            .get("https://www.googleapis.com/oauth2/v1/userinfo")
+            .bearer_auth(res.access_token)
+            .send()
+            .await;
+
+        let res = match res {
+            Ok(v) => v,
+            Err(err) => {
+                error!("failed to request user info: {:?}", err);
+                return Err(Status::internal("failed to request user info"));
+            }
+        };*/
+
+        // TODO: finish this
+        unimplemented!()
+    }
+
     async fn create_task(&self, req: Request<CreateTaskRequest>) -> Result<Response<CreateTaskResponse>, Status> {
         let headers: http::HeaderMap = req.metadata().clone().into_headers();
         let user_id = headers.get("x-access-token")
