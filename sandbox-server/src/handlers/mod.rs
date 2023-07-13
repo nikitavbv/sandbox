@@ -1,13 +1,11 @@
-use axum::response::IntoResponse;
-
 use {
     std::sync::Arc,
-    tracing::error,
+    tracing::{info, error},
     tonic::{Status, Request, Response},
-    serde::Deserialize,
+    serde::{Serialize, Deserialize},
     anyhow::Result,
-    config::Config,
-    jsonwebtoken::{DecodingKey, Validation, Algorithm},
+    chrono::Utc,
+    jsonwebtoken::{EncodingKey, DecodingKey, Validation, Algorithm},
     rand::distributions::{Alphanumeric, Distribution},
     rpc::{
         sandbox_service_server::SandboxService,
@@ -32,25 +30,57 @@ use {
 
 pub mod rest;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct TokenClaims {
+    exp: usize,
     sub: String,
+    email: String,
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct OAuthCodeExchangeResponse {
+    access_token: String,
+}
+
+#[derive(Deserialize)]
+struct UserInfoResponse {
+    id: String,
+    email: String,
+    name: String,
 }
 
 pub struct SandboxServiceHandler {
     database: Arc<Database>,
 
+    token_encoding_key: EncodingKey,
     token_decoding_key: DecodingKey,
     worker_token: String,
+    oauth_secret: String,
 }
 
 impl SandboxServiceHandler {
-    pub async fn new(config: &Config, database: Arc<Database>) -> Result<Self> {
+    pub async fn new(database: Arc<Database>, token_encoding_key: EncodingKey, token_decoding_key: DecodingKey, worker_token: String, oauth_secret: String) -> Result<Self> {
         Ok(Self {
             database,
-            token_decoding_key: DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key")?.as_bytes()).unwrap(),
-            worker_token: config.get_string("token.worker_token").unwrap(),
+            token_encoding_key,
+            token_decoding_key,
+            worker_token,
+            oauth_secret,
         })
+    }
+
+    fn issue_token(&self, id: &str, email: &str, name: &str) -> String {
+        jsonwebtoken::encode(
+            &jsonwebtoken::Header::new(Algorithm::RS384),
+            &TokenClaims {
+                exp: (Utc::now().timestamp() as usize) + (7 * 24 * 60 * 60),
+                sub: format!("google:{}", id),
+                email: email.to_owned(),
+                name: name.to_owned(),
+            },
+            &self.token_encoding_key,
+        ).unwrap()
     }
 
     fn decode_token(&self, token: &str) -> String {
@@ -78,7 +108,7 @@ impl SandboxService for SandboxServiceHandler {
     async fn o_auth_login(&self, req: Request<OAuthLoginRequest>) -> Result<Response<OAuthLoginResponse>, Status> {
         let req = req.into_inner();
         
-        /*let client = reqwest::Client::new();
+        let client = reqwest::Client::new();
         let res = client
             .post("https://oauth2.googleapis.com/token")
             .form(&[
@@ -97,7 +127,7 @@ impl SandboxService for SandboxServiceHandler {
                 error!("failed to run code exchange request: {:?}", err);
                 return Err(Status::internal("something went wrong"));
             }
-        };
+        }.text().await.unwrap();
 
         let res: OAuthCodeExchangeResponse = match serde_json::from_str(&res) {
             Ok(v) => v,
@@ -119,10 +149,20 @@ impl SandboxService for SandboxServiceHandler {
                 error!("failed to request user info: {:?}", err);
                 return Err(Status::internal("failed to request user info"));
             }
-        };*/
+        };
 
-        // TODO: finish this
-        unimplemented!()
+        let res: UserInfoResponse = match res.json().await {
+            Ok(v) => v,
+            Err(err) => {
+                error!("failed to get user info response: {:?}", err);
+                return Err(Status::internal("failed to get user info response"));
+            }
+        };
+
+        let token = self.issue_token(&res.id, &res.email, &res.name);
+        info!("issued token for {}", res.email);
+
+        Ok(Response::new(OAuthLoginResponse { token }))
     }
 
     async fn create_task(&self, req: Request<CreateTaskRequest>) -> Result<Response<CreateTaskResponse>, Status> {
