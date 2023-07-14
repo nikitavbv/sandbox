@@ -162,7 +162,7 @@ fn home() -> Html {
     };
 
     let login = Callback::from(move |_| {
-        let redirect_uri = format!("{}/v1/auth/callback", window().unwrap().location().origin().unwrap());
+        let redirect_uri = format!("{}/login", window().unwrap().location().origin().unwrap());
         let is_local = window().unwrap().location().host().unwrap().contains("localhost");
 
         let mut query_params = HashMap::new();
