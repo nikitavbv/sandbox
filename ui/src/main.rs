@@ -163,13 +163,11 @@ fn home() -> Html {
 
     let login = Callback::from(move |_| {
         let redirect_uri = format!("{}/login", window().unwrap().location().origin().unwrap());
-        let is_local = window().unwrap().location().host().unwrap().contains("localhost");
 
         let mut query_params = HashMap::new();
         query_params.insert("client_id", "916750455653-biu6q4c7llj7q1k14h3qaquktcdlkeo4.apps.googleusercontent.com".to_owned());
         query_params.insert("response_type", "code".to_owned());
         query_params.insert("scope", "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email".to_owned()); 
-        query_params.insert("state", if is_local { "local" } else { "prod" }.to_owned());
 
         let query_string = form_urlencoded::Serializer::new("".to_owned())
             .extend_pairs(query_params.iter())

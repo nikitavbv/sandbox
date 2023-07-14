@@ -13,7 +13,7 @@ use {
         FILE_DESCRIPTOR_SET,
     },
     crate::{
-        handlers::{SandboxServiceHandler, rest::{OAuthClientSecret, rest_router}},
+        handlers::{SandboxServiceHandler, rest::{rest_router}},
         state::database::Database,
     },
 };
@@ -36,7 +36,7 @@ pub async fn run_axum_server(config: &Config, database: Arc<Database>, encoding_
     let port = config.get_int("server.port").unwrap_or(8081);
     let addr = format!("{}:{}", host, port).parse().unwrap();
     
-    let oauth_client_secret = OAuthClientSecret { client_secret: config.get("auth.oauth_client_secret").unwrap() };
+    let oauth_client_secret = config.get("auth.oauth_client_secret").unwrap();
 
     info!("starting axum server on {:?}", addr);
     
@@ -62,12 +62,12 @@ pub async fn run_grpc_server(config: &Config, database: Arc<Database>, encoding_
 pub async fn service(
     database: Arc<Database>, 
     worker_token: String,
-    oauth_client_secret: OAuthClientSecret,
+    oauth_client_secret: String,
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
 ) -> Result<RestGrpcService> {
-    let grpc = Router::new().nest("/v1/rpc", grpc_router(database.clone(), encoding_key.clone(), decoding_key, worker_token, oauth_client_secret.client_secret.clone()).await?);
-    let rest = rest_router(database, oauth_client_secret, encoding_key);
+    let grpc = Router::new().nest("/v1/rpc", grpc_router(database.clone(), encoding_key.clone(), decoding_key, worker_token, oauth_client_secret).await?);
+    let rest = rest_router(database, encoding_key);
     Ok(RestGrpcService::new(rest, grpc))
 }
 
