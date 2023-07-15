@@ -4,6 +4,7 @@ use {
     config::Config,
     serde::{Serialize, Deserialize},
     s3::{Bucket, creds::Credentials, region::Region},
+    sqlx::types::Uuid,
     ulid::Ulid,
     crate::entities::{TaskId, TaskStatus, Task, UserId},
 };
@@ -25,7 +26,7 @@ enum PersistedTaskStatus {
 }
 
 struct PersistedUserId {
-    id: Vec<u8>,
+    id: Uuid,
 }
 
 pub struct Database {
@@ -156,8 +157,8 @@ impl Database {
             )
             select id as "id!" from ins
             union all select id as "id!" from sandbox_users where email = $2 limit 1;
-        "#, &new_id.0.to_be_bytes(), email).fetch_one(&self.pool).await.unwrap();
+        "#, Uuid::parse_str(&new_id.to_string()).unwrap(), email).fetch_one(&self.pool).await.unwrap();
 
-        UserId::from_vec(user_id.id)
+        UserId::from_u128(user_id.id.as_u128())
     }
 }

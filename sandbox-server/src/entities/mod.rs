@@ -49,9 +49,9 @@ pub struct UserId {
 }
 
 impl UserId {
-    pub fn from_vec(v: Vec<u8>) -> Self {
+    pub fn from_u128(v: u128) -> Self {
         Self {
-            id: Ulid(u128::from_be_bytes(v.try_into().unwrap())),
+            id: Ulid(v),
         }
     }
 
