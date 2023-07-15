@@ -1,6 +1,6 @@
 create table sandbox_users
 (
-    id    uuid not null
+    id    text not null
         constraint sandbox_users_pk
             primary key,
     email text  not null

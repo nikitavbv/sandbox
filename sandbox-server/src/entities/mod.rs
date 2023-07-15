@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use ulid::Ulid;
 
 pub struct Task {
@@ -49,9 +51,9 @@ pub struct UserId {
 }
 
 impl UserId {
-    pub fn from_u128(v: u128) -> Self {
+    pub fn from_string(id: String) -> Self {
         Self {
-            id: Ulid(v),
+            id: Ulid::from_str(&id).unwrap(),
         }
     }
 

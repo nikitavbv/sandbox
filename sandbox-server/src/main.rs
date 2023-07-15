@@ -1,9 +1,7 @@
 use {
     tracing::info,
     sandbox_common::utils::{init_logging, load_config},
-    crate::{
-        server::run_server,
-    },
+    crate::server::run_server,
 };
 
 pub mod entities;
