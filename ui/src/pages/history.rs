@@ -18,10 +18,6 @@ pub struct HistoryEntryProps {
 pub fn history_page() -> Html {
     let navigator = use_navigator().unwrap();
     
-    let return_home = Callback::from(move |_| {
-        navigator.push(&Route::Home);
-    });
-
     let client = Arc::new(Mutex::new(client()));
     let state = use_state(|| None::<Vec<Task>>);
     let state_setter = state.setter();
@@ -48,7 +44,6 @@ pub fn history_page() -> Html {
 
     html!(
         <div>
-            <button onclick={return_home}>{"home"}</button>
             <h1>{"history"}</h1>
             { tasks }
         </div>

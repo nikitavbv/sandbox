@@ -97,10 +97,6 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         }
     }, (props.task_id.clone(), state.as_ref().and_then(|v| v.status.clone())));
 
-    let return_home = Callback::from(move |_| {
-        navigator.push(&Route::Home);
-    });
-
     let rendered = match &*state {
         None => html!(<div>{"loading task status..."}</div>),
         Some(v) => {
@@ -120,8 +116,6 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
     html!(
         <div>
-            <button onclick={return_home}>{"home"}</button>
-            <h1>{"image generation"}</h1>
             { rendered }
         </div>
     )

@@ -20,4 +20,5 @@ serde = "1.0.163"
 gloo-storage = "0.2.2"
 gloo-timers = "0.2.6"
 form_urlencoded = "1.2.0"
+stylist = {  version = "0.12.1", features = ["yew_integration"] }
 rpc = { path = "../rpc", features = ["client"] }

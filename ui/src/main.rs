@@ -10,6 +10,7 @@ use {
     wasm_bindgen::JsCast,
     urlencoding::encode,
     gloo_storage::{Storage, LocalStorage},
+    stylist::{style, yew::styled_component},
     rpc::{
         sandbox_service_client::SandboxServiceClient,
         CreateTaskRequest,
@@ -92,15 +93,19 @@ impl Reducible for ModelState {
     }
 }
 
-#[function_component(App)]
+#[styled_component(App)]
 fn app() -> Html {
-    info!("application started");
+    let style = style!(r#"
+        padding: 24px;
+    "#).unwrap();
 
     html!(
         <div>
-            <Header />
             <BrowserRouter>
-                <Switch<Route> render={router_switch} />
+                <Header />
+                <main class={style}>
+                    <Switch<Route> render={router_switch} />
+                </main>
             </BrowserRouter>
         </div>
     )
