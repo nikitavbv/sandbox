@@ -1,3 +1,5 @@
+use ulid::Ulid;
+
 pub struct Task {
     pub id: TaskId,
     pub prompt: String,
@@ -40,4 +42,20 @@ pub enum TaskStatus {
         total_steps: u32,
     },
     Finished,
+}
+
+pub struct UserId {
+    id: Ulid,
+}
+
+impl UserId {
+    pub fn from_vec(v: Vec<u8>) -> Self {
+        Self {
+            id: Ulid(u128::from_be_bytes(v.try_into().unwrap())),
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        self.id.to_string()
+    }
 }

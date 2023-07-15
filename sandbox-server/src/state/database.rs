@@ -4,7 +4,8 @@ use {
     config::Config,
     serde::{Serialize, Deserialize},
     s3::{Bucket, creds::Credentials, region::Region},
-    crate::entities::{TaskId, TaskStatus, Task},
+    ulid::Ulid,
+    crate::entities::{TaskId, TaskStatus, Task, UserId},
 };
 
 struct PersistedTask {
@@ -21,6 +22,10 @@ enum PersistedTaskStatus {
         total_steps: u32,
     },
     Finished,
+}
+
+struct PersistedUserId {
+    id: Vec<u8>,
 }
 
 pub struct Database {
@@ -140,5 +145,19 @@ impl Database {
     pub async fn get_generated_image(&self, task_id: &TaskId) -> Vec<u8> {
         let key = format!("output/images/{}", task_id.as_str());
         self.bucket.get_object(&key).await.unwrap().to_vec()
+    }
+
+    pub async fn create_or_get_user_by_email(&self, email: &str) -> UserId {
+        let new_id = Ulid::new();
+
+        let user_id = sqlx::query_as!(PersistedUserId, r#"
+            with ins as (
+                insert into sandbox_users (id, email) values ($1, $2) on conflict do nothing returning id
+            )
+            select id as "id!" from ins
+            union all select id as "id!" from sandbox_users where email = $2 limit 1;
+        "#, &new_id.0.to_be_bytes(), email).fetch_one(&self.pool).await.unwrap();
+
+        UserId::from_vec(user_id.id)
     }
 }

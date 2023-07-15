@@ -23,7 +23,7 @@ use {
         OAuthLoginResponse,
     },
     crate::{
-        entities::{Task, TaskId, TaskStatus},
+        entities::{Task, TaskId, TaskStatus, UserId},
         state::database::Database,
     },
 };
@@ -45,7 +45,8 @@ struct OAuthCodeExchangeResponse {
 
 #[derive(Deserialize)]
 struct UserInfoResponse {
-    id: String,
+    #[serde(rename = "id")]
+    _id: String,
     email: String,
     name: String,
 }
@@ -70,12 +71,12 @@ impl SandboxServiceHandler {
         })
     }
 
-    fn issue_token(&self, id: &str, email: &str, name: &str) -> String {
+    fn issue_token(&self, id: &UserId, email: &str, name: &str) -> String {
         jsonwebtoken::encode(
             &jsonwebtoken::Header::new(Algorithm::RS384),
             &TokenClaims {
                 exp: (Utc::now().timestamp() as usize) + (7 * 24 * 60 * 60),
-                sub: format!("google:{}", id),
+                sub: id.to_string(),
                 email: email.to_owned(),
                 name: name.to_owned(),
             },
@@ -159,7 +160,9 @@ impl SandboxService for SandboxServiceHandler {
             }
         };
 
-        let token = self.issue_token(&res.id, &res.email, &res.name);
+        let user_id = self.database.create_or_get_user_by_email(&res.email).await;
+
+        let token = self.issue_token(&user_id, &res.email, &res.name);
         info!("issued token for {}", res.email);
 
         Ok(Response::new(OAuthLoginResponse { token }))
