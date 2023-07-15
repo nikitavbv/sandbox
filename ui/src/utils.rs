@@ -10,6 +10,8 @@ use {
         service::Interceptor,
         codegen::InterceptedService,
     },
+    stylist::Style,
+    yew::Classes,
     rpc::sandbox_service_client::SandboxServiceClient,
 };
 
@@ -56,5 +58,32 @@ impl Interceptor for AuthTokenSetterInterceptor {
             req.metadata_mut().insert("x-access-token", MetadataValue::try_from(token).unwrap());
         }
         Ok(req)
+    }
+}
+
+pub struct MultiClass {
+    classes: Vec<String>,
+}
+
+impl MultiClass {
+    pub fn new() -> Self {
+        Self {
+            classes: Vec::new(),
+        }
+    }
+
+    pub fn with(self, class: &Style) -> Self {
+        let mut classes = self.classes;
+        classes.push(class.get_class_name().to_owned());
+
+        Self {
+            classes,
+        }
+    }
+}
+
+impl From<MultiClass> for Classes {
+    fn from(value: MultiClass) -> Self {
+        value.classes.join(" ").into()
     }
 }

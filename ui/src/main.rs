@@ -190,14 +190,9 @@ fn home() -> Html {
         })
     };
 
-    let open_history = Callback::from(move |_| {
-        navigator.push(&Route::History);
-    });
-
     let account_ui = if token.is_some() {
         html!(
             <div>
-                <button onclick={open_history}>{"history"}</button>
                 <button onclick={logout}>{"logout"}</button>
             </div>
         )
