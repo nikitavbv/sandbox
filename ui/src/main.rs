@@ -159,7 +159,7 @@ fn router_component(props: &RouterComponentProps) -> Html {
     )
 }
 
-#[function_component(Home)]
+#[styled_component(Home)]
 fn home() -> Html {
     let navigator = use_navigator().unwrap();
     let state = use_reducer(ModelState::default);
@@ -205,11 +205,63 @@ fn home() -> Html {
         })
     };
 
+    let page_style = style!(r#"
+        margin: 0 auto;
+        width: 600px;
+    "#).unwrap();
+
+    let input_style = style!(r#"
+        padding: 8px;
+        font-size: 14pt;
+        border-radius: 5px;
+        border: 2px solid white;
+        outline: none;
+        width: 400px;
+        font-family: Inter;
+        transition: border-color 0.2s ease-out;
+  
+        :focus {
+            border: 2px solid #5695DC;
+        }
+    "#).unwrap();
+
+    let description_style = style!(r#"
+        width: 100%;
+        text-align: center;
+        user-select: none;
+        padding-bottom: 16px;
+        display: block;
+        font-size: 16pt;
+        line-height: 24pt;
+        color: white;
+    "#).unwrap();
+
+    let generate_image_button_style = style!(r#"
+        margin-left: 8px;
+        padding: 8px 14px;
+        font-size: 14pt;
+        background-color: #5695DC;
+        color: white;
+        border: 2px solid #5695DC;
+        border-radius: 5px;
+        font-family: Inter;
+        cursor: pointer;
+        width: 192px;
+        transition:
+            color 0.2s ease-out, 
+            background-color 0.2s ease-out;
+
+        :hover {
+            background-color: #F6F4F3;
+            color: #5695DC;
+        }
+    "#).unwrap();
+
     html!(
-        <div>
-            <h1>{"image generation"}</h1>
-            <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
-            <button onclick={run_inference}>{"run model"}</button>
+        <div class={page_style}>
+            <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
+            <input class={input_style} onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
+            <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
         </div>
     )
 }
