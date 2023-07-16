@@ -102,7 +102,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         text-align: center;
         font-size: 20pt;
         font-weight: 100;
-        padding-top: 200px;
+        padding-top: 240px;
     "#).unwrap();
 
     let image_style = style!(r#"
@@ -126,9 +126,10 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
         span {
             display: block;
-            padding: 12px 0;
+            padding: 20px 0 0 0;
             text-align: center;
             user-select: none;
+            line-height: 20pt;
         }
     "#).unwrap();
 
