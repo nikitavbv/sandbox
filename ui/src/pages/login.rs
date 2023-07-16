@@ -7,6 +7,7 @@ use {
     wasm_bindgen_futures::spawn_local,
     web_sys::window,
     rpc::OAuthLoginRequest,
+    stylist::{style, yew::styled_component},
     crate::utils::{Route, client},
 };
 
@@ -20,9 +21,16 @@ pub struct LoginProps {
     pub login: Callback<()>,
 }
 
-#[function_component(LoginPage)]
+#[styled_component(LoginPage)]
 pub fn login_page(props: &LoginProps) -> Html {
     let navigator = use_navigator().unwrap();
+
+    let style = style!(r#"
+        text-align: center;
+        font-size: 20pt;
+        font-weight: 100;
+        padding-top: 200px;
+    "#).unwrap();
 
     let client = Arc::new(Mutex::new(client()));
 
@@ -51,8 +59,8 @@ pub fn login_page(props: &LoginProps) -> Html {
     }, query.code.clone());
 
     html!(
-        <div>
-            {"please wait..."}
+        <div class={style}>
+            {"Logging you in to your account. Please wait..."}
         </div>
     )
 }
