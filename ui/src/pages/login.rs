@@ -15,8 +15,13 @@ struct LoginQuery {
     code: String,
 }
 
+#[derive(Properties, PartialEq)]
+pub struct LoginProps {
+    pub login: Callback<()>,
+}
+
 #[function_component(LoginPage)]
-pub fn login_page() -> Html {
+pub fn login_page(props: &LoginProps) -> Html {
     let navigator = use_navigator().unwrap();
 
     let client = Arc::new(Mutex::new(client()));
@@ -27,6 +32,7 @@ pub fn login_page() -> Html {
     };
     let query: LoginQuery = location.query().unwrap();
 
+    let login_callback = props.login.clone();
     use_effect_with_deps(move |code| {
         let code = code.clone();
 
@@ -39,8 +45,9 @@ pub fn login_page() -> Html {
             }).await.unwrap().into_inner();
 
             LocalStorage::set("access_token", res.token).unwrap();
+            login_callback.emit(());
             navigator.push(&Route::Home);
-        });      
+        });
     }, query.code.clone());
 
     html!(

@@ -95,29 +95,68 @@ impl Reducible for ModelState {
 
 #[styled_component(App)]
 fn app() -> Html {
-    let style = style!(r#"
-        padding: 24px;
-    "#).unwrap();
-
     html!(
         <div>
             <BrowserRouter>
-                <Header />
-                <main class={style}>
-                    <Switch<Route> render={router_switch} />
-                </main>
+                <Switch<Route> render={router_switch} />
             </BrowserRouter>
         </div>
     )
 }
 
 fn router_switch(route: Route) -> Html {
-    match route {
+    html!(<RouterComponent route={route} />)
+}
+
+#[derive(Properties, PartialEq)]
+struct RouterComponentProps {
+    route: Route,
+}
+
+#[function_component(RouterComponent)]
+fn router_component(props: &RouterComponentProps) -> Html {
+    let style = style!(r#"
+        padding: 24px;
+    "#).unwrap();
+
+    let is_logged_in = use_state(|| LocalStorage::get::<String>("access_token").is_ok());
+    let logout = {
+        let is_logged_in_setter = is_logged_in.setter();
+        
+        move |_| {
+            LocalStorage::delete("access_token");
+            is_logged_in_setter.set(false);
+        }
+    };
+    let login = {
+        let is_logged_in_setter = is_logged_in.setter();
+
+        move |_: ()| {
+            is_logged_in_setter.set(true);
+        }
+    };
+
+    let body = match &props.route {
         Route::Home => html!(<Home />),
-        Route::Login => html!(<LoginPage />),
-        Route::Task { id }=> html!(<TaskPage task_id={id} />),
+        Route::Login => html!(<LoginPage login={login} />),
+        Route::Task { id }=> html!(<TaskPage task_id={id.clone()} />),
         Route::History => html!(<HistoryPage />),
-    }
+    };
+
+    let header_component = if &Route::Login == &props.route {
+        html!()
+    } else {
+        html!(<Header is_logged_in={*is_logged_in} logout={logout} />)
+    };
+
+    html!(
+        <>
+            { header_component }      
+            <main class={style}>
+                { body }
+            </main>
+        </>
+    )
 }
 
 #[function_component(Home)]
@@ -166,43 +205,8 @@ fn home() -> Html {
         })
     };
 
-    let login = Callback::from(move |_| {
-        let redirect_uri = format!("{}/login", window().unwrap().location().origin().unwrap());
-
-        let mut query_params = HashMap::new();
-        query_params.insert("client_id", "916750455653-biu6q4c7llj7q1k14h3qaquktcdlkeo4.apps.googleusercontent.com".to_owned());
-        query_params.insert("response_type", "code".to_owned());
-        query_params.insert("scope", "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email".to_owned()); 
-
-        let query_string = form_urlencoded::Serializer::new("".to_owned())
-            .extend_pairs(query_params.iter())
-            .finish();
-
-        window().unwrap().location().set_href(&format!("https://accounts.google.com/o/oauth2/v2/auth?redirect_uri={}&{}", redirect_uri, query_string)).unwrap();
-    });
-
-    let logout = {
-        let token_setter = token.setter();
-        
-        Callback::from(move |_| {
-            LocalStorage::delete("access_token");
-            token_setter.set(None);
-        })
-    };
-
-    let account_ui = if token.is_some() {
-        html!(
-            <div>
-                <button onclick={logout}>{"logout"}</button>
-            </div>
-        )
-    } else {
-        html!(<button onclick={login}>{"login"}</button>)
-    };
-
     html!(
         <div>
-            { account_ui }      
             <h1>{"image generation"}</h1>
             <input onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt"}/>
             <button onclick={run_inference}>{"run model"}</button>
