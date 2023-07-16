@@ -219,6 +219,8 @@ fn home() -> Html {
         width: 400px;
         font-family: Inter;
         transition: border-color 0.2s ease-out;
+        background-color: white;
+        color: black;
   
         :focus {
             border: 2px solid #5695DC;
@@ -247,6 +249,7 @@ fn home() -> Html {
         font-family: Inter;
         cursor: pointer;
         width: 192px;
+        user-select: none;
         transition:
             color 0.2s ease-out, 
             background-color 0.2s ease-out;

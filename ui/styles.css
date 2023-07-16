@@ -50,6 +50,10 @@ table {
     box-sizing: border-box;
 }
 
+:root {
+	color-scheme: dark;
+}
+
 body {
     background-color: #191919;
     color: white;

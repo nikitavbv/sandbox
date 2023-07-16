@@ -5,8 +5,9 @@ use {
     yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
     gloo_timers::callback::Interval,
+    stylist::{style, yew::styled_component},
     rpc::{TaskId, Task, GetTaskRequest},
-    crate::utils::{client, Route},
+    crate::utils::{client, Route, MultiClass},
 };
 
 #[derive(Properties, PartialEq)]
@@ -14,7 +15,7 @@ pub struct TaskPageProps {
     pub task_id: String,
 }
 
-#[function_component(TaskPage)]
+#[styled_component(TaskPage)]
 pub fn task_page(props: &TaskPageProps) -> Html {
     let navigator = use_navigator().unwrap();
 
@@ -97,20 +98,77 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         }
     }, (props.task_id.clone(), state.as_ref().and_then(|v| v.status.clone())));
 
+    let loading_style = style!(r#"
+        text-align: center;
+        font-size: 20pt;
+        font-weight: 100;
+        padding-top: 200px;
+    "#).unwrap();
+
+    let image_style = style!(r#"
+        display: block;
+        margin: 0 auto;
+    "#).unwrap();
+
+    let image_placeholder_style = style!(r#"
+        width: 512px;
+        height: 512px;
+        border: 1px solid #CED0CE;
+        color: #CED0CE;
+        text-align: center;
+        line-height: 512px;
+        user-select: none;
+    "#).unwrap();
+
+    let status_style = style!(r#"
+        width: 512px;
+        margin: 0 auto;
+
+        span {
+            display: block;
+            padding: 12px 0;
+            text-align: center;
+            user-select: none;
+        }
+    "#).unwrap();
+
     let rendered = match &*state {
-        None => html!(<div>{"loading task status..."}</div>),
+        None => html!(<div class={loading_style}>{"loading task status..."}</div>),
         Some(v) => {
-            match &v.status {
-                Some(rpc::task::Status::PendingDetails(_)) => html!(<div>{"waiting for task to be picked by worker..."}</div>),
-                Some(rpc::task::Status::InProgressDetails(in_progress)) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
-                Some(rpc::task::Status::FinishedDetails(_)) => html!(
+            if v.status.is_none() {
+                return html!(<div class={loading_style}>{"loading task status..."}</div>);
+            }
+
+            let image = match v.status.as_ref().unwrap() {
+                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", v.id.as_ref().unwrap().id)} class={image_style} />),
+                _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &v.prompt }</div>),
+            };
+
+            let status = match v.status.as_ref().unwrap() {
+                rpc::task::Status::PendingDetails(_) => html!(<>
+                    <span>{"waiting for image generation task to be picked by worker..."}</span>
+                    <span>{"this normally takes a few seconds, but may be longer if multiple tasks are in queue"}</span>
+                </>),
+                _ => html!(),
+            };
+
+            /*match v.status.as_ref().unwrap() {
+                rpc::task::Status::PendingDetails(_) => html!(<div>{"waiting for task to be picked by worker..."}</div>),
+                rpc::task::Status::InProgressDetails(in_progress) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
+                rpc::task::Status::FinishedDetails(_) => html!(
                     <div>
                         <img src={format!("/v1/storage/{}", v.id.as_ref().unwrap().id)} style={"display: block;"} />
                         <p style="font-style: italic;">{ v.prompt.clone() }</p>
                     </div>
                 ),
-                None => html!(<div>{"refreshing task state..."}</div>),
-            }
+            }*/
+
+            html!(
+                <div>
+                    { image }
+                    <div class={status_style}>{ status }</div>
+                </div>
+            )
         }
     };
 
