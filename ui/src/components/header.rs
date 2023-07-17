@@ -66,7 +66,7 @@ pub fn header(props: &HeaderProps) -> Html {
     };
 
     let history_menu_entry = if props.is_logged_in {
-        html!(<span class={menu_entry_style.clone()} onclick={open_history}>{"history"}</span>)
+        html!(<span class={menu_entry_style.clone()} onclick={open_history}>{"tasks"}</span>)
     } else {
         html!()
     };

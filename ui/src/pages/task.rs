@@ -133,6 +133,35 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         }
     "#).unwrap();
 
+    let progress_bar_style = style!(r#"
+        width: 512px;
+        height: 24px;
+        border: 1px solid white;
+        margin-top: 20px;
+    "#).unwrap();
+    
+    let progress_bar_bar_style = style!(r#"
+        background-color: white;
+        height: 100%;
+
+        transition: width 0.4s linear;
+    "#).unwrap();
+
+    let progress_bar_text_style = style!(r#"
+        color: white;
+        mix-blend-mode: difference;
+        width: 512px;
+        text-align: center;
+        line-height: 24px;
+        vertical-align: middle;
+    "#).unwrap();
+
+    let prompt_info_style = style!(r#"
+        font-style: italic;
+        with: 512px;
+        text-algin: center;
+    "#).unwrap();
+
     let rendered = match &*state {
         None => html!(<div class={loading_style}>{"loading task status..."}</div>),
         Some(v) => {
@@ -150,19 +179,17 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                     <span>{"waiting for image generation task to be picked by worker..."}</span>
                     <span>{"this normally takes a few seconds, but may be longer if multiple tasks are in queue"}</span>
                 </>),
-                _ => html!(),
-            };
-
-            /*match v.status.as_ref().unwrap() {
-                rpc::task::Status::PendingDetails(_) => html!(<div>{"waiting for task to be picked by worker..."}</div>),
-                rpc::task::Status::InProgressDetails(in_progress) => html!(<div>{format!("task in progress: {}/{}", in_progress.current_step, in_progress.total_steps)}</div>),
-                rpc::task::Status::FinishedDetails(_) => html!(
-                    <div>
-                        <img src={format!("/v1/storage/{}", v.id.as_ref().unwrap().id)} style={"display: block;"} />
-                        <p style="font-style: italic;">{ v.prompt.clone() }</p>
+                rpc::task::Status::InProgressDetails(in_progress) => html!(<>
+                    <div class={progress_bar_style}>
+                        <div class={progress_bar_bar_style} style={format!("width: {}%;", (in_progress.current_step as f32) / (in_progress.total_steps as f32) * 100.0)}>
+                            <div class={progress_bar_text_style}>{format!("generating image: {}/{} steps", in_progress.current_step, in_progress.total_steps)}</div>
+                        </div>
                     </div>
-                ),
-            }*/
+                </>),
+                rpc::task::Status::FinishedDetails(_) => html!(<>
+                    <span class={prompt_info_style}>{ &v.prompt }</span>
+                </>),
+            };
 
             html!(
                 <div>

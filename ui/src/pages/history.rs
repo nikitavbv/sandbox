@@ -44,7 +44,6 @@ pub fn history_page() -> Html {
 
     html!(
         <div>
-            <h1>{"history"}</h1>
             { tasks }
         </div>
     )
