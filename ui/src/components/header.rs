@@ -10,6 +10,7 @@ use {
 
 #[derive(Properties, PartialEq)]
 pub struct HeaderProps {
+    pub current_route: Route,
     pub is_logged_in: bool,
     pub logout: Callback<()>,
 }
@@ -38,10 +39,15 @@ pub fn header(props: &HeaderProps) -> Html {
         cursor: pointer;
         height: 100%;
         display: inline-block;
+        transition: background-color 0.2s ease-out;
 
         :hover {
             background-color: #3D3D3D;
         }
+    "#).unwrap();
+
+    let active_menu_entry_style = style!(r#"
+        border-bottom: 2px solid #CED0CE;
     "#).unwrap();
 
     let login_ctl_style = style!(r#"
@@ -66,7 +72,14 @@ pub fn header(props: &HeaderProps) -> Html {
     };
 
     let history_menu_entry = if props.is_logged_in {
-        html!(<span class={menu_entry_style.clone()} onclick={open_history}>{"tasks"}</span>)
+        let style = MultiClass::new().with(&menu_entry_style);
+        let style = if props.current_route == Route::History {
+            style.with(&active_menu_entry_style)
+        } else {
+            style
+        };
+
+        html!(<span class={style} onclick={open_history}>{"tasks"}</span>)
     } else {
         html!()
     };

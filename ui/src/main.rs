@@ -146,7 +146,7 @@ fn router_component(props: &RouterComponentProps) -> Html {
     let header_component = if &Route::Login == &props.route {
         html!()
     } else {
-        html!(<Header is_logged_in={*is_logged_in} logout={logout} />)
+        html!(<Header current_route={props.route.clone()} is_logged_in={*is_logged_in} logout={logout} />)
     };
 
     html!(
