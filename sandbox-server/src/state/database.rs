@@ -71,7 +71,7 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1", user_id)
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap();
