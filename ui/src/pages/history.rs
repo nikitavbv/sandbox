@@ -3,6 +3,7 @@ use {
     yew::prelude::*,
     yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
+    stylist::{style, yew::styled_component},
     rpc::{self, Task, GetAllTasksRequest},
     crate::utils::{Route, client},
 };
@@ -14,10 +15,8 @@ pub struct HistoryEntryProps {
     finished: bool,
 }
 
-#[function_component(HistoryPage)]
+#[styled_component(HistoryPage)]
 pub fn history_page() -> Html {
-    let navigator = use_navigator().unwrap();
-    
     let client = Arc::new(Mutex::new(client()));
     let state = use_state(|| None::<Vec<Task>>);
     let state_setter = state.setter();
@@ -42,36 +41,75 @@ pub fn history_page() -> Html {
         ))
         .collect();
 
+    let header_style = style!(r#"
+        text-align: center;
+        font-size: 16pt;
+        margin-bottom: 16px;
+    "#).unwrap();
+
     html!(
         <div>
+            <h1 class={header_style}>{"All tasks"}</h1>
             { tasks }
         </div>
     )
 }
 
-#[function_component(HistoryEntry)]
+#[styled_component(HistoryEntry)]
 pub fn history_entry(props: &HistoryEntryProps) -> Html {
     let navigator = use_navigator().unwrap();
+    
+    let entry_style = style!(r#"
+        width: 512px;
+        margin: 0 auto;
+        border: 1px solid #CED0CE;
+        border-radius: 5px;
+        margin-top: 20px;
+        display: flex;
+    "#).unwrap();
+
+    let label_style = style!(r#"
+        display: inline-block;
+        margin: auto 0;
+        padding: 0 20px;
+    "#).unwrap();
+
+    let image_style = style!(r#"
+        width: 128px;
+        height: 128px;
+        background-color: #CED0CE;
+
+        img {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    "#).unwrap();
 
     let image = if props.finished {
-        html!(<img src={format!("/v1/storage/{}", props.id)} style={"width: 128px; height: 128px;"} />)
+        html!(
+            <div class={image_style}>
+                <img src={format!("/v1/storage/{}", props.id)} />
+            </div>
+        )
     } else {
         html!(<span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{"in progress..."}</span>)
     };
 
-    let open_task = {
+    /*let open_task = {
         let id = props.id.clone();
         let navigator = navigator.clone();
 
         Callback::from(move |_| {
             navigator.push(&Route::Task { id: id.clone() });
         })
-    };
+    };*/
 
     html!(
-        <div onclick={open_task} style={{"cursor: pointer;"}}>
-            <span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{props.prompt.clone()}</span>
+        <div class={entry_style}>
             { image }
+            <span class={label_style}>{props.prompt.clone()}</span>
         </div>
     )
 }
