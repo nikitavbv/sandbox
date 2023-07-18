@@ -1,9 +1,11 @@
 use {
-    std::sync::{Arc, Mutex},
+    std::{sync::{Arc, Mutex}, time::Duration},
+    tracing::info,
     yew::prelude::*,
     yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
     stylist::{style, yew::styled_component},
+    timeago::Formatter,
     rpc::{self, Task, GetAllTasksRequest},
     crate::utils::{Route, client},
 };
@@ -13,6 +15,7 @@ pub struct HistoryEntryProps {
     id: String,
     prompt: String,
     finished: bool,
+    time_since: Duration,
 }
 
 #[styled_component(HistoryPage)]
@@ -37,7 +40,8 @@ pub fn history_page() -> Html {
         .map(|v| html!(<HistoryEntry 
             id={v.id.as_ref().unwrap().id.clone()} 
             prompt={v.prompt.clone()}
-            finished={is_finished(v)} />
+            finished={is_finished(v)} 
+            time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)} />
         ))
         .collect();
 
@@ -72,12 +76,30 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
         display: inline-block;
         margin: auto 0;
         padding: 0 20px;
+        flex: 1;
+        text-align: center;
     "#).unwrap();
 
     let image_style = style!(r#"
         width: 128px;
         height: 128px;
         background-color: #CED0CE;
+        position: relative;
+
+        span {
+            position: absolute;
+            display: block;
+            left: 0;
+            right: 0;
+            line-height: 128px;
+            text-align: center;
+        }
+
+        img {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
 
         img {
             top: 0;
@@ -87,29 +109,82 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
         }
     "#).unwrap();
 
+    let in_progress_style = style!(r#"
+        width: 128px; 
+        height: 128px; 
+        display: inline-block; 
+        vertical-align: middle; 
+        text-align: center;
+        border-right: 1px solid #CED0CE;
+        user-select: none;
+        line-height: 128px;
+    "#).unwrap();
+
+    let controls_style = style!(r#"
+        width: 128px;
+        height: 128px;
+        display: flex;
+        align-items: center;
+
+        button {
+            margin: auto;
+            display: block;
+            padding: 8px 14px;
+            font-size: 12pt;
+            background-color: #5695DC;
+            color: white;
+            border: 2px solid #5695DC;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            transition:
+                color 0.2s ease-out, 
+                background-color 0.2s ease-out;
+        }
+
+        button:hover {
+            background-color: #F6F4F3;
+            color: #5695DC;
+        }
+    "#).unwrap();
+
+    let task_timestamp_style = style!(r#"
+        display: block;
+        margin-top: 12px;
+        color: #CED0CE;
+        font-size: 10pt;
+    "#).unwrap();
+
     let image = if props.finished {
         html!(
             <div class={image_style}>
+                <span>{"loading..."}</span>
                 <img src={format!("/v1/storage/{}", props.id)} />
             </div>
         )
     } else {
-        html!(<span style={{"width: 128px; height: 128px; display: inline-block; vertical-align: middle; text-align: center;"}}>{"in progress..."}</span>)
+        html!(<span class={in_progress_style}>{"in progress..."}</span>)
     };
 
-    /*let open_task = {
+    let open_task = {
         let id = props.id.clone();
         let navigator = navigator.clone();
 
         Callback::from(move |_| {
             navigator.push(&Route::Task { id: id.clone() });
         })
-    };*/
+    };
 
     html!(
         <div class={entry_style}>
             { image }
-            <span class={label_style}>{props.prompt.clone()}</span>
+            <div class={label_style}>
+                <span>{props.prompt.clone()}</span>
+                <span class={task_timestamp_style}>{Formatter::new().convert(props.time_since)}</span>
+            </div>
+            <div class={controls_style}>
+                <button onclick={open_task}>{"open"}</button>
+            </div>
         </div>
     )
 }

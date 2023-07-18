@@ -21,4 +21,6 @@ gloo-storage = "0.2.2"
 gloo-timers = "0.2.6"
 form_urlencoded = "1.2.0"
 stylist = {  version = "0.12.1", features = ["yew_integration"] }
+timeago = "0.4.1"
+web-time = "0.2.0"
 rpc = { path = "../rpc", features = ["client"] }
