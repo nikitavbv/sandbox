@@ -1,10 +1,11 @@
 use {
     anyhow::Result,
-    sqlx::postgres::PgPoolOptions,
+    sqlx::{postgres::PgPoolOptions,types::time::OffsetDateTime},
     config::Config,
     serde::{Serialize, Deserialize},
     s3::{Bucket, creds::Credentials, region::Region},
     ulid::Ulid,
+    chrono::{NaiveDateTime, DateTime, Utc},
     crate::entities::{TaskId, TaskStatus, Task, UserId},
 };
 
@@ -12,6 +13,7 @@ struct PersistedTask {
     id: String,
     prompt: String,
     status: sqlx::types::JsonValue,
+    created_at: OffsetDateTime,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -71,7 +73,7 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap();
@@ -86,7 +88,7 @@ impl Database {
     }
 
     pub async fn get_task(&self, id: &TaskId) -> Task {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where task_id = $1", id.as_str())
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where task_id = $1", id.as_str())
             .fetch_one(&self.pool)
             .await
             .unwrap();
@@ -95,7 +97,7 @@ impl Database {
     }
 
     pub async fn get_any_new_task(&self) -> Option<Task> {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status from sandbox_tasks where is_pending = true limit 1")
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
             .await
             .unwrap()?;
@@ -111,10 +113,14 @@ impl Database {
             PersistedTaskStatus::Finished => TaskStatus::Finished,
         };
 
+        let created_at = NaiveDateTime::from_timestamp_opt(task.created_at.unix_timestamp(), 0).unwrap();
+        let created_at = DateTime::from_utc(created_at, Utc);
+
         Task {
             id,
             prompt: task.prompt,
             status,
+            created_at,
         }
     }
 

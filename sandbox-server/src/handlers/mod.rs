@@ -1,3 +1,5 @@
+use chrono::Timelike;
+
 use {
     std::sync::Arc,
     tracing::{info, error},
@@ -7,6 +9,7 @@ use {
     chrono::Utc,
     jsonwebtoken::{EncodingKey, DecodingKey, Validation, Algorithm},
     rand::distributions::{Alphanumeric, Distribution},
+    prost_types::Timestamp,
     rpc::{
         sandbox_service_server::SandboxService,
         GetTaskToRunRequest,
@@ -92,6 +95,10 @@ impl SandboxServiceHandler {
         rpc::Task {
             prompt: task.prompt,
             id: Some(rpc::TaskId::from(task.id)),
+            created_at: Some(Timestamp {
+                seconds: task.created_at.timestamp(),
+                nanos: task.created_at.nanosecond() as i32,
+            }),
             status: match task.status {
                 TaskStatus::Pending => Some(rpc::task::Status::PendingDetails(rpc::PendingTaskDetails {})),
                 TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {

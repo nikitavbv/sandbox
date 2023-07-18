@@ -1,11 +1,14 @@
-use std::str::FromStr;
-
-use ulid::Ulid;
+use {
+    std::str::FromStr,
+    ulid::Ulid,
+    chrono::{DateTime, Utc},
+};
 
 pub struct Task {
     pub id: TaskId,
     pub prompt: String,
     pub status: TaskStatus,
+    pub created_at: DateTime<Utc>,
 }
 
 pub struct TaskId {

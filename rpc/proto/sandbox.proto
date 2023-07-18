@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package sandbox;
 
+import "google/protobuf/timestamp.proto";
+
 service SandboxService {
     // for ui
     rpc OAuthLogin(OAuthLoginRequest) returns (OAuthLoginResponse) {}
@@ -22,6 +24,7 @@ message TaskId {
 message Task {
     TaskId id = 4;
     string prompt = 1;
+    google.protobuf.Timestamp created_at = 6;
 
     oneof status {
         PendingTaskDetails pending_details = 5;
