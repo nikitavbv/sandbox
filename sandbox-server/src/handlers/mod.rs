@@ -1,13 +1,11 @@
-use chrono::Timelike;
-
 use {
     std::sync::Arc,
     tracing::{info, error},
     tonic::{Status, Request, Response},
     serde::{Serialize, Deserialize},
     anyhow::Result,
-    chrono::Utc,
-    jsonwebtoken::{EncodingKey, DecodingKey, Validation, Algorithm},
+    chrono::{Utc, Timelike},
+    jsonwebtoken::{EncodingKey, DecodingKey, Validation, Algorithm, errors::ErrorKind as JwtErrorKind},
     rand::distributions::{Alphanumeric, Distribution},
     prost_types::Timestamp,
     rpc::{
@@ -54,6 +52,12 @@ struct UserInfoResponse {
     name: String,
 }
 
+enum TokenDecodeResult {
+    Token(String),
+    TokenExpired,
+    DecodeError(String),
+}
+
 pub struct SandboxServiceHandler {
     database: Arc<Database>,
 
@@ -87,8 +91,14 @@ impl SandboxServiceHandler {
         ).unwrap()
     }
 
-    fn decode_token(&self, token: &str) -> String {
-        jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
+    fn decode_token(&self, token: &str) -> TokenDecodeResult {
+        match jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)) {
+            Ok(v) => TokenDecodeResult::Token(v.claims.sub),
+            Err(err) => match err.kind() {
+                JwtErrorKind::ExpiredSignature => TokenDecodeResult::TokenExpired,
+                other => TokenDecodeResult::DecodeError(format!("{:?}", other)),   
+            }
+        }
     }
 
     fn task_to_rpc_task(&self, task: Task, assets: Vec<AssetId>) -> rpc::Task {
@@ -184,6 +194,18 @@ impl SandboxService for SandboxServiceHandler {
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v));
 
+        let user_id = match user_id {
+            Some(v) => match v {
+                TokenDecodeResult::Token(t) => Some(t),
+                TokenDecodeResult::DecodeError(err) => {
+                    error!("error while decoding token: {:?}", err);
+                    return Err(Status::internal("internal server error"));
+                },
+                TokenDecodeResult::TokenExpired => return Err(Status::unauthenticated("token expired")),
+            },
+            None => None,
+        };
+
         let req = req.into_inner();
 
         let task_id = generate_task_id();
@@ -209,7 +231,14 @@ impl SandboxService for SandboxServiceHandler {
         let user_id = match headers.get("x-access-token")
             .map(|v| v.to_str().unwrap().to_owned())
             .map(|v| self.decode_token(&v)) {
-            Some(v) => v,
+            Some(v) => match v {
+                TokenDecodeResult::Token(t) => t,
+                TokenDecodeResult::DecodeError(err) => {
+                    error!("error while decoding token: {:?}", err);
+                    return Err(Status::internal("internal server error"));
+                },
+                TokenDecodeResult::TokenExpired => return Err(Status::unauthenticated("token expired")),
+            },
             None => return Err(Status::unauthenticated("unauthenticated")),
         };
 
