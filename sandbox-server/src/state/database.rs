@@ -6,7 +6,7 @@ use {
     s3::{Bucket, creds::Credentials, region::Region},
     ulid::Ulid,
     chrono::{NaiveDateTime, DateTime, Utc},
-    crate::entities::{TaskId, TaskStatus, Task, UserId},
+    crate::entities::{TaskId, TaskStatus, Task, UserId, AssetId},
 };
 
 struct PersistedTask {
@@ -27,6 +27,10 @@ enum PersistedTaskStatus {
 }
 
 struct PersistedUserId {
+    id: String,
+}
+
+struct PersistedAssetId {
     id: String,
 }
 
@@ -143,8 +147,10 @@ impl Database {
             .await
             .unwrap();
 
+        let asset_id = self.create_task_asset(id.as_str()).await;
+
         if let Some(image) = image {
-            self.bucket.put_object(&format!("output/images/{}", id.as_str()), &image).await.unwrap();
+            self.bucket.put_object(&format!("output/images/{}", asset_id.to_string()), &image).await.unwrap();
         }
     }
 
@@ -165,5 +171,23 @@ impl Database {
         "#, new_id.to_string(), email).fetch_one(&self.pool).await.unwrap();
 
         UserId::from_string(user_id.id)
+    }
+
+    pub async fn create_task_asset(&self, task_id: &str) -> AssetId {
+        let asset_id = Ulid::new();
+
+        sqlx::query!("insert into sandbox_task_assets (task_id, asset_id) values ($1, $2)", task_id, asset_id.to_string()).execute(&self.pool).await.unwrap();
+
+        AssetId::from_string(asset_id.to_string())
+    }
+
+    pub async fn get_task_assets(&self, task_id: &TaskId) -> Vec<AssetId> {
+        sqlx::query_as!(PersistedAssetId, "select asset_id as id from sandbox_task_assets where task_id = $1", task_id.as_str())
+            .fetch_all(&self.pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|v| AssetId::from_string(v.id))
+            .collect()
     }
 }

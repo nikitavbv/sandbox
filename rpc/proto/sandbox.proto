@@ -21,6 +21,10 @@ message TaskId {
     string id = 1;
 }
 
+message TaskAsset {
+    string id = 1;
+}
+
 message Task {
     TaskId id = 4;
     string prompt = 1;
@@ -31,6 +35,8 @@ message Task {
         InProgressTaskDetails in_progress_details = 2;
         FinishedTaskDetails finished_details = 3;
     }
+
+    repeated TaskAsset assets = 7;
 }
 
 message PendingTaskDetails {

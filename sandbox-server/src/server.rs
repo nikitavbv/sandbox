@@ -13,7 +13,7 @@ use {
         FILE_DESCRIPTOR_SET,
     },
     crate::{
-        handlers::{SandboxServiceHandler, rest::{rest_router}},
+        handlers::{SandboxServiceHandler, rest::rest_router},
         state::database::Database,
     },
 };

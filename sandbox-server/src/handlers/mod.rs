@@ -26,7 +26,7 @@ use {
         OAuthLoginResponse,
     },
     crate::{
-        entities::{Task, TaskId, TaskStatus, UserId},
+        entities::{Task, TaskId, TaskStatus, UserId, AssetId},
         state::database::Database,
     },
 };
@@ -91,7 +91,7 @@ impl SandboxServiceHandler {
         jsonwebtoken::decode::<TokenClaims>(token, &self.token_decoding_key, &Validation::new(Algorithm::RS384)).unwrap().claims.sub
     }
 
-    fn task_to_rpc_task(&self, task: Task) -> rpc::Task {
+    fn task_to_rpc_task(&self, task: Task, assets: Vec<AssetId>) -> rpc::Task {
         rpc::Task {
             prompt: task.prompt,
             id: Some(rpc::TaskId::from(task.id)),
@@ -107,6 +107,9 @@ impl SandboxServiceHandler {
                 })),
                 TaskStatus::Finished => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {})),
             },
+            assets: assets.into_iter().map(|v| rpc::TaskAsset {
+                id: v.to_string(),
+            }).collect(),
         }
     }
 }
@@ -194,9 +197,10 @@ impl SandboxService for SandboxServiceHandler {
     async fn get_task(&self, req: Request<GetTaskRequest>) -> Result<Response<GetTaskResponse>, Status> {
         let task_id = TaskId::from(req.into_inner().id.unwrap());
         let task = self.database.get_task(&task_id).await;
+        let assets = self.database.get_task_assets(&task_id).await;
 
         Ok(Response::new(GetTaskResponse {
-            task: Some(self.task_to_rpc_task(task)),
+            task: Some(self.task_to_rpc_task(task, assets)),
         }))
     }
 
@@ -209,8 +213,15 @@ impl SandboxService for SandboxServiceHandler {
             None => return Err(Status::unauthenticated("unauthenticated")),
         };
 
-        let tasks = self.database.get_user_tasks(&user_id).await.into_iter().map(|v| self.task_to_rpc_task(v)).collect();
-        Ok(Response::new(GetAllTasksResponse { tasks }))
+        let tasks = self.database.get_user_tasks(&user_id).await;
+        let mut rpc_tasks = Vec::new();
+
+        for task in tasks {
+            let assets = self.database.get_task_assets(&task.id).await;
+            rpc_tasks.push(self.task_to_rpc_task(task, assets));
+        }
+        
+        Ok(Response::new(GetAllTasksResponse { tasks: rpc_tasks }))
     }
 
     async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {

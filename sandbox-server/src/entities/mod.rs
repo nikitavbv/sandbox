@@ -64,3 +64,19 @@ impl UserId {
         self.id.to_string()
     }
 }
+
+pub struct AssetId {
+    id: Ulid,
+}
+
+impl AssetId {
+    pub fn from_string(id: String) -> Self {
+        Self {
+            id: Ulid::from_str(&id).unwrap(),
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        self.id.to_string()
+    }
+}
