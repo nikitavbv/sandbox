@@ -147,9 +147,8 @@ impl Database {
             .await
             .unwrap();
 
-        let asset_id = self.create_task_asset(id.as_str()).await;
-
         if let Some(image) = image {
+            let asset_id = self.create_task_asset(id.as_str()).await;
             self.bucket.put_object(&format!("output/images/{}", asset_id.to_string()), &image).await.unwrap();
         }
     }

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: sandbox
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.311
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.313
         ports:
         - containerPort: 8080
           protocol: TCP
