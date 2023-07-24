@@ -17,6 +17,7 @@ pub struct HistoryEntryProps {
     prompt: String,
     finished: bool,
     time_since: Duration,
+    cover_asset_id: Option<String>,
 }
 
 #[styled_component(HistoryPage)]
@@ -37,6 +38,7 @@ pub fn history_page() -> Html {
                 Err(err) => match err.code() {
                     Code::Unauthenticated => {
                         navigator.push(&Route::Login);
+                        return;
                     },
                     other => panic!("error while getting all tasks: {:?}", other),
                 },
@@ -45,15 +47,29 @@ pub fn history_page() -> Html {
         })
     }, [None::<String>]);
 
-    let tasks: Vec<_> = state.iter()
-        .flat_map(|v| v.iter())
-        .map(|v| html!(<HistoryEntry 
-            id={v.id.as_ref().unwrap().id.clone()} 
-            prompt={v.prompt.clone()}
-            finished={is_finished(v)} 
-            time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)} />
-        ))
-        .collect();
+    let loading_style = style!(r#"
+        text-align: center;
+        font-size: 14pt;
+        margin: 0 auto;
+        display: block;
+    "#).unwrap();
+
+    let tasks = if state.is_some() {
+        let tasks: Vec<_> = state.iter()
+            .flat_map(|v| v.iter())
+            .map(|v| html!(<HistoryEntry 
+                id={v.id.as_ref().unwrap().id.clone()} 
+                prompt={v.prompt.clone()}
+                finished={is_finished(v)}
+                time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)}
+                cover_asset_id={v.assets.get(0).map(|v| v.id.clone())} />
+            ))
+            .collect();
+
+        html!(<>{ tasks }</>)
+    } else {
+        html!(<span class={loading_style}>{"Loading..."}</span>)
+    };
 
     let header_style = style!(r#"
         text-align: center;
@@ -165,11 +181,11 @@ pub fn history_entry(props: &HistoryEntryProps) -> Html {
         font-size: 10pt;
     "#).unwrap();
 
-    let image = if props.finished {
+    let image = if let Some(asset_id) = props.cover_asset_id.as_ref() {
         html!(
             <div class={image_style}>
                 <span>{"loading..."}</span>
-                <img src={format!("/v1/storage/{}", props.id)} />
+                <img src={format!("/v1/storage/{}", asset_id)} />
             </div>
         )
     } else {
