@@ -5,7 +5,7 @@ use {
     yew_router::prelude::*,
     gloo_storage::{Storage, LocalStorage},
     web_sys::window,
-    crate::utils::{Route, MultiClass},
+    crate::utils::{Route, MultiClass, start_oauth_flow},
 };
 
 #[derive(Properties, PartialEq)]
@@ -84,20 +84,7 @@ pub fn header(props: &HeaderProps) -> Html {
         html!()
     };
 
-    let login = Callback::from(move |_| {
-        let redirect_uri = format!("{}/login", window().unwrap().location().origin().unwrap());
-
-        let mut query_params = HashMap::new();
-        query_params.insert("client_id", "916750455653-biu6q4c7llj7q1k14h3qaquktcdlkeo4.apps.googleusercontent.com".to_owned());
-        query_params.insert("response_type", "code".to_owned());
-        query_params.insert("scope", "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email".to_owned()); 
-
-        let query_string = form_urlencoded::Serializer::new("".to_owned())
-            .extend_pairs(query_params.iter())
-            .finish();
-
-        window().unwrap().location().set_href(&format!("https://accounts.google.com/o/oauth2/v2/auth?redirect_uri={}&{}", redirect_uri, query_string)).unwrap();
-    });
+    let login = Callback::from(move |_| start_oauth_flow());
 
     let login_menu_entry = if props.is_logged_in {
         html!()

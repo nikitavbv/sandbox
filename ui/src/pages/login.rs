@@ -8,12 +8,12 @@ use {
     web_sys::window,
     rpc::OAuthLoginRequest,
     stylist::{style, yew::styled_component},
-    crate::utils::{Route, client},
+    crate::utils::{Route, client, start_oauth_flow},
 };
 
 #[derive(Deserialize, Debug)]
 struct LoginQuery {
-    code: String,
+    code: Option<String>,
 }
 
 #[derive(Properties, PartialEq)]
@@ -41,21 +41,26 @@ pub fn login_page(props: &LoginProps) -> Html {
     let query: LoginQuery = location.query().unwrap();
 
     let login_callback = props.login.clone();
+
     use_effect_with_deps(move |code| {
         let code = code.clone();
 
-        spawn_local(async move {
-            let mut client = client.lock().unwrap();
+        if let Some(code) = code {
+            spawn_local(async move {
+                let mut client = client.lock().unwrap();
 
-            let res = client.o_auth_login(OAuthLoginRequest {
-                code: code.to_owned(),
-                redirect_uri: format!("{}/login", window().unwrap().location().origin().unwrap()),
-            }).await.unwrap().into_inner();
+                let res = client.o_auth_login(OAuthLoginRequest {
+                    code: code.to_owned(),
+                    redirect_uri: format!("{}/login", window().unwrap().location().origin().unwrap()),
+                }).await.unwrap().into_inner();
 
-            LocalStorage::set("access_token", res.token).unwrap();
-            login_callback.emit(());
-            navigator.push(&Route::Home);
-        });
+                LocalStorage::set("access_token", res.token).unwrap();
+                login_callback.emit(());
+                navigator.push(&Route::Home);
+            });
+        } else {
+            start_oauth_flow();
+        }
     }, query.code.clone());
 
     html!(

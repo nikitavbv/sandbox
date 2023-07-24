@@ -7,7 +7,7 @@ use {
         response::Response,
         extract::Path,
         routing::get, 
-        http::header::{CONTENT_TYPE, HeaderValue}, 
+        http::{StatusCode, header::{CONTENT_TYPE, HeaderValue}}, 
         body::Body,
     },
     crate::{
@@ -29,7 +29,14 @@ pub fn rest_router(database: Arc<Database>, encoding_key: jsonwebtoken::Encoding
 }
 
 async fn serve_asset(Extension(database): Extension<Arc<Database>>, Path(asset_id): Path<AssetID>) -> Response<Body> {
-    let body = database.get_generated_image(&TaskId::new(asset_id.asset_id)).await;
+    let body = match database.get_generated_image(&TaskId::new(asset_id.asset_id)).await {
+        Some(v) => v,
+        None => {
+            let mut res = Response::new(Body::from("not_found"));
+            *res.status_mut() = StatusCode::NOT_FOUND;
+            return res;
+        }
+    };
 
     let mut res = Response::new(Body::from(body));
     res.headers_mut().insert(CONTENT_TYPE, HeaderValue::from_static("image/png"));

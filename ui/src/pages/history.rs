@@ -6,6 +6,7 @@ use {
     wasm_bindgen_futures::spawn_local,
     stylist::{style, yew::styled_component},
     timeago::Formatter,
+    tonic::Code,
     rpc::{self, Task, GetAllTasksRequest},
     crate::utils::{Route, client},
 };
@@ -20,6 +21,7 @@ pub struct HistoryEntryProps {
 
 #[styled_component(HistoryPage)]
 pub fn history_page() -> Html {
+    let navigator = use_navigator().unwrap();
     let client = Arc::new(Mutex::new(client()));
     let state = use_state(|| None::<Vec<Task>>);
     let state_setter = state.setter();
@@ -30,7 +32,15 @@ pub fn history_page() -> Html {
 
         spawn_local(async move {
             let mut client = client.lock().unwrap();
-            let tasks = client.get_all_tasks(GetAllTasksRequest {}).await.unwrap().into_inner();
+            let tasks = match client.get_all_tasks(GetAllTasksRequest {}).await {
+                Ok(v) => v.into_inner(),
+                Err(err) => match err.code() {
+                    Code::Unauthenticated => {
+                        navigator.push(&Route::Login);
+                    },
+                    other => panic!("error while getting all tasks: {:?}", other),
+                },
+            };
             state_setter.set(Some(tasks.tasks));
         })
     }, [None::<String>]);

@@ -3,7 +3,7 @@ use {
     sqlx::{postgres::PgPoolOptions,types::time::OffsetDateTime},
     config::Config,
     serde::{Serialize, Deserialize},
-    s3::{Bucket, creds::Credentials, region::Region},
+    s3::{Bucket, creds::Credentials, region::Region, error::S3Error},
     ulid::Ulid,
     chrono::{NaiveDateTime, DateTime, Utc},
     crate::entities::{TaskId, TaskStatus, Task, UserId, AssetId},
@@ -153,9 +153,17 @@ impl Database {
         }
     }
 
-    pub async fn get_generated_image(&self, task_id: &TaskId) -> Vec<u8> {
-        let key = format!("output/images/{}", task_id.as_str());
-        self.bucket.get_object(&key).await.unwrap().to_vec()
+    pub async fn get_generated_image(&self, task_id: &TaskId) -> Option<Vec<u8>> {
+        match self.bucket.get_object(&format!("output/images/{}", task_id.as_str())).await {
+            Ok(v) => Some(v.to_vec()),
+            Err(err) => match err {
+                S3Error::HttpFailWithBody(code, _body) => match code {
+                    404 => None,
+                    other => panic!("failed to get generated image because of http error: {:?}", other),
+                },
+                other => panic!("failed to get generated image because of error: {:?}", other),
+            },
+        }
     }
 
     pub async fn create_or_get_user_by_email(&self, email: &str) -> UserId {
