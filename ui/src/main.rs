@@ -1,20 +1,14 @@
 use {
-    std::{sync::{Arc, Mutex}, rc::Rc, collections::HashMap},
-    tracing::info,
+    std::{sync::{Arc, Mutex}, rc::Rc},
     yew::prelude::*,
-    yew_router::{prelude::*, navigator},
-    tonic::{Request, Status},
+    yew_router::prelude::*,
     wasm_bindgen_futures::spawn_local,
     tracing_wasm::WASMLayerConfigBuilder,
-    web_sys::{EventTarget, HtmlInputElement, window},
+    web_sys::{EventTarget, HtmlInputElement},
     wasm_bindgen::JsCast,
-    urlencoding::encode,
     gloo_storage::{Storage, LocalStorage},
     stylist::{style, yew::styled_component},
-    rpc::{
-        sandbox_service_client::SandboxServiceClient,
-        CreateTaskRequest,
-    },
+    rpc::CreateTaskRequest,
     crate::{
         components::header::Header,
         pages::{
@@ -37,27 +31,10 @@ struct ImageGenerationParams {
     number_of_images_custom: bool,
 }
 
-#[derive(Clone, PartialEq)]
-enum InferenceResultData {
-    Text(String),
-    Image(Vec<u8>),
-}
-
-#[derive(Clone, PartialEq)]
-struct InferenceResult {
-    data: InferenceResultData,
-    worker: String,
-}
-
 enum ImageGenerationParamAction {
     UpdatePrompt(String),
     SelectNumberOfImagesOption(u32),
     SetCustomNumberOfImages(u32),
-}
-
-#[derive(Properties, PartialEq)]
-pub struct InferenceResultDisplayProps {
-    result: InferenceResult,
 }
 
 impl Default for ImageGenerationParams {
