@@ -31,10 +31,9 @@ pub mod pages;
 pub mod utils;
 
 #[derive(Clone)]
-struct ModelState {
-    inference_started: bool,
+struct ImageGenerationParams {
     prompt: String,
-    result: Option<InferenceResult>,
+    number_of_images: u32,
 }
 
 #[derive(Clone, PartialEq)]
@@ -49,10 +48,9 @@ struct InferenceResult {
     worker: String,
 }
 
-enum ModelAction {
+enum ImageGenerationParamAction {
     UpdatePrompt(String),
-    StartInference,
-    SetInferenceResult(InferenceResult),
+    UpdateNumberOfImages(u32),
 }
 
 #[derive(Properties, PartialEq)]
@@ -60,18 +58,17 @@ pub struct InferenceResultDisplayProps {
     result: InferenceResult,
 }
 
-impl Default for ModelState {
+impl Default for ImageGenerationParams {
     fn default() -> Self {
         Self {
-            inference_started: false,
             prompt: "".to_owned(),
-            result: None,
+            number_of_images: 1,
         }
     }
 }
 
-impl Reducible for ModelState {
-    type Action = ModelAction;
+impl Reducible for ImageGenerationParams {
+    type Action = ImageGenerationParamAction;
 
     fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
         match action {
@@ -79,16 +76,10 @@ impl Reducible for ModelState {
                 prompt,
                 ..(*self).clone()
             },
-            Self::Action::StartInference => Self {
-                inference_started: true,
-                result: None,
+            Self::Action::UpdateNumberOfImages(number_of_images) => Self {
+                number_of_images,
                 ..(*self).clone()
-            },
-            Self::Action::SetInferenceResult(result) => Self {
-                inference_started: false,
-                result: Some(result),
-                ..(*self).clone()
-            },
+            }
         }.into()
     }
 }
@@ -162,32 +153,31 @@ fn router_component(props: &RouterComponentProps) -> Html {
 #[styled_component(Home)]
 fn home() -> Html {
     let navigator = use_navigator().unwrap();
-    let state = use_reducer(ModelState::default);
+    let params = use_reducer(ImageGenerationParams::default);
     let token: UseStateHandle<Option<String>> = use_state(|| LocalStorage::get("access_token").ok());
     let client = Arc::new(Mutex::new(client_with_token((*token).clone())));
 
     let on_prompt_change = {
-        let state = state.clone();
+        let params = params.clone();
 
         Callback::from(move |e: Event| {
             let target: Option<EventTarget> = e.target();
             let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
             if let Some(input) = input {
-                state.dispatch(ModelAction::UpdatePrompt(input.value()));
+                params.dispatch(ImageGenerationParamAction::UpdatePrompt(input.value()));
             }
         })
     };
 
     let run_inference = {
-        let state = state.clone();
+        let params = params.clone();
         let client = client.clone();
         let navigator = navigator.clone();
 
-        let prompt = state.prompt.clone();
+        let prompt = params.prompt.clone();
 
         Callback::from(move |_| {
             let client = client.clone();
-            let state = state.clone();
             let navigator = navigator.clone();
 
             let prompt = prompt.clone();
@@ -284,25 +274,49 @@ fn home() -> Html {
             line-height: 32px;
             text-align: center;
             cursor: pointer;
+            transition: color 0.2s ease-out, background-color 0.2s ease-out;
+        }
+
+        div:first-child {
+            border-radius: 3px 0 0 3px;
         }
 
         div:last-child {
             border-right: 1px solid white;
+            border-radius: 0 3px 3px 0;
+        }
+
+        div:hover {
+            background-color: white;
+            color: black;
+        }
+
+        .selected {
+            background-color: white;
+            color: black;
         }
     "#).unwrap();
+
+    let number_of_images_options = [1, 5, 10];
+
+    let number_of_images_components = number_of_images_options
+        .into_iter()
+        .map(|v| html!(<div 
+            class={if v == params.number_of_images { "selected" } else { "" }}
+            onclick={
+                let params = params.clone();
+                Callback::from(move |_| { params.dispatch(ImageGenerationParamAction::UpdateNumberOfImages(v)) })
+            }>{v.to_string()}</div>))
+        .collect::<Vec<_>>();
 
     html!(
         <div class={page_style}>
             <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
-            <input class={input_style} onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
+            <input class={input_style} onchange={on_prompt_change} value={params.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
             <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
             <div class={option_row_style}>
                 <div class={option_name_style}>{"number of images"}</div>
-                <div class={option_selector_style}>
-                    <div>{"1"}</div>
-                    <div>{"5"}</div>
-                    <div>{"10"}</div>
-                </div>
+                <div class={option_selector_style}>{ number_of_images_components }</div>
             </div>
         </div>
     )
