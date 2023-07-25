@@ -34,6 +34,7 @@ pub mod utils;
 struct ImageGenerationParams {
     prompt: String,
     number_of_images: u32,
+    number_of_images_custom: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -50,7 +51,8 @@ struct InferenceResult {
 
 enum ImageGenerationParamAction {
     UpdatePrompt(String),
-    UpdateNumberOfImages(u32),
+    SelectNumberOfImagesOption(u32),
+    SetCustomNumberOfImages(u32),
 }
 
 #[derive(Properties, PartialEq)]
@@ -62,7 +64,8 @@ impl Default for ImageGenerationParams {
     fn default() -> Self {
         Self {
             prompt: "".to_owned(),
-            number_of_images: 1,
+            number_of_images: 4,
+            number_of_images_custom: true,
         }
     }
 }
@@ -76,8 +79,14 @@ impl Reducible for ImageGenerationParams {
                 prompt,
                 ..(*self).clone()
             },
-            Self::Action::UpdateNumberOfImages(number_of_images) => Self {
+            Self::Action::SelectNumberOfImagesOption(number_of_images) => Self {
                 number_of_images,
+                number_of_images_custom: false,
+                ..(*self).clone()
+            },
+            Self::Action::SetCustomNumberOfImages(number_of_images) => Self {
+                number_of_images,
+                number_of_images_custom: true,
                 ..(*self).clone()
             }
         }.into()
@@ -281,11 +290,6 @@ fn home() -> Html {
             border-radius: 3px 0 0 3px;
         }
 
-        div:last-child {
-            border-right: 1px solid white;
-            border-radius: 0 3px 3px 0;
-        }
-
         div:hover {
             background-color: white;
             color: black;
@@ -295,6 +299,15 @@ fn home() -> Html {
             background-color: white;
             color: black;
         }
+
+        input {
+            outline: none;
+            border-radius: 0 3px 3px 0;
+            border: 1px solid white;
+            width: 70px;
+            padding: 0 8px;
+            text-align: center;
+        }
     "#).unwrap();
 
     let number_of_images_options = [1, 5, 10];
@@ -302,12 +315,24 @@ fn home() -> Html {
     let number_of_images_components = number_of_images_options
         .into_iter()
         .map(|v| html!(<div 
-            class={if v == params.number_of_images { "selected" } else { "" }}
+            class={if v == params.number_of_images && !params.number_of_images_custom { "selected" } else { "" }}
             onclick={
                 let params = params.clone();
-                Callback::from(move |_| { params.dispatch(ImageGenerationParamAction::UpdateNumberOfImages(v)) })
+                move |_| { params.dispatch(ImageGenerationParamAction::SelectNumberOfImagesOption(v)) }
             }>{v.to_string()}</div>))
         .collect::<Vec<_>>();
+
+    let on_number_of_images_custom_change = {
+        let params = params.clone();
+        
+        move |e: Event| {
+            let target: Option<EventTarget> = e.target();
+            let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
+            if let Some(input) = input {
+                params.dispatch(ImageGenerationParamAction::SetCustomNumberOfImages(input.value().parse().unwrap()));
+            }
+        }
+    };
 
     html!(
         <div class={page_style}>
@@ -316,7 +341,10 @@ fn home() -> Html {
             <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
             <div class={option_row_style}>
                 <div class={option_name_style}>{"number of images"}</div>
-                <div class={option_selector_style}>{ number_of_images_components }</div>
+                <div class={option_selector_style}>
+                    { number_of_images_components }
+                    <input type="number" onchange={on_number_of_images_custom_change} value={if params.number_of_images_custom { Some(params.number_of_images.to_string()) } else { None }} />
+                </div>
             </div>
         </div>
     )
