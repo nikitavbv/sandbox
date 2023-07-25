@@ -64,8 +64,8 @@ impl Default for ImageGenerationParams {
     fn default() -> Self {
         Self {
             prompt: "".to_owned(),
-            number_of_images: 4,
-            number_of_images_custom: true,
+            number_of_images: 1,
+            number_of_images_custom: false,
         }
     }
 }
