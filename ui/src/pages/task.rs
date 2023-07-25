@@ -170,7 +170,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
             }
 
             let image = match v.status.as_ref().unwrap() {
-                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", v.id.as_ref().unwrap().id)} class={image_style} />),
+                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", v.assets.get(0).unwrap().id)} class={image_style} />),
                 _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &v.prompt }</div>),
             };
 
