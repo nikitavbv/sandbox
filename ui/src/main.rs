@@ -260,11 +260,50 @@ fn home() -> Html {
         }
     "#).unwrap();
 
+    let option_row_style = style!(r#"
+        display: flex;
+        margin-top: 16px;
+        height: 32px;
+    "#).unwrap();
+
+    let option_name_style = style!(r#"
+        flex: 1;
+        line-height: 32px;
+        user-select: none;
+    "#).unwrap();
+
+    let option_selector_style = style!(r#"
+        display: flex;
+
+        div {
+            border: 1px solid white;
+            border-right: 0px;
+            user-select: none;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        div:last-child {
+            border-right: 1px solid white;
+        }
+    "#).unwrap();
+
     html!(
         <div class={page_style}>
             <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
             <input class={input_style} onchange={on_prompt_change} value={state.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
             <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
+            <div class={option_row_style}>
+                <div class={option_name_style}>{"number of images"}</div>
+                <div class={option_selector_style}>
+                    <div>{"1"}</div>
+                    <div>{"5"}</div>
+                    <div>{"10"}</div>
+                </div>
+            </div>
         </div>
     )
 }
