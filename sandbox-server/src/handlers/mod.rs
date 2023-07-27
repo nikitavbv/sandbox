@@ -22,6 +22,8 @@ use {
         GetAllTasksResponse,
         OAuthLoginRequest,
         OAuthLoginResponse,
+        CreateTaskAssetRequest,
+        CreateTaskAssetResponse,
     },
     crate::{
         entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams},
@@ -279,6 +281,20 @@ impl SandboxService for SandboxServiceHandler {
                 prompt: v.prompt,
             }),
         }))
+    }
+
+    async fn create_task_asset(&self, req: Request<CreateTaskAssetRequest>) -> Result<Response<CreateTaskAssetResponse>, Status> {
+        let token = match extract_access_token(&req) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        if token != self.worker_token {
+            return Err(Status::unauthenticated("wrong_token"));
+        }
+
+        let req = req.into_inner();
+        // TODO: create task asset
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
