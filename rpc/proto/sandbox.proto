@@ -37,6 +37,7 @@ message Task {
     }
 
     repeated TaskAsset assets = 7;
+    TaskParams params = 8;
 }
 
 message PendingTaskDetails {
@@ -48,6 +49,11 @@ message InProgressTaskDetails {
 }
 
 message FinishedTaskDetails {
+}
+
+message TaskParams {
+    uint32 iterations = 1;
+    uint32 number_of_images = 2;
 }
 
 /* requests and responses */
@@ -63,7 +69,7 @@ message OAuthLoginResponse {
 message CreateTaskRequest {
     string prompt = 1;
 
-    uint32 iterations = 2;
+    TaskParams params = 2;
 }
 
 message CreateTaskResponse {

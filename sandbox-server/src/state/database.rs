@@ -6,7 +6,7 @@ use {
     s3::{Bucket, creds::Credentials, region::Region, error::S3Error},
     ulid::Ulid,
     chrono::{NaiveDateTime, DateTime, Utc},
-    crate::entities::{TaskId, TaskStatus, Task, UserId, AssetId},
+    crate::entities::{TaskId, TaskStatus, Task, UserId, AssetId, TaskParams},
 };
 
 struct PersistedTask {
@@ -14,6 +14,7 @@ struct PersistedTask {
     prompt: String,
     status: sqlx::types::JsonValue,
     created_at: OffsetDateTime,
+    params: Option<sqlx::types::JsonValue>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,6 +33,12 @@ struct PersistedUserId {
 
 struct PersistedAssetId {
     id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PersistedTaskParams {
+    iterations: u32,
+    number_of_images: u32,
 }
 
 pub struct Database {
@@ -63,13 +70,17 @@ impl Database {
         })
     }
 
-    pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, prompt: &str) {
+    pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, prompt: &str, params: &TaskParams) {
         sqlx::query!(
-            "insert into sandbox_tasks (user_id, task_id, prompt, is_pending, status) values ($1, $2, $3, true, $4)", 
+            "insert into sandbox_tasks (user_id, task_id, prompt, is_pending, status, params) values ($1, $2, $3, true, $4, $5)", 
             user_id, 
             id.as_str(),
             prompt,
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
+            serde_json::to_value(PersistedTaskParams {
+                iterations: params.iterations,
+                number_of_images: params.number_of_images,
+            }).unwrap(),
         )
             .execute(&self.pool)
             .await
@@ -77,7 +88,7 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at, params from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap();
@@ -92,7 +103,7 @@ impl Database {
     }
 
     pub async fn get_task(&self, id: &TaskId) -> Task {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where task_id = $1", id.as_str())
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at, params from sandbox_tasks where task_id = $1", id.as_str())
             .fetch_one(&self.pool)
             .await
             .unwrap();
@@ -101,7 +112,7 @@ impl Database {
     }
 
     pub async fn get_any_new_task(&self) -> Option<Task> {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at from sandbox_tasks where is_pending = true limit 1")
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, prompt, status, created_at, params from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
             .await
             .unwrap()?;
@@ -120,11 +131,20 @@ impl Database {
         let created_at = NaiveDateTime::from_timestamp_opt(task.created_at.unix_timestamp(), 0).unwrap();
         let created_at = DateTime::from_utc(created_at, Utc);
 
+        let params = task.params
+            .map(|v| serde_json::from_value::<PersistedTaskParams>(v).unwrap())
+            .map(|v| TaskParams {
+                iterations: v.iterations,
+                number_of_images: v.number_of_images,
+            })
+            .unwrap_or_default();
+
         Task {
             id,
             prompt: task.prompt,
             status,
             created_at,
+            params,
         }
     }
 

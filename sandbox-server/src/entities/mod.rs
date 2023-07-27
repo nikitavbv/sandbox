@@ -9,6 +9,7 @@ pub struct Task {
     pub prompt: String,
     pub status: TaskStatus,
     pub created_at: DateTime<Utc>,
+    pub params: TaskParams,
 }
 
 pub struct TaskId {
@@ -78,5 +79,19 @@ impl AssetId {
 
     pub fn to_string(&self) -> String {
         self.id.to_string()
+    }
+}
+
+pub struct TaskParams {
+    pub iterations: u32,
+    pub number_of_images: u32,
+}
+
+impl Default for TaskParams {
+    fn default() -> Self {
+        Self {
+            iterations: 20,
+            number_of_images: 1,
+        }
     }
 }

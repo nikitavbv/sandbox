@@ -24,7 +24,7 @@ use {
         OAuthLoginResponse,
     },
     crate::{
-        entities::{Task, TaskId, TaskStatus, UserId, AssetId},
+        entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams},
         state::database::Database,
     },
 };
@@ -120,6 +120,10 @@ impl SandboxServiceHandler {
             assets: assets.into_iter().map(|v| rpc::TaskAsset {
                 id: v.to_string(),
             }).collect(),
+            params: Some(rpc::TaskParams {
+                iterations: task.params.iterations,
+                number_of_images: task.params.number_of_images,
+            }),
         }
     }
 }
@@ -209,7 +213,10 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
-        self.database.new_task(user_id, &task_id, &req.prompt).await;
+        self.database.new_task(user_id, &task_id, &req.prompt, &TaskParams {
+            iterations: req.params.as_ref().unwrap().iterations,
+            number_of_images: req.params.as_ref().unwrap().number_of_images,
+        }).await;
 
         Ok(Response::new(CreateTaskResponse {
             id: Some(rpc::TaskId::from(task_id)),
