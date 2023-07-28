@@ -148,7 +148,7 @@ impl Database {
         }
     }
 
-    pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus, image: Option<Vec<u8>>) {
+    pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
         let persisted_status = match status {
             TaskStatus::Pending => PersistedTaskStatus::Pending,
             TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: *total_steps },
@@ -166,11 +166,6 @@ impl Database {
             .execute(&self.pool)
             .await
             .unwrap();
-
-        if let Some(image) = image {
-            let asset_id = self.create_task_asset(id.as_str()).await;
-            self.bucket.put_object(&format!("output/images/{}", asset_id.to_string()), &image).await.unwrap();
-        }
     }
 
     pub async fn get_generated_image(&self, task_id: &TaskId) -> Option<Vec<u8>> {
@@ -200,10 +195,11 @@ impl Database {
         UserId::from_string(user_id.id)
     }
 
-    pub async fn create_task_asset(&self, task_id: &str) -> AssetId {
+    pub async fn create_task_asset(&self, task_id: &TaskId, data: Vec<u8>) -> AssetId {
         let asset_id = Ulid::new();
 
-        sqlx::query!("insert into sandbox_task_assets (task_id, asset_id) values ($1, $2)", task_id, asset_id.to_string()).execute(&self.pool).await.unwrap();
+        sqlx::query!("insert into sandbox_task_assets (task_id, asset_id) values ($1, $2)", task_id.as_str(), asset_id.to_string()).execute(&self.pool).await.unwrap();
+        self.bucket.put_object(&format!("output/images/{}", asset_id.to_string()), &data).await.unwrap();
 
         AssetId::from_string(asset_id.to_string())
     }

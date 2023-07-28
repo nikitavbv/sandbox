@@ -294,7 +294,11 @@ impl SandboxService for SandboxServiceHandler {
         }
 
         let req = req.into_inner();
-        // TODO: create task asset
+        let task_id = TaskId::from(req.task_id.unwrap());
+
+        self.database.create_task_asset(&task_id, req.image).await;
+
+        Ok(Response::new(CreateTaskAssetResponse {}))
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
@@ -315,7 +319,7 @@ impl SandboxService for SandboxServiceHandler {
 
         let task_id = TaskId::from(req.id.unwrap());
 
-        self.database.save_task_status(&task_id, &task_status, req.image).await;
+        self.database.save_task_status(&task_id, &task_status).await;
 
         Ok(Response::new(UpdateTaskStatusResponse {}))
     }
