@@ -6,7 +6,7 @@ use {
     wasm_bindgen_futures::spawn_local,
     gloo_timers::callback::Interval,
     stylist::{style, yew::styled_component},
-    rpc::{TaskId, Task, GetTaskRequest},
+    rpc::{TaskId, Task, TaskParams, GetTaskRequest, InProgressTaskDetails},
     crate::utils::{client, Route, MultiClass},
 };
 
@@ -122,7 +122,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
     let status_style = style!(r#"
         width: 512px;
-        margin: 0 auto;
+        margin: 0 auto 20px auto;
 
         span {
             display: block;
@@ -164,37 +164,37 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
     let rendered = match &*state {
         None => html!(<div class={loading_style}>{"loading task status..."}</div>),
-        Some(v) => {
-            if v.status.is_none() {
+        Some(task) => {
+            if task.status.is_none() {
                 return html!(<div class={loading_style}>{"loading task status..."}</div>);
             }
 
-            let image = match v.status.as_ref().unwrap() {
-                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", v.assets.get(0).unwrap().id)} class={image_style} />),
-                _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &v.prompt }</div>),
+            let image = match task.status.as_ref().unwrap() {
+                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", task.assets.get(0).unwrap().id)} class={image_style} />),
+                _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>),
             };
 
-            let status = match v.status.as_ref().unwrap() {
+            let status = match task.status.as_ref().unwrap() {
                 rpc::task::Status::PendingDetails(_) => html!(<>
                     <span>{"waiting for image generation task to be picked by worker..."}</span>
                     <span>{"this normally takes a few seconds, but may be longer if multiple tasks are in queue"}</span>
                 </>),
                 rpc::task::Status::InProgressDetails(in_progress) => html!(<>
                     <div class={progress_bar_style}>
-                        <div class={progress_bar_bar_style} style={format!("width: {}%;", (in_progress.current_step as f32) / (in_progress.total_steps as f32) * 100.0)}>
-                            <div class={progress_bar_text_style}>{format!("generating image: {}/{} steps", in_progress.current_step, in_progress.total_steps)}</div>
+                        <div class={progress_bar_bar_style} style={format!("width: {}%;", calculate_progress(task.params.as_ref(), in_progress) * 100.0)}>
+                            <div class={progress_bar_text_style}>{progress_text(task.params.as_ref(), in_progress)}</div>
                         </div>
                     </div>
                 </>),
                 rpc::task::Status::FinishedDetails(_) => html!(<>
-                    <span class={prompt_info_style}>{ &v.prompt }</span>
+                    <span class={prompt_info_style}>{ &task.prompt }</span>
                 </>),
             };
 
             html!(
                 <div>
-                    { image }
                     <div class={status_style}>{ status }</div>
+                    { image }
                 </div>
             )
         }
@@ -205,4 +205,21 @@ pub fn task_page(props: &TaskPageProps) -> Html {
             { rendered }
         </div>
     )
+}
+
+fn calculate_progress(params: Option<&TaskParams>, in_progress_details: &InProgressTaskDetails) -> f32 {
+    let steps_per_image = in_progress_details.total_steps as f32;
+    let total_steps = steps_per_image * (params.map(|v| v.number_of_images).unwrap_or(1) as f32);
+
+    (steps_per_image * in_progress_details.current_image as f32 + in_progress_details.current_step as f32) / total_steps
+}
+
+fn progress_text(params: Option<&TaskParams>, in_progress_details: &InProgressTaskDetails) -> String {
+    let total_images = params.map(|v| v.number_of_images).unwrap_or(1);
+
+    if total_images == 1 {
+        format!("generating image: {}/{} steps", in_progress_details.current_step, in_progress_details.total_steps)
+    } else {
+        format!("generating image {} out of {}", in_progress_details.current_image + 1, total_images)
+    }
 }
