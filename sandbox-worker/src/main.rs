@@ -100,16 +100,16 @@ async fn main() -> anyhow::Result<()> {
             let image = model.run(&prompt, tx.clone());
             info!("finished generating image");
             
-            client.lock().await.update_task_status(UpdateTaskStatusRequest {
-                id: Some(id.clone()),
-                task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
-            }).await.unwrap();
-
             client.lock().await.create_task_asset(CreateTaskAssetRequest {
                 task_id: Some(id.clone()),
                 image,
             }).await.unwrap();   
         }
+
+        client.lock().await.update_task_status(UpdateTaskStatusRequest {
+            id: Some(id.clone()),
+            task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
+        }).await.unwrap();
 
         info!("finished processing task");
     }
