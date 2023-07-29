@@ -69,7 +69,8 @@ async fn main() -> anyhow::Result<()> {
         let prompt = task.prompt;
         let id = task.id.unwrap();
     
-        info!("generating image for prompt: {}, task id: {}", prompt, id.id);
+        let total_images = task.params.unwrap().number_of_images;
+
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         {
             let id = id.clone();
@@ -92,19 +93,23 @@ async fn main() -> anyhow::Result<()> {
                 }
             });
         }
-        
-        let image = model.run(&prompt, tx);
-        info!("finished generating image");
-        
-        client.lock().await.update_task_status(UpdateTaskStatusRequest {
-            id: Some(id.clone()),
-            task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
-        }).await.unwrap();
 
-        client.lock().await.create_task_asset(CreateTaskAssetRequest {
-            task_id: Some(id.clone()),
-            image,
-        }).await.unwrap();
+        for image in 0..total_images {
+            info!("generating image ({}/{}) for prompt: {}, task id: {}", image + 1, total_images, prompt, id.id);
+        
+            let image = model.run(&prompt, tx.clone());
+            info!("finished generating image");
+            
+            client.lock().await.update_task_status(UpdateTaskStatusRequest {
+                id: Some(id.clone()),
+                task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
+            }).await.unwrap();
+
+            client.lock().await.create_task_asset(CreateTaskAssetRequest {
+                task_id: Some(id.clone()),
+                image,
+            }).await.unwrap();   
+        }
 
         info!("finished processing task");
     }
