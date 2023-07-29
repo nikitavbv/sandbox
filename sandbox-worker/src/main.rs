@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
         let prompt = task.prompt;
         let id = task.id.unwrap();
     
-        let total_images = task.params.unwrap().number_of_images;
+        let total_images = task.params.map(|v| v.number_of_images).unwrap_or(0);
 
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         {
