@@ -169,12 +169,10 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 return html!(<div class={loading_style}>{"loading task status..."}</div>);
             }
 
-            let image = match task.status.as_ref().unwrap() {
-                rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", task.assets.get(0).unwrap().id)} class={image_style} />),
-                _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>),
+            let image = match task.assets.get(0) {
+                Some(asset) => html!(<img src={format!("/v1/storage/{}", asset.id)} class={image_style} />),
+                None => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>),
             };
-
-            info!("task status: {:?}", task.status);
 
             let status = match task.status.as_ref().unwrap() {
                 rpc::task::Status::PendingDetails(_) => html!(<>
