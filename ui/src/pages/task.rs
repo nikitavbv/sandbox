@@ -1,5 +1,5 @@
 use {
-    std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}},
+    std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, rc::Rc},
     tracing::info,
     yew::prelude::*,
     yew_router::prelude::*,
@@ -15,27 +15,64 @@ pub struct TaskPageProps {
     pub task_id: String,
 }
 
+#[derive(Clone)]
+pub struct TaskState {
+    task: Option<Task>,
+    focused_asset: Option<String>,
+}
+
+pub enum TaskStateAction {
+    LoadTask(Task),
+    FocusOnAsset(String),
+}
+
+impl Default for TaskState {
+    fn default() -> Self {
+        Self {
+            task: None,
+            focused_asset: None,
+        }
+    }
+}
+
+impl Reducible for TaskState {
+    type Action = TaskStateAction;
+
+    fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
+        match action {
+            Self::Action::LoadTask(task) => Self {
+                task: Some(task),
+                ..(*self).clone()
+            },
+            Self::Action::FocusOnAsset(asset_id) => Self {
+                focused_asset: Some(asset_id),
+                ..(*self).clone()
+            }
+        }.into()
+    }
+}
+
 #[styled_component(TaskPage)]
 pub fn task_page(props: &TaskPageProps) -> Html {
     let navigator = use_navigator().unwrap();
 
     let client = Arc::new(Mutex::new(client()));
-    let state = use_state(|| None::<Task>);
-    let state_setter = state.setter();
+    let state = use_reducer(TaskState::default);
+    let state_dispatcher = state.dispatcher();
 
     {
         let client = client.clone();
-        let state_setter = state_setter.clone();
+        let state_dispatcher = state_dispatcher.clone();
 
         use_effect_with_deps(move |id| {
             let client = client.clone();
             let id = id.clone();
-            let state_setter = state_setter.clone();
+            let state_dispatcher = state_dispatcher.clone();
 
             {
                 let id = id.clone();
                 let client = client.clone();
-                let state_setter = state_setter.clone();
+                let state_dispatcher = state_dispatcher.clone();
 
                 spawn_local(async move {
                     let mut client = client.lock().unwrap();
@@ -46,7 +83,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                         }),
                     }).await.unwrap().into_inner();
 
-                    state_setter.set(res.task);
+                    state_dispatcher.dispatch(TaskStateAction::LoadTask(res.task.unwrap()));
                 });
             }
             
@@ -54,49 +91,53 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         }, props.task_id.clone());
     }
 
-    use_effect_with_deps(move |(task_id, status)| {
-        let mut interval = None;            
-        
-        if status.is_none() {
-            info!("no info about task yet");
-        } else if let Some(rpc::task::Status::FinishedDetails(_)) = status {
-            info!("task is finished");
-        } else {
-            info!("task is not finished yet");
+    {
+        let state_dispatcher = state_dispatcher.clone();
+
+        use_effect_with_deps(move |(task_id, status)| {
+            let mut interval = None;            
             
-            let refresh_in_progress = Arc::new(AtomicBool::new(false));
-            let id = task_id.clone();
-            let state_setter = state_setter.clone();
-
-            interval = Some(Interval::new(1000, move || {
-                let id = id.clone();
-                let client = client.clone();
-
-                if refresh_in_progress.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
-                    let refresh_in_progress = refresh_in_progress.clone();
-                    let state_setter = state_setter.clone();
-
-                    spawn_local(async move {
-                        let mut client = client.lock().unwrap();
-
-                        let res = client.get_task(GetTaskRequest {
-                            id: Some(TaskId { id }),
-                        }).await.unwrap().into_inner();
-                        
-                        state_setter.set(res.task);
-
-                        refresh_in_progress.store(false, Ordering::SeqCst);
-                    });
-                }
-            }));
-        }
-
-        move || {
-            if let Some(interval) = interval {
-                interval.cancel();
+            if status.is_none() {
+                info!("no info about task yet");
+            } else if let Some(rpc::task::Status::FinishedDetails(_)) = status {
+                info!("task is finished");
+            } else {
+                info!("task is not finished yet");
+                
+                let refresh_in_progress = Arc::new(AtomicBool::new(false));
+                let id = task_id.clone();
+                let state_dispatcher = state_dispatcher.clone();
+    
+                interval = Some(Interval::new(1000, move || {
+                    let id = id.clone();
+                    let client = client.clone();
+    
+                    if refresh_in_progress.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok() {
+                        let refresh_in_progress = refresh_in_progress.clone();
+                        let state_dispatcher = state_dispatcher.clone();
+    
+                        spawn_local(async move {
+                            let mut client = client.lock().unwrap();
+    
+                            let res = client.get_task(GetTaskRequest {
+                                id: Some(TaskId { id }),
+                            }).await.unwrap().into_inner();
+                            
+                            state_dispatcher.dispatch(TaskStateAction::LoadTask(res.task.unwrap()));
+    
+                            refresh_in_progress.store(false, Ordering::SeqCst);
+                        });
+                    }
+                }));
             }
-        }
-    }, (props.task_id.clone(), state.as_ref().and_then(|v| v.status.clone())));
+    
+            move || {
+                if let Some(interval) = interval {
+                    interval.cancel();
+                }
+            }
+        }, (props.task_id.clone(), state.task.as_ref().and_then(|v| v.status.clone())));
+    }
 
     let loading_style = style!(r#"
         text-align: center;
@@ -170,19 +211,30 @@ pub fn task_page(props: &TaskPageProps) -> Html {
             font-size: 20pt;
             text-align: center;
         }
+
+        div {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px 0;
+            justify-content: space-evenly;
+        }
+
+        div img {
+            width: 80px;
+            height: 80px;
+            margin: 0 8px 8px 0;
+            cursor: pointer;
+        }
     "#).unwrap();
 
-    let rendered = match &*state {
+    let selected_asset_style = style!("outline: 2px solid white;").unwrap();
+
+    let rendered = match &state.task {
         None => html!(<div class={loading_style}>{"loading task status..."}</div>),
         Some(task) => {
             if task.status.is_none() {
                 return html!(<div class={loading_style}>{"loading task status..."}</div>);
             }
-
-            let image = match task.assets.get(0) {
-                Some(asset) => html!(<img src={format!("/v1/storage/{}", asset.id)} class={image_style} />),
-                None => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>),
-            };
 
             let status = match task.status.as_ref().unwrap() {
                 rpc::task::Status::PendingDetails(_) => html!(<>
@@ -201,8 +253,29 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 </>),
             };
 
+            let image = if !task.assets.is_empty() {
+                let focused_asset_id = state.focused_asset.as_ref().cloned().unwrap_or(task.assets.get(0).unwrap().id.clone());
+                html!(<img src={format!("/v1/storage/{}", focused_asset_id)} class={image_style} />)
+            } else {
+                html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>)
+            };
+
             let all_images = if task.assets.len() > 1 {
-                let images = vec![html!()];
+                let focused_asset_id = state.focused_asset.as_ref().cloned().unwrap_or(task.assets.get(0).unwrap().id.clone());
+
+                let mut images = Vec::new();
+                let selected_asset_style_class = selected_asset_style.get_class_name().to_owned();
+
+                for asset in &task.assets {
+                    let state_dispatcher = state_dispatcher.clone();
+                    let asset_id = asset.id.clone();
+
+                    images.push(html!(<img 
+                        class={if focused_asset_id == asset_id { selected_asset_style_class.clone() } else { "".to_owned() }}
+                        draggable="false"
+                        src={format!("/v1/storage/{}", asset_id)} 
+                        onclick={Callback::from(move |_| state_dispatcher.dispatch(TaskStateAction::FocusOnAsset(asset_id.clone())))} />));
+                }
 
                 html!(
                     <div class={all_images_style}>
