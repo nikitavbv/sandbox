@@ -195,6 +195,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         text-align: center;
         line-height: 24px;
         vertical-align: middle;
+        user-select: none;
     "#).unwrap();
 
     let prompt_info_style = style!(r#"
