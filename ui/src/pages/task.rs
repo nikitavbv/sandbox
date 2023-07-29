@@ -162,6 +162,16 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         text-algin: center;
     "#).unwrap();
 
+    let all_images_style = style!(r#"
+        max-width: 600px;
+        margin: 20px auto 0 auto;
+
+        h1 {
+            font-size: 20pt;
+            text-align: center;
+        }
+    "#).unwrap();
+
     let rendered = match &*state {
         None => html!(<div class={loading_style}>{"loading task status..."}</div>),
         Some(task) => {
@@ -191,10 +201,24 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 </>),
             };
 
+            let all_images = if task.assets.len() > 1 {
+                let images = vec![html!()];
+
+                html!(
+                    <div class={all_images_style}>
+                        <h1>{"All images"}</h1>
+                        <div>{ images }</div>
+                    </div>
+                )
+            } else {
+                html!()
+            };
+
             html!(
                 <div>
                     <div class={status_style}>{ status }</div>
                     { image }
+                    { all_images }
                 </div>
             )
         }
