@@ -14,6 +14,7 @@ use {
         sandbox_service_client::SandboxServiceClient,
         GetTaskToRunRequest,
         UpdateTaskStatusRequest,
+        CreateTaskAssetRequest,
     },
     crate::{
         model::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
@@ -78,7 +79,6 @@ async fn main() -> anyhow::Result<()> {
                                     current_step,
                                     total_steps,
                                 })),
-                                image: None,
                             }).await.unwrap();
                         },
                     }
@@ -92,7 +92,11 @@ async fn main() -> anyhow::Result<()> {
         client.lock().await.update_task_status(UpdateTaskStatusRequest {
             id: Some(id.clone()),
             task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
-            image: Some(image),
+        }).await.unwrap();
+
+        client.lock().await.create_task_asset(CreateTaskAssetRequest {
+            task_id: Some(id.clone()),
+            image,
         }).await.unwrap();
 
         info!("finished processing task");
