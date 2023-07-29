@@ -9,6 +9,7 @@ use {
     rand::distributions::{Alphanumeric, Distribution},
     prost_types::Timestamp,
     rpc::{
+        self,
         sandbox_service_server::SandboxService,
         GetTaskToRunRequest,
         GetTaskToRunResponse,
@@ -279,6 +280,10 @@ impl SandboxService for SandboxServiceHandler {
             task_to_run: task_to_run.map(|v| rpc::get_task_to_run_response::TaskToRun {
                 id: Some(rpc::TaskId::from(v.id)),
                 prompt: v.prompt,
+                params: Some(rpc::TaskParams {
+                    iterations: v.params.iterations,
+                    number_of_images: v.params.number_of_images,
+                }),
             }),
         }))
     }

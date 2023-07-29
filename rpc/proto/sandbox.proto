@@ -99,6 +99,7 @@ message GetTaskToRunResponse {
     message TaskToRun {
         TaskId id = 1;
         string prompt = 2;
+        TaskParams params = 3;
     }
 
     optional TaskToRun task_to_run = 1;
