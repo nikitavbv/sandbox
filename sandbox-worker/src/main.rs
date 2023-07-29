@@ -77,15 +77,21 @@ async fn main() -> anyhow::Result<()> {
             let client = client.clone();
 
             tokio::spawn(async move {
+                let mut current_image = 0;
+
                 while let Some(update) = rx.recv().await {
                     match update {
                         ImageGenerationStatus::Finished => break,
+                        ImageGenerationStatus::StartedImageGeneration { current_image: i } => {
+                            current_image = i;
+                        }
                         ImageGenerationStatus::InProgress { current_step, total_steps } => {
                             client.lock().await.update_task_status(UpdateTaskStatusRequest {
                                 id: Some(id.clone()),
                                 task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails {
                                     current_step,
                                     total_steps,
+                                    current_image,
                                 })),
                             }).await.unwrap();
                         },
@@ -95,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         for image in 0..total_images {
+            tx.send(ImageGenerationStatus::StartedImageGeneration { current_image: image }).unwrap();
             info!("generating image ({}/{}) for prompt: {}, task id: {}", image + 1, total_images, prompt, id.id);
         
             let image = model.run(&prompt, tx.clone());

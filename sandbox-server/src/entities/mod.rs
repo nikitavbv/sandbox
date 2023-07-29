@@ -44,6 +44,7 @@ impl From<TaskId> for rpc::TaskId {
 pub enum TaskStatus {
     Pending,
     InProgress {
+        current_image: u32,
         current_step: u32,
         total_steps: u32,
     },

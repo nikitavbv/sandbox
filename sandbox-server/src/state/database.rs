@@ -23,6 +23,7 @@ enum PersistedTaskStatus {
     InProgress {
         current_step: u32,
         total_steps: u32,
+        current_image: Option<u32>,
     },
     Finished,
 }
@@ -124,7 +125,11 @@ impl Database {
         let id = TaskId::new(task.id);
         let status = match serde_json::from_value::<PersistedTaskStatus>(task.status).unwrap() {
             PersistedTaskStatus::Pending => TaskStatus::Pending,
-            PersistedTaskStatus::InProgress { current_step, total_steps } => TaskStatus::InProgress { current_step, total_steps },
+            PersistedTaskStatus::InProgress { current_step, total_steps, current_image } => TaskStatus::InProgress { 
+                current_step, 
+                total_steps, 
+                current_image: current_image.unwrap_or(0),
+            },
             PersistedTaskStatus::Finished => TaskStatus::Finished,
         };
 
@@ -151,7 +156,11 @@ impl Database {
     pub async fn save_task_status(&self, id: &TaskId, status: &TaskStatus) {
         let persisted_status = match status {
             TaskStatus::Pending => PersistedTaskStatus::Pending,
-            TaskStatus::InProgress { current_step, total_steps } => PersistedTaskStatus::InProgress { current_step: *current_step, total_steps: *total_steps },
+            TaskStatus::InProgress { current_step, total_steps, current_image } => PersistedTaskStatus::InProgress { 
+                current_step: *current_step, 
+                total_steps: *total_steps,
+                current_image: Some(*current_image),
+            },
             TaskStatus::Finished => PersistedTaskStatus::Finished,
         };
 

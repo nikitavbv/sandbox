@@ -47,6 +47,8 @@ message PendingTaskDetails {
 message InProgressTaskDetails {
     uint32 current_step = 1;
     uint32 total_steps = 2;
+    
+    uint32 current_image = 3;
 }
 
 message FinishedTaskDetails {

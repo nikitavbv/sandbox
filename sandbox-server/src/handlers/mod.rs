@@ -114,9 +114,10 @@ impl SandboxServiceHandler {
             }),
             status: match task.status {
                 TaskStatus::Pending => Some(rpc::task::Status::PendingDetails(rpc::PendingTaskDetails {})),
-                TaskStatus::InProgress { current_step, total_steps } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
+                TaskStatus::InProgress { current_step, total_steps, current_image } => Some(rpc::task::Status::InProgressDetails(rpc::InProgressTaskDetails {
                     current_step,
                     total_steps,
+                    current_image,
                 })),
                 TaskStatus::Finished => Some(rpc::task::Status::FinishedDetails(rpc::FinishedTaskDetails {})),
             },
@@ -318,7 +319,11 @@ impl SandboxService for SandboxServiceHandler {
 
         let req = req.into_inner();
         let task_status = match req.task_status.unwrap() {
-            rpc::update_task_status_request::TaskStatus::InProgress(in_progress) => TaskStatus::InProgress { current_step: in_progress.current_step, total_steps: in_progress.total_steps },
+            rpc::update_task_status_request::TaskStatus::InProgress(in_progress) => TaskStatus::InProgress { 
+                current_image: in_progress.current_image,
+                current_step: in_progress.current_step, 
+                total_steps: in_progress.total_steps,
+            },
             rpc::update_task_status_request::TaskStatus::Finished(_) => TaskStatus::Finished,
         };
 

@@ -23,6 +23,9 @@ struct ModelComponents {
 
 #[derive(Debug)]
 pub enum ImageGenerationStatus {
+    StartedImageGeneration {
+        current_image: u32,
+    },
     InProgress {
         current_step: u32,
         total_steps: u32,
