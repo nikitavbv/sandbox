@@ -86,14 +86,18 @@ async fn main() -> anyhow::Result<()> {
                             current_image = i;
                         }
                         ImageGenerationStatus::InProgress { current_step, total_steps } => {
-                            client.lock().await.update_task_status(UpdateTaskStatusRequest {
+                            let res = client.lock().await.update_task_status(UpdateTaskStatusRequest {
                                 id: Some(id.clone()),
                                 task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails {
                                     current_step,
                                     total_steps,
                                     current_image,
                                 })),
-                            }).await.unwrap();
+                            }).await;
+
+                            if let Err(err) = res {
+                                error!("failed to report task status: {:?}", err);
+                            }
                         },
                     }
                 }

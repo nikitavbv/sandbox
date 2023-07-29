@@ -17,7 +17,7 @@ struct PersistedTask {
     params: Option<sqlx::types::JsonValue>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 enum PersistedTaskStatus {
     Pending,
     InProgress {

@@ -126,7 +126,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
         span {
             display: block;
-            padding: 20px 0 0 0;
+            padding: 0;
             text-align: center;
             user-select: none;
             line-height: 20pt;
@@ -173,6 +173,8 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 rpc::task::Status::FinishedDetails(_) => html!(<img src={format!("/v1/storage/{}", task.assets.get(0).unwrap().id)} class={image_style} />),
                 _ => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>),
             };
+
+            info!("task status: {:?}", task.status);
 
             let status = match task.status.as_ref().unwrap() {
                 rpc::task::Status::PendingDetails(_) => html!(<>
