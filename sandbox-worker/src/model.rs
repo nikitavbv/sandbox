@@ -128,7 +128,6 @@ impl StableDiffusionImageGenerationModel {
         tch::vision::image::save(&image, &output_file).unwrap();
 
         let result = fs::read(output_file).unwrap();
-        updates_callback.send(ImageGenerationStatus::Finished).unwrap();
 
         result
     }

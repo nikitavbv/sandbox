@@ -106,6 +106,7 @@ async fn main() -> anyhow::Result<()> {
             }).await.unwrap();   
         }
 
+        tx.send(ImageGenerationStatus::Finished).unwrap();
         client.lock().await.update_task_status(UpdateTaskStatusRequest {
             id: Some(id.clone()),
             task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
