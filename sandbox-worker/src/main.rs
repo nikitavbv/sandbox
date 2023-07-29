@@ -1,6 +1,6 @@
 use {
     std::{time::Duration, sync::Arc},
-    tracing::info,
+    tracing::{info, error},
     tokio::{time::sleep, sync::Mutex},
     tonic::{
         service::Interceptor,
@@ -48,7 +48,14 @@ async fn main() -> anyhow::Result<()> {
     info!("model loaded");
 
     loop {
-        let res = client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await.unwrap().into_inner();
+        let res = match client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await {
+            Ok(v) => v.into_inner(),
+            Err(err) => {
+                error!("failed to request task to run: {:?}", err);
+                sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+        };
     
         let task = match res.task_to_run {
             Some(v) => v,
