@@ -8,7 +8,7 @@ use {
     wasm_bindgen::JsCast,
     gloo_storage::{Storage, LocalStorage},
     stylist::{style, yew::styled_component},
-    rpc::CreateTaskRequest,
+    rpc::{CreateTaskRequest, TaskParams},
     crate::{
         components::header::Header,
         pages::{
@@ -173,8 +173,10 @@ fn home() -> Html {
                 let mut client = client.lock().unwrap();
                 let res = client.create_task(CreateTaskRequest {
                     prompt,
-                    iterations: 20,
-                    number_of_images: params.number_of_images,
+                    params: Some(TaskParams {
+                        iterations: 20,
+                        number_of_images: params.number_of_images,
+                    }),
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
                     id: res.id.unwrap().id,
