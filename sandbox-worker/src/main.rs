@@ -17,12 +17,14 @@ use {
         CreateTaskAssetRequest,
     },
     crate::{
-        model::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
+        text_to_image::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
+        chat::LlamaChatModel,
         storage::Storage,
     },
 };
 
-pub mod model;
+pub mod chat;
+pub mod text_to_image;
 pub mod storage;
 
 #[tokio::main]
@@ -44,7 +46,9 @@ async fn main() -> anyhow::Result<()> {
     let storage = Storage::new(&config);
 
     info!("loading model");
-    let model = StableDiffusionImageGenerationModel::new(&storage).await;
+    let text_to_image_model = StableDiffusionImageGenerationModel::new(&storage).await; 
+    info!("text to image model loaded");
+    let chat_model = LlamaChatModel::new();
     info!("model loaded");
 
     loop {
@@ -108,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
             tx.send(ImageGenerationStatus::StartedImageGeneration { current_image: image }).unwrap();
             info!("generating image ({}/{}) for prompt: {}, task id: {}", image + 1, total_images, prompt, id.id);
         
-            let image = model.run(&prompt, tx.clone());
+            let image = text_to_image_model.run(&prompt, tx.clone());
             info!("finished generating image");
             
             client.lock().await.create_task_asset(CreateTaskAssetRequest {

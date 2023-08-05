@@ -33,3 +33,4 @@ This web app is built for learning and fun purposes. All components are written 
 Most of the heavy lifting is performed by these amazing libraries:
 - [tch-rs](https://github.com/LaurentMazare/tch-rs)
 - [diffusers-rs](https://github.com/LaurentMazare/diffusers-rs)
+- [llm](https://github.com/rustformers/llm)
