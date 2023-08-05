@@ -1,6 +1,7 @@
 <div align="center">
 
-[![preview of application](./docs/preview1.png)](https://sandbox.nikitavbv.com)
+<img src="./docs/preview1.png" width="200">
+<img src="./docs/preview2.png" width="200">
 
 </div>
 
