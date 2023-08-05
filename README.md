@@ -1,5 +1,7 @@
 <div align="center">
+
 [![preview of application](./docs/preview1.png)](https://sandbox.nikitavbv.com)
+
 </div>
 
 this is a sandbox to play with various ml models for learning and fun.
