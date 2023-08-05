@@ -19,10 +19,12 @@ This web app is built for learning and fun purposes. All components are written 
 
 - Generate images with Stable Diffusion v2.1
 
-# todos
+# TODOs
 
+- generate images using controlnet.
 - serve static frontend files from sandbox-server, so that you can run most of the app (without worker) with single `cargo run`.
-- enable caching for assets
+- enable caching for assets.
+- make "tasks" link in the header to be an actual link.
 
 # Acknowledgments
 
