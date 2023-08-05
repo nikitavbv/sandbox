@@ -23,10 +23,14 @@ This web app is built for learning and fun purposes. All components are written 
 
 - add "about" page.
 - generate images using controlnet.
+- chat with llama.
 - serve static frontend files from sandbox-server, so that you can run most of the app (without worker) with single `cargo run`.
+- simple self hosting.
 - enable caching for assets.
 - make "tasks" link in the header to be an actual link.
 - delete images and tasks.
+- button to generate X more images for task.
+- bidirectional streaming between worker and server.
 
 # Acknowledgments
 
