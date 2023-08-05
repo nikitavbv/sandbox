@@ -1,7 +1,7 @@
 <div align="center">
 
-<img src="./docs/preview1.png" width="200">
-<img src="./docs/preview2.png" width="200">
+<a href="https://sandbox.nikitavbv.com"><img src="./docs/preview1.png" width="500"></a>
+<a href="https://sandbox.nikitavbv.com/tasks/wkrnakbAKeP1re"><img src="./docs/preview2.png" width="500"></a>
 
 </div>
 
