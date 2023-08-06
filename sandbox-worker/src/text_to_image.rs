@@ -35,10 +35,10 @@ pub enum ImageGenerationStatus {
 
 impl ModelComponents {
     async fn new(data_resolver: &Storage, sd_config: &mut stable_diffusion::StableDiffusionConfig, device: Device) -> Self {
-        let vocab_file = data_resolver.load_model_file("bpe_simple_vocab_16e6.txt").await;
-        let clip_weights = data_resolver.load_model_file("clip_v2.1.ot").await;
-        let vae_weights = data_resolver.load_model_file("vae.ot").await;
-        let unet_weights = data_resolver.load_model_file("unet.ot").await;
+        let vocab_file = data_resolver.load_model_file("stable-diffusion", "bpe_simple_vocab_16e6.txt").await;
+        let clip_weights = data_resolver.load_model_file("stable-diffusion", "clip_v2.1.ot").await;
+        let vae_weights = data_resolver.load_model_file("stable-diffusion", "vae.ot").await;
+        let unet_weights = data_resolver.load_model_file("stable-diffusion", "unet.ot").await;
 
         let tokenizer = clip::Tokenizer::create(&vocab_file, &sd_config.clip).unwrap();
         let text_model = sd_config.build_clip_transformer(&clip_weights, device).unwrap();

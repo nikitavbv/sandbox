@@ -29,8 +29,9 @@ impl Storage {
         }
     }
 
-    pub async fn load_model_file(&self, file_name: &str) -> String {
-        let model_data_dir = Path::new("data/model/stable-diffusion");
+    pub async fn load_model_file(&self, model_name: &str, file_name: &str) -> String {
+        let model_data_dir = format!("data/model/{}", model_name);
+        let model_data_dir = Path::new(&model_data_dir);
         if !model_data_dir.exists() {
             fs::create_dir_all(&model_data_dir).unwrap();
         }
@@ -41,8 +42,7 @@ impl Storage {
             return file_path_str;
         }
 
-        let res = self.bucket.get_object(&format!("model/stable-diffusion/{}", file_name)).await.unwrap();
-        tokio::fs::write(file_path, res.as_slice()).await.unwrap();
+        self.bucket.get_object_to_writer(&format!("model/{}/{}", model_name, file_name), &mut tokio::fs::File::create(file_path).await.unwrap()).await.unwrap();
 
         file_path_str
     }

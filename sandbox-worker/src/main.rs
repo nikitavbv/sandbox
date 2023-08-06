@@ -45,11 +45,11 @@ async fn main() -> anyhow::Result<()> {
     
     let storage = Storage::new(&config);
 
-    info!("loading model");
+    info!("loading models");
     let text_to_image_model = StableDiffusionImageGenerationModel::new(&storage).await; 
     info!("text to image model loaded");
-    let chat_model = LlamaChatModel::new();
-    info!("model loaded");
+    let chat_model = LlamaChatModel::new(&storage).await;
+    info!("chat model loaded");
 
     loop {
         let res = match client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await {
