@@ -1,7 +1,10 @@
 use {
     std::{fs, path::Path},
+    tracing::info,
     s3::{Bucket, creds::Credentials, region::Region},
     config::Config,
+    tokio::io::AsyncWriteExt,
+    indicatif::ProgressBar,
 };
 
 pub struct Storage {
@@ -42,7 +45,28 @@ impl Storage {
             return file_path_str;
         }
 
-        self.bucket.get_object_to_writer(&format!("model/{}/{}", model_name, file_name), &mut tokio::fs::File::create(file_path).await.unwrap()).await.unwrap();
+        info!("downloading file \"{}\" for model {}", file_name, model_name);
+
+        let mut file = tokio::fs::File::create(file_path).await.unwrap();
+        
+        let key = format!("model/{}/{}", model_name, file_name);
+        let head = self.bucket.head_object(&key).await.unwrap();
+        let file_size = head.0.content_length.unwrap() as usize;
+
+        let progress = ProgressBar::new(file_size as u64);
+
+        let block_size = 10 * 1024 * 1024; // 10 megabytes
+        let mut i = 0;
+        while i < file_size {
+            let block = self.bucket.get_object_range(&key, i as u64, Some((i + block_size) as u64)).await.unwrap();
+            let block = block.as_slice();
+            i += block.len();
+            progress.inc(block.len() as u64);
+            file.write(block).await.unwrap();
+        }
+        progress.finish_and_clear();
+
+        info!("finished downloading file \"{}\"", file_name);
 
         file_path_str
     }
