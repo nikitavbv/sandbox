@@ -57,12 +57,13 @@ impl Storage {
 
         let block_size = 10 * 1024 * 1024; // 10 megabytes
         let mut i = 0;
+
         while i < file_size {
             let block = self.bucket.get_object_range(&key, i as u64, Some((i + block_size) as u64)).await.unwrap();
             let block = block.as_slice();
             i += block.len();
             progress.inc(block.len() as u64);
-            file.write(block).await.unwrap();
+            file.write_all(block).await.unwrap();
         }
         progress.finish_and_clear();
 
