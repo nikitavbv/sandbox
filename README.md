@@ -38,3 +38,4 @@ Most of the heavy lifting is performed by these amazing libraries:
 - [tch-rs](https://github.com/LaurentMazare/tch-rs)
 - [diffusers-rs](https://github.com/LaurentMazare/diffusers-rs)
 - [llm](https://github.com/rustformers/llm)
+- [candle](https://github.com/huggingface/candle)
