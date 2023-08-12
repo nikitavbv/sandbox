@@ -18,7 +18,7 @@ use {
     },
     crate::{
         stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
-        llama::LlamaChatModel,
+        llama::{LlamaChatModel, Message, Role},
         storage::Storage,
     },
 };
@@ -51,6 +51,9 @@ async fn main() -> anyhow::Result<()> {
     info!("text to image model loaded");
     let chat_model = LlamaChatModel::new(&storage).await;
     info!("chat model loaded");
+    /*chat_model.chat(vec![
+        Message::new(Role::User, "Hi! Should I pick Rust or Python if I am building an application that should be fast and resource efficient?".to_owned()),
+    ]);*/
 
     loop {
         let res = match client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await {

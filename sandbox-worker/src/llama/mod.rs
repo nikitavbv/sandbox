@@ -14,6 +14,17 @@ pub struct LlamaChatModel {
     tokenizer: Tokenizer,
 }
 
+pub enum Role {
+    User,
+    Assistant,
+    System,
+}
+
+pub struct Message {
+    role: Role,
+    text: String,
+}
+
 impl LlamaChatModel {
     pub async fn new(storage: &Storage) -> Self {
         let device = Device::Cpu;
@@ -44,19 +55,25 @@ impl LlamaChatModel {
         }
     }
 
-    pub fn chat(&self) {
-        let mut tokens = self.tokenizer
-            .encode("Hello my dear", true)
-            .unwrap()
-            .get_ids()
-            .to_vec();
+    pub fn chat(&self, messages: Vec<Message>) {
+        let mut tokens = Vec::new();
+
+        for message in &messages {
+            let mut message_tokens = self.tokenizer
+                .encode(format!("[INST] {} [/INST] ", message.text), true)
+                .unwrap()
+                .get_ids()
+                .to_vec();
+
+            tokens.append(&mut message_tokens);
+        }
 
         let mut logits_processor = LogitsProcessor::new(42, Some(0.6));
         let mut new_tokens = vec![];
         let device = Device::Cpu;
 
         let mut index_pos = 0;
-        for index in 0..10 {
+        for index in 0..100 {
             let context_size = if index > 0 {
                 1
             } else {
@@ -72,7 +89,16 @@ impl LlamaChatModel {
             tokens.push(next_token);
             new_tokens.push(next_token);
 
-            println!("{:?}", self.tokenizer.decode(vec![next_token], true).unwrap());
+            println!("{}", self.tokenizer.decode(vec![next_token], true).unwrap());
+        }
+    }
+}
+
+impl Message {
+    pub fn new(role: Role, message: String) -> Self {
+        Self {
+            role,
+            text: message
         }
     }
 }
