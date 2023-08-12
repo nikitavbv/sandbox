@@ -18,14 +18,14 @@ use {
     },
     crate::{
         stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
-        chat::LlamaChatModel,
+        llama::LlamaChatModel,
         storage::Storage,
     },
 };
 
 pub mod stable_diffusion;
 
-pub mod chat;
+pub mod llama;
 pub mod storage;
 
 #[tokio::main]

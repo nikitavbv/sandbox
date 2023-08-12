@@ -436,7 +436,7 @@ dependencies = [
 [[package]]
 name = "candle-core"
 version = "0.1.0"
-source = "git+https://github.com/huggingface/candle#0c3f109faa6ddc81d50c046fd2270cb5a2c353a7"
+source = "git+https://github.com/huggingface/candle#a0908d212c1e874d21d87f1587d8ff2394158740"
 dependencies = [
  "byteorder",
  "candle-gemm",
@@ -581,7 +581,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.1.0"
-source = "git+https://github.com/huggingface/candle#0c3f109faa6ddc81d50c046fd2270cb5a2c353a7"
+source = "git+https://github.com/huggingface/candle#a0908d212c1e874d21d87f1587d8ff2394158740"
 dependencies = [
  "candle-core",
  "safetensors",
