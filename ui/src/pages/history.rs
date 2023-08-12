@@ -59,7 +59,7 @@ pub fn history_page() -> Html {
             .flat_map(|v| v.iter())
             .map(|v| html!(<HistoryEntry 
                 id={v.id.as_ref().unwrap().id.clone()} 
-                prompt={v.prompt.clone()}
+                prompt={v.params.as_ref().unwrap().prompt.clone()}
                 finished={is_finished(v)}
                 time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)}
                 cover_asset_id={v.assets.get(0).map(|v| v.id.clone())} />

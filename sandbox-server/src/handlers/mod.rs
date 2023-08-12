@@ -106,7 +106,6 @@ impl SandboxServiceHandler {
 
     fn task_to_rpc_task(&self, task: Task, assets: Vec<AssetId>) -> rpc::Task {
         rpc::Task {
-            prompt: task.prompt,
             id: Some(rpc::TaskId::from(task.id)),
             created_at: Some(Timestamp {
                 seconds: task.created_at.timestamp(),
@@ -127,6 +126,7 @@ impl SandboxServiceHandler {
             params: Some(rpc::TaskParams {
                 iterations: task.params.iterations,
                 number_of_images: task.params.number_of_images,
+                prompt: task.prompt,
             }),
         }
     }
@@ -217,7 +217,7 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
-        self.database.new_task(user_id, &task_id, &req.prompt, &TaskParams {
+        self.database.new_task(user_id, &task_id, &req.params.as_ref().unwrap().prompt, &TaskParams {
             iterations: req.params.as_ref().unwrap().iterations,
             number_of_images: req.params.as_ref().unwrap().number_of_images,
         }).await;
@@ -280,10 +280,10 @@ impl SandboxService for SandboxServiceHandler {
         Ok(Response::new(GetTaskToRunResponse {
             task_to_run: task_to_run.map(|v| rpc::get_task_to_run_response::TaskToRun {
                 id: Some(rpc::TaskId::from(v.id)),
-                prompt: v.prompt,
                 params: Some(rpc::TaskParams {
                     iterations: v.params.iterations,
                     number_of_images: v.params.number_of_images,
+                    prompt: v.prompt,
                 }),
             }),
         }))

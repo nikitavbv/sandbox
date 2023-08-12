@@ -71,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
             }
         };
 
-        let prompt = task.prompt;
+        let prompt = task.params.as_ref().map(|v| v.prompt.clone()).unwrap_or("cute cat".to_owned());
         let id = task.id.unwrap();
     
         let total_images = task.params.map(|v| v.number_of_images).unwrap_or(0);

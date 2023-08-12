@@ -28,7 +28,6 @@ message TaskAsset {
 
 message Task {
     TaskId id = 4;
-    string prompt = 1;
     google.protobuf.Timestamp created_at = 6;
 
     oneof status {
@@ -57,6 +56,7 @@ message FinishedTaskDetails {
 message TaskParams {
     uint32 iterations = 1;
     uint32 number_of_images = 2;
+    string prompt = 3;
 }
 
 /* requests and responses */
@@ -70,8 +70,6 @@ message OAuthLoginResponse {
 }
 
 message CreateTaskRequest {
-    string prompt = 1;
-
     TaskParams params = 2;
 }
 
@@ -100,7 +98,6 @@ message GetTaskToRunRequest {
 message GetTaskToRunResponse {
     message TaskToRun {
         TaskId id = 1;
-        string prompt = 2;
         TaskParams params = 3;
     }
 

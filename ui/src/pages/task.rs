@@ -250,7 +250,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                     </div>
                 </>),
                 rpc::task::Status::FinishedDetails(_) => html!(<>
-                    <span class={prompt_info_style}>{ &task.prompt }</span>
+                    <span class={prompt_info_style}>{ &task.params.as_ref().unwrap().prompt }</span>
                 </>),
             };
 
@@ -258,7 +258,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                 let focused_asset_id = state.focused_asset.as_ref().cloned().unwrap_or(task.assets.get(0).unwrap().id.clone());
                 html!(<img src={format!("/v1/storage/{}", focused_asset_id)} class={image_style} />)
             } else {
-                html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.prompt }</div>)
+                html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.params.as_ref().unwrap().prompt }</div>)
             };
 
             let all_images = if task.assets.len() > 1 {

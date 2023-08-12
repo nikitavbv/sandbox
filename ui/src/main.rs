@@ -174,10 +174,10 @@ fn home() -> Html {
             spawn_local(async move {
                 let mut client = client.lock().unwrap();
                 let res = client.create_task(CreateTaskRequest {
-                    prompt,
                     params: Some(TaskParams {
                         iterations: 20,
                         number_of_images: params.number_of_images,
+                        prompt,
                     }),
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
