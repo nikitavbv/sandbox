@@ -40,6 +40,7 @@ struct PersistedAssetId {
 pub struct PersistedTaskParams {
     iterations: u32,
     number_of_images: u32,
+    prompt: Option<String>,
 }
 
 pub struct Database {
@@ -76,11 +77,12 @@ impl Database {
             "insert into sandbox_tasks (user_id, task_id, prompt, is_pending, status, params) values ($1, $2, $3, true, $4, $5)", 
             user_id, 
             id.as_str(),
-            prompt,
+            prompt.clone(),
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
             serde_json::to_value(PersistedTaskParams {
                 iterations: params.iterations,
                 number_of_images: params.number_of_images,
+                prompt: Some(prompt.to_owned()),
             }).unwrap(),
         )
             .execute(&self.pool)
