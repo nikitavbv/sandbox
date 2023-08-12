@@ -1,6 +1,7 @@
 use {
-    candle::{Device, DType},
+    candle::{Device, DType, Tensor},
     candle_nn::VarBuilder,
+    candle_transformers::generation::LogitsProcessor,
     tokenizers::Tokenizer,
     crate::storage::Storage,
     self::model::{Config, Cache, Llama},
@@ -9,7 +10,8 @@ use {
 mod model;
 
 pub struct LlamaChatModel {
-    //llama: Llama,
+    llama: Llama,
+    tokenizer: Tokenizer,
 }
 
 impl LlamaChatModel {
@@ -37,7 +39,40 @@ impl LlamaChatModel {
         let tokenizer = Tokenizer::from_file(tokenizer).unwrap();
 
         Self {
-            // llama,
+            llama,
+            tokenizer,
+        }
+    }
+
+    pub fn chat(&self) {
+        let mut tokens = self.tokenizer
+            .encode("Hello my dear", true)
+            .unwrap()
+            .get_ids()
+            .to_vec();
+
+        let mut logits_processor = LogitsProcessor::new(42, Some(0.6));
+        let mut new_tokens = vec![];
+        let device = Device::Cpu;
+
+        let mut index_pos = 0;
+        for index in 0..10 {
+            let context_size = if index > 0 {
+                1
+            } else {
+                tokens.len()
+            };
+            let ctxt = &tokens[tokens.len().saturating_sub(context_size)..];
+            let input = Tensor::new(ctxt, &device).unwrap().unsqueeze(0).unwrap();
+            let logits = self.llama.forward(&input, index_pos).unwrap();
+            let logits = logits.squeeze(0).unwrap();
+            index_pos += ctxt.len();
+
+            let next_token = logits_processor.sample(&logits).unwrap();
+            tokens.push(next_token);
+            new_tokens.push(next_token);
+
+            println!("{:?}", self.tokenizer.decode(vec![next_token], true).unwrap());
         }
     }
 }
