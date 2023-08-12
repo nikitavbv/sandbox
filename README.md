@@ -31,10 +31,8 @@ This web app is built for learning and fun purposes. All components are written 
 - delete images and tasks.
 - button to generate X more images for task.
 - bidirectional streaming between worker and server.
+- since worker does not have any external dependencies, all the code from it can be moved back into server crate.
 
 # Acknowledgments
 
-Most of the heavy lifting is performed by these amazing libraries:
-- [tch-rs](https://github.com/LaurentMazare/tch-rs)
-- [diffusers-rs](https://github.com/LaurentMazare/diffusers-rs)
-- [llm](https://github.com/rustformers/llm)
+Most of the heavy lifting is performed by [candle](https://github.com/huggingface/candle) (which is an amazing library) and code samples from candle examples.

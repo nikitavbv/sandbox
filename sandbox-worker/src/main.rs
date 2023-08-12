@@ -17,14 +17,15 @@ use {
         CreateTaskAssetRequest,
     },
     crate::{
-        text_to_image::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
+        stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
         chat::LlamaChatModel,
         storage::Storage,
     },
 };
 
+pub mod stable_diffusion;
+
 pub mod chat;
-pub mod text_to_image;
 pub mod storage;
 
 #[tokio::main]
