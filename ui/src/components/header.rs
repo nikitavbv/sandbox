@@ -84,6 +84,24 @@ pub fn header(props: &HeaderProps) -> Html {
         html!()
     };
 
+    let about_menu_entry = {
+        let style = MultiClass::new().with(&menu_entry_style);
+        let style = if props.current_route == Route::About {
+            style.with(&active_menu_entry_style)
+        } else {
+            style
+        };
+        
+        let open_about = {
+            let navigator = navigator.clone();
+            Callback::from(move |_| {
+                navigator.push(&Route::About);
+            })
+        };
+
+        html!(<span class={style} onclick={open_about}>{"about"}</span>)
+    };
+
     let login = Callback::from(move |_| start_oauth_flow());
 
     let login_menu_entry = if props.is_logged_in {
@@ -104,6 +122,7 @@ pub fn header(props: &HeaderProps) -> Html {
         <header class={style}>
             <span class={title_style} onclick={return_home}>{ "sandbox" }</span>
             { history_menu_entry }
+            { about_menu_entry }
             { login_menu_entry }
             { logout_menu_entry }
         </header>

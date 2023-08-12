@@ -28,6 +28,8 @@ pub enum Route {
     Task { id: String },
     #[at("/history")]
     History,
+    #[at("/about")]
+    About,
 }
 
 pub fn client() -> SandboxClient {

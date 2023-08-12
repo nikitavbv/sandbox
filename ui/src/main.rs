@@ -15,6 +15,7 @@ use {
             task::TaskPage,
             login::LoginPage,
             history::HistoryPage,
+            about::AboutPage,
         },
         utils::{client_with_token, Route},
     },
@@ -118,6 +119,7 @@ fn router_component(props: &RouterComponentProps) -> Html {
         Route::Login => html!(<LoginPage login={login} />),
         Route::Task { id }=> html!(<TaskPage task_id={id.clone()} />),
         Route::History => html!(<HistoryPage />),
+        Route::About => html!(<AboutPage />),
     };
 
     let header_component = if &Route::Login == &props.route {
