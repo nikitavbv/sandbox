@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
     let chat_model = LlamaChatModel::new(&storage).await;
     info!("chat model loaded");
     /*chat_model.chat(vec![
-        Message::new(Role::User, "Hi! Should I pick Rust or Python if I am building an application that should be fast and resource efficient?".to_owned()),
+        Message::new(Role::User, "Hi! What is chocolate made of?".to_owned()),
     ]);*/
 
     loop {

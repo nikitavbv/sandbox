@@ -14,12 +14,14 @@ pub struct LlamaChatModel {
     tokenizer: Tokenizer,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Role {
     User,
     Assistant,
     System,
 }
 
+#[derive(Debug)]
 pub struct Message {
     role: Role,
     text: String,
@@ -58,9 +60,22 @@ impl LlamaChatModel {
     pub fn chat(&self, messages: Vec<Message>) {
         let mut tokens = Vec::new();
 
-        for message in &messages {
+        for message in messages.chunks(2) {
+            if message[0].role != Role::User {
+                panic!("expected role of message to be User");
+            }
+            if message.len() > 1 && message[1].role != Role::Assistant{
+                panic!("expected role of message to be Assistant");
+            }
+
+            let prompt = if message.len() == 1 {
+                format!("[INST] {} [/INST] ", message[0].text)
+            } else {
+                format!("[INST] {} [/INST] {} ", message[0].text, message[1].text)
+            };
+
             let mut message_tokens = self.tokenizer
-                .encode(format!("[INST] {} [/INST] ", message.text), true)
+                .encode(prompt, true)
                 .unwrap()
                 .get_ids()
                 .to_vec();
@@ -73,7 +88,7 @@ impl LlamaChatModel {
         let device = Device::Cpu;
 
         let mut index_pos = 0;
-        for index in 0..100 {
+        for index in 0..200 {
             let context_size = if index > 0 {
                 1
             } else {
@@ -89,7 +104,7 @@ impl LlamaChatModel {
             tokens.push(next_token);
             new_tokens.push(next_token);
 
-            println!("{}", self.tokenizer.decode(vec![next_token], true).unwrap());
+            println!("{}", self.tokenizer.decode(new_tokens.clone(), false).unwrap());
         }
     }
 }
