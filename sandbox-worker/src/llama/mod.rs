@@ -57,7 +57,7 @@ impl LlamaChatModel {
         }
     }
 
-    pub fn chat(&self, messages: Vec<Message>) {
+    pub fn chat(&self, messages: Vec<Message>) -> Message {
         let mut tokens = Vec::new();
 
         for message in messages.chunks(2) {
@@ -83,12 +83,16 @@ impl LlamaChatModel {
             tokens.append(&mut message_tokens);
         }
 
+        let end_of_sequence = self.tokenizer.token_to_id("</s>").unwrap();
+
         let mut logits_processor = LogitsProcessor::new(42, Some(0.6));
         let mut new_tokens = vec![];
         let device = Device::Cpu;
 
         let mut index_pos = 0;
-        for index in 0..200 {
+        let max_tokens = 5000;
+        let mut index = 0;
+        while index < max_tokens {
             let context_size = if index > 0 {
                 1
             } else {
@@ -101,11 +105,20 @@ impl LlamaChatModel {
             index_pos += ctxt.len();
 
             let next_token = logits_processor.sample(&logits).unwrap();
+            if next_token == end_of_sequence {
+                println!("break because end of sequence");
+                break;
+            }
+
             tokens.push(next_token);
             new_tokens.push(next_token);
 
-            println!("{}", self.tokenizer.decode(new_tokens.clone(), false).unwrap());
+            println!("{} (last: {})", self.tokenizer.decode(new_tokens.clone(), false).unwrap(), next_token);
+
+            index += 1;
         }
+
+        Message::new(Role::Assistant, self.tokenizer.decode(new_tokens.clone(), true).unwrap())
     }
 }
 
