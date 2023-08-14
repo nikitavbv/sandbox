@@ -17,7 +17,7 @@ use {
         GetTaskToRunRequest,
         UpdateTaskStatusRequest,
         CreateTaskAssetRequest,
-        task_params::{Params, ImageGenerationParams},
+        task_params::{Params, ImageGenerationParams, ChatMessageGenerationParams},
         TaskId,
     },
     crate::{
@@ -55,9 +55,6 @@ async fn main() -> anyhow::Result<()> {
     info!("text to image model loaded");
     let chat_model = LlamaChatModel::new(&storage).await;
     info!("chat model loaded");
-    /*chat_model.chat(vec![
-        Message::new(Role::User, "Hi! What is chocolate made of?".to_owned()),
-    ]);*/
 
     loop {
         let res = match client.lock().await.get_task_to_run(GetTaskToRunRequest {}).await {
@@ -80,9 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
         match task.params.unwrap().params.unwrap() {
             Params::ImageGeneration(image_generation) => run_image_generation_task(client.clone(), &text_to_image_model, task.id.unwrap(), &image_generation).await,
-            Params::ChatMessageGeneration(chat_message) => {
-                unimplemented!("not implemented yet");
-            }
+            Params::ChatMessageGeneration(chat_message_generation) => run_chat_message_generation_task(client.clone(), &chat_model, task.id.unwrap(), &chat_message_generation).await,
         };
 
         info!("finished processing task");
@@ -145,6 +140,24 @@ async fn run_image_generation_task(
     }
 
     tx.send(ImageGenerationStatus::Finished).unwrap();
+    client.lock().await.update_task_status(UpdateTaskStatusRequest {
+        id: Some(id.clone()),
+        task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
+    }).await.unwrap();
+}
+
+async fn run_chat_message_generation_task(
+    client: Arc<Mutex<SandboxServiceClient<InterceptedService<Channel, AuthTokenSetterInterceptor>>>>,
+    chat_model: &LlamaChatModel,
+    id: TaskId,
+    params: &ChatMessageGenerationParams
+) {
+    let res = chat_model.chat(vec![
+        Message::new(Role::User, "Hi!".to_owned()),
+    ]);
+
+    info!("finished running chat message generation: {:?}", res);
+
     client.lock().await.update_task_status(UpdateTaskStatusRequest {
         id: Some(id.clone()),
         task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
