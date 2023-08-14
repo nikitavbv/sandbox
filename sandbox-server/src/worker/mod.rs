@@ -11,7 +11,6 @@ use {
         codegen::InterceptedService,
     },
     config::Config,
-    sandbox_common::utils::{init_logging, load_config},
     rpc::{
         self,
         sandbox_service_client::SandboxServiceClient,

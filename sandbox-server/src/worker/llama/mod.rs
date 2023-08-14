@@ -113,12 +113,12 @@ impl LlamaChatModel {
             tokens.push(next_token);
             new_tokens.push(next_token);
 
-            println!("{} (last: {})", self.tokenizer.decode(new_tokens.clone(), false).unwrap(), next_token);
+            println!("{}", self.tokenizer.decode(&new_tokens, false).unwrap());
 
             index += 1;
         }
 
-        Message::new(Role::Assistant, self.tokenizer.decode(new_tokens.clone(), true).unwrap())
+        Message::new(Role::Assistant, self.tokenizer.decode(&new_tokens, true).unwrap())
     }
 }
 
