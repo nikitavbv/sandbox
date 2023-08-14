@@ -25,6 +25,10 @@ use {
         OAuthLoginResponse,
         CreateTaskAssetRequest,
         CreateTaskAssetResponse,
+        GetChatMessagesRequest,
+        GetChatMessagesResponse,
+        CreateChatMessageRequest,
+        CreateChatMessageResponse,
     },
     crate::{
         entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams},
@@ -317,6 +321,32 @@ impl SandboxService for SandboxServiceHandler {
         self.database.create_task_asset(&task_id, req.image).await;
 
         Ok(Response::new(CreateTaskAssetResponse {}))
+    }
+
+    async fn get_chat_messages(&self, req: Request<GetChatMessagesRequest>) -> Result<Response<GetChatMessagesResponse>, Status> {
+        let token = match extract_access_token(&req) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        if token != self.worker_token {
+            return Err(Status::unauthenticated("wrong_token"));
+        }
+
+        unimplemented!()
+    }
+
+    async fn create_chat_message(&self, req: Request<CreateChatMessageRequest>) -> Result<Response<CreateChatMessageResponse>, Status> {
+        let token = match extract_access_token(&req) {
+            Some(v) => v,
+            None => return Err(Status::unauthenticated("unauthenticated")),
+        };
+
+        if token != self.worker_token {
+            return Err(Status::unauthenticated("wrong_token"));
+        }
+        
+        unimplemented!()
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {

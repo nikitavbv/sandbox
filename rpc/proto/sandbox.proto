@@ -14,6 +14,8 @@ service SandboxService {
     // for workers
     rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
     rpc CreateTaskAsset(CreateTaskAssetRequest) returns (CreateTaskAssetResponse) {}
+    rpc GetChatMessages(GetChatMessagesRequest) returns (GetChatMessagesResponse) {}
+    rpc CreateChatMessage(CreateChatMessageRequest) returns (CreateChatMessageResponse) {}
     rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse) {}
 }
 
@@ -136,4 +138,16 @@ message CreateTaskAssetRequest {
 }
 
 message CreateTaskAssetResponse {
+}
+
+message GetChatMessagesRequest {
+}
+
+message GetChatMessagesResponse {
+}
+
+message CreateChatMessageRequest {
+}
+
+message CreateChatMessageResponse {
 }

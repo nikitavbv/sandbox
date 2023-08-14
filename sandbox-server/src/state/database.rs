@@ -224,4 +224,12 @@ impl Database {
             .map(|v| AssetId::from_string(v.id))
             .collect()
     }
+
+    pub async fn get_chat_messages(&self, task_id: &TaskId) {
+        unimplemented!()
+    }
+
+    pub async fn create_chat_message(&self) {
+        unimplemented!()
+    }
 }
