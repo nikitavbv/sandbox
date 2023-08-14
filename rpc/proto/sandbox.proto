@@ -64,8 +64,12 @@ message TaskParams {
         string prompt = 3;
     }
 
+    message ChatMessageGenerationParams {
+    }
+
     oneof params {
         ImageGenerationParams image_generation = 4;
+        ChatMessageGenerationParams chat_message_generation = 5;
     }
 }
 

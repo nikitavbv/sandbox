@@ -7,6 +7,8 @@ use {
         metadata::MetadataValue,
         Status,
         Request,
+        transport::Channel,
+        codegen::InterceptedService,
     },
     sandbox_common::utils::{init_logging, load_config},
     rpc::{
@@ -15,6 +17,8 @@ use {
         GetTaskToRunRequest,
         UpdateTaskStatusRequest,
         CreateTaskAssetRequest,
+        task_params::{Params, ImageGenerationParams},
+        TaskId,
     },
     crate::{
         stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
@@ -36,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     info!("sandbox worker started");
     let endpoint = config.get_string("worker.endpoint").unwrap();
     let client = Arc::new(Mutex::new(SandboxServiceClient::with_interceptor(
-        tonic::transport::Channel::from_shared(endpoint)
+        Channel::from_shared(endpoint)
             .unwrap()
             .connect()
             .await
@@ -74,65 +78,77 @@ async fn main() -> anyhow::Result<()> {
             }
         };
 
-        let prompt = task.params.as_ref().map(|v| v.prompt.clone()).unwrap_or("cute cat".to_owned());
-        let id = task.id.unwrap();
-    
-        let total_images = task.params.map(|v| v.number_of_images).unwrap_or(0);
-
-        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-        {
-            let id = id.clone();
-            let client = client.clone();
-
-            tokio::spawn(async move {
-                let mut current_image = 0;
-
-                while let Some(update) = rx.recv().await {
-                    match update {
-                        ImageGenerationStatus::Finished => break,
-                        ImageGenerationStatus::StartedImageGeneration { current_image: i } => {
-                            current_image = i;
-                        }
-                        ImageGenerationStatus::InProgress { current_step, total_steps } => {
-                            let res = client.lock().await.update_task_status(UpdateTaskStatusRequest {
-                                id: Some(id.clone()),
-                                task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails {
-                                    current_step,
-                                    total_steps,
-                                    current_image,
-                                })),
-                            }).await;
-
-                            if let Err(err) = res {
-                                error!("failed to report task status: {:?}", err);
-                            }
-                        },
-                    }
-                }
-            });
-        }
-
-        for image in 0..total_images {
-            tx.send(ImageGenerationStatus::StartedImageGeneration { current_image: image }).unwrap();
-            info!("generating image ({}/{}) for prompt: {}, task id: {}", image + 1, total_images, prompt, id.id);
-        
-            let image = text_to_image_model.run(&prompt, tx.clone());
-            info!("finished generating image");
-            
-            client.lock().await.create_task_asset(CreateTaskAssetRequest {
-                task_id: Some(id.clone()),
-                image,
-            }).await.unwrap();   
-        }
-
-        tx.send(ImageGenerationStatus::Finished).unwrap();
-        client.lock().await.update_task_status(UpdateTaskStatusRequest {
-            id: Some(id.clone()),
-            task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
-        }).await.unwrap();
+        match task.params.unwrap().params.unwrap() {
+            Params::ImageGeneration(image_generation) => run_image_generation_task(client.clone(), &text_to_image_model, task.id.unwrap(), &image_generation).await,
+            Params::ChatMessageGeneration(chat_message) => {
+                unimplemented!("not implemented yet");
+            }
+        };
 
         info!("finished processing task");
     }
+}
+
+async fn run_image_generation_task(
+    client: Arc<Mutex<SandboxServiceClient<InterceptedService<Channel, AuthTokenSetterInterceptor>>>>,
+    text_to_image_model: &StableDiffusionImageGenerationModel,
+    id: TaskId, 
+    params: &ImageGenerationParams
+) {
+    let prompt = params.prompt.clone();
+    let total_images = params.number_of_images;
+
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    {
+        let id = id.clone();
+        let client = client.clone();
+
+        tokio::spawn(async move {
+            let mut current_image = 0;
+
+            while let Some(update) = rx.recv().await {
+                match update {
+                    ImageGenerationStatus::Finished => break,
+                    ImageGenerationStatus::StartedImageGeneration { current_image: i } => {
+                        current_image = i;
+                    }
+                    ImageGenerationStatus::InProgress { current_step, total_steps } => {
+                        let res = client.lock().await.update_task_status(UpdateTaskStatusRequest {
+                            id: Some(id.clone()),
+                            task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails {
+                                current_step,
+                                total_steps,
+                                current_image,
+                            })),
+                        }).await;
+
+                        if let Err(err) = res {
+                            error!("failed to report task status: {:?}", err);
+                        }
+                    },
+                }
+            }
+        });
+    }
+
+    for image in 0..total_images {
+        tx.send(ImageGenerationStatus::StartedImageGeneration { current_image: image }).unwrap();
+        info!("generating image ({}/{}) for prompt: {}, task id: {}", image + 1, total_images, prompt, id.id);
+
+        let image = text_to_image_model.run(&prompt, tx.clone());
+        info!("finished generating image");
+        
+        client.lock().await.create_task_asset(CreateTaskAssetRequest {
+            task_id: Some(id.clone()),
+            image,
+        }).await.unwrap();   
+    }
+
+    tx.send(ImageGenerationStatus::Finished).unwrap();
+    client.lock().await.update_task_status(UpdateTaskStatusRequest {
+        id: Some(id.clone()),
+        task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
+    }).await.unwrap();
 }
 
 pub struct AuthTokenSetterInterceptor {
