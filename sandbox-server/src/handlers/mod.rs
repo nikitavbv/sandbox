@@ -126,7 +126,13 @@ impl SandboxServiceHandler {
             params: Some(rpc::TaskParams {
                 iterations: task.params.iterations,
                 number_of_images: task.params.number_of_images,
-                prompt: task.prompt,
+                prompt: task.prompt.clone(),
+
+                params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
+                    iterations: task.params.iterations,
+                    number_of_images: task.params.number_of_images,
+                    prompt: task.prompt,
+                })),
             }),
         }
     }
@@ -283,7 +289,13 @@ impl SandboxService for SandboxServiceHandler {
                 params: Some(rpc::TaskParams {
                     iterations: v.params.iterations,
                     number_of_images: v.params.number_of_images,
-                    prompt: v.prompt,
+                    prompt: v.prompt.clone(),
+
+                    params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
+                        iterations: v.params.iterations,
+                        number_of_images: v.params.number_of_images,
+                        prompt: v.prompt,
+                    })),
                 }),
             }),
         }))

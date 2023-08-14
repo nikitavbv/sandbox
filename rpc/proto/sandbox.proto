@@ -57,6 +57,16 @@ message TaskParams {
     uint32 iterations = 1;
     uint32 number_of_images = 2;
     string prompt = 3;
+
+    message ImageGenerationParams {
+        uint32 iterations = 1;
+        uint32 number_of_images = 2;
+        string prompt = 3;
+    }
+
+    oneof params {
+        ImageGenerationParams image_generation = 4;
+    }
 }
 
 /* requests and responses */
