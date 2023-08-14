@@ -8,7 +8,7 @@ use {
     wasm_bindgen::JsCast,
     gloo_storage::{Storage, LocalStorage},
     stylist::{style, yew::styled_component},
-    rpc::{CreateTaskRequest, TaskParams},
+    rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ImageGenerationParams as RpcImageGenerationParams}},
     crate::{
         components::header::Header,
         pages::{
@@ -177,7 +177,13 @@ fn home() -> Html {
                     params: Some(TaskParams {
                         iterations: 20,
                         number_of_images: params.number_of_images,
-                        prompt,
+                        prompt: prompt.clone(),
+
+                        params: Some(Params::ImageGeneration(RpcImageGenerationParams {
+                            iterations: 20,
+                            number_of_images: params.number_of_images,
+                            prompt,
+                        })),
                     }),
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
