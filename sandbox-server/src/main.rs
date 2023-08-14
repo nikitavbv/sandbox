@@ -1,9 +1,9 @@
 use {
     tracing::info,
-    sandbox_common::utils::{init_logging, load_config},
     crate::{
         server::run_server,
         worker::run_worker,
+        utils::{init_logging, load_config},
     },
 };
 
@@ -12,6 +12,7 @@ pub mod handlers;
 pub mod state;
 pub mod worker;
 pub mod server;
+pub mod utils;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

@@ -2815,16 +2815,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sandbox-common"
-version = "0.1.0"
-dependencies = [
- "config",
- "serde",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "sandbox-server"
 version = "0.1.0"
 dependencies = [
@@ -2855,7 +2845,6 @@ dependencies = [
  "reqwest",
  "rpc",
  "rust-s3",
- "sandbox-common",
  "serde",
  "serde_json",
  "sqlx",
