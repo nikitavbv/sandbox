@@ -6,7 +6,7 @@ use {
     tempfile::tempdir,
     candle::{DType, Device, Tensor, IndexOp},
     tokenizers::Tokenizer,
-    crate::storage::Storage,
+    super::storage::Storage,
     self::{
         vae::AutoEncoderKL,
         unet_2d::UNet2DConditionModel,

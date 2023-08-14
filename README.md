@@ -30,7 +30,6 @@ This web app is built for learning and fun purposes. All components are written 
 - delete images and tasks.
 - button to generate X more images for task.
 - bidirectional streaming between worker and server.
-- since worker does not have any external dependencies, all the code from it can be moved back into server crate.
 - add some metrics to control how many tasks are completed/running/in queue and how much time it takes to process a task.
 - worker k8s config
 

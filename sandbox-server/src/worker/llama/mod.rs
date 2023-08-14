@@ -3,7 +3,7 @@ use {
     candle_nn::VarBuilder,
     candle_transformers::generation::LogitsProcessor,
     tokenizers::Tokenizer,
-    crate::storage::Storage,
+    super::storage::Storage,
     self::model::{Config, Cache, Llama},
 };
 

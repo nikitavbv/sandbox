@@ -10,6 +10,7 @@ use {
         transport::Channel,
         codegen::InterceptedService,
     },
+    config::Config,
     sandbox_common::utils::{init_logging, load_config},
     rpc::{
         self,
@@ -20,7 +21,7 @@ use {
         task_params::{Params, ImageGenerationParams, ChatMessageGenerationParams},
         TaskId,
     },
-    crate::{
+    self::{
         stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
         llama::{LlamaChatModel, Message, Role},
         storage::Storage,
@@ -32,11 +33,7 @@ pub mod stable_diffusion;
 pub mod llama;
 pub mod storage;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    init_logging();
-    let config = load_config();
-    
+pub async fn run_worker(config: &Config) {
     info!("sandbox worker started");
     let endpoint = config.get_string("worker.endpoint").unwrap();
     let client = Arc::new(Mutex::new(SandboxServiceClient::with_interceptor(
