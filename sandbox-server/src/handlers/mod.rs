@@ -27,8 +27,8 @@ use {
         CreateTaskAssetResponse,
         GetChatMessagesRequest,
         GetChatMessagesResponse,
-        CreateChatMessageRequest,
-        CreateChatMessageResponse,
+        AddChatAssistantMessageRequest,
+        AddChatAssistantMessageResponse,
     },
     crate::{
         entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams},
@@ -333,10 +333,25 @@ impl SandboxService for SandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
 
-        unimplemented!()
+        let req = req.into_inner();
+        let task_id = TaskId::from(req.task_id.unwrap());
+
+        let messages = self.database.get_chat_messages(&task_id).await
+            .into_iter()
+            .map(|v| rpc::get_chat_messages_response::ChatMessage {
+                message_id: Some(rpc::MessageId::from(v.message_id)),
+                content: v.content,
+                role: rpc::ChatMessageRole::from(v.role).into(),
+                message_index: v.index,
+            })
+            .collect();
+
+        Ok(Response::new(GetChatMessagesResponse {
+            messages,
+        }))
     }
 
-    async fn create_chat_message(&self, req: Request<CreateChatMessageRequest>) -> Result<Response<CreateChatMessageResponse>, Status> {
+    async fn add_chat_assistant_message(&self, req: Request<AddChatAssistantMessageRequest>) -> Result<Response<AddChatAssistantMessageResponse>, Status> {
         let token = match extract_access_token(&req) {
             Some(v) => v,
             None => return Err(Status::unauthenticated("unauthenticated")),

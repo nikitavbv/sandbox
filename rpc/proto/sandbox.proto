@@ -15,7 +15,7 @@ service SandboxService {
     rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
     rpc CreateTaskAsset(CreateTaskAssetRequest) returns (CreateTaskAssetResponse) {}
     rpc GetChatMessages(GetChatMessagesRequest) returns (GetChatMessagesResponse) {}
-    rpc CreateChatMessage(CreateChatMessageRequest) returns (CreateChatMessageResponse) {}
+    rpc AddChatAssistantMessage(AddChatAssistantMessageRequest) returns (AddChatAssistantMessageResponse) {}
     rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse) {}
 }
 
@@ -73,6 +73,16 @@ message TaskParams {
         ImageGenerationParams image_generation = 4;
         ChatMessageGenerationParams chat_message_generation = 5;
     }
+}
+
+message MessageId {
+    string id = 1;
+}
+
+enum ChatMessageRole {
+    System = 0;
+    User = 1;
+    Assistant = 2;
 }
 
 /* requests and responses */
@@ -141,13 +151,24 @@ message CreateTaskAssetResponse {
 }
 
 message GetChatMessagesRequest {
+    TaskId task_id = 1;
 }
 
 message GetChatMessagesResponse {
+    message ChatMessage {
+        MessageId message_id = 1;
+        string content = 2;
+        ChatMessageRole role = 3;
+        uint32 message_index = 4;
+    }
+
+    repeated ChatMessage messages = 1;
 }
 
-message CreateChatMessageRequest {
+message AddChatAssistantMessageRequest {
+    TaskId task_id = 1;
+    string content = 2;
 }
 
-message CreateChatMessageResponse {
+message AddChatAssistantMessageResponse {
 }

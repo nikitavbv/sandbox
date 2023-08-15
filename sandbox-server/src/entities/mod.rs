@@ -117,8 +117,26 @@ impl MessageId {
     }
 }
 
+impl From<MessageId> for rpc::MessageId {
+    fn from(value: MessageId) -> Self {
+        Self {
+            id: value.id,
+        }
+    }
+}
+
 pub enum ChatMessageRole {
     System,
     User,
     Assistant,
+}
+
+impl From<ChatMessageRole> for rpc::ChatMessageRole {
+    fn from(value: ChatMessageRole) -> Self {
+        match value {
+            ChatMessageRole::System => Self::System,
+            ChatMessageRole::User => Self::User,
+            ChatMessageRole::Assistant => Self::Assistant,
+        }
+    }
 }
