@@ -274,6 +274,21 @@ impl Database {
     }
 
     pub async fn create_chat_message(&self, task_id: &TaskId, content: String, role: ChatMessageRole, index: u32) -> MessageId {
-        unimplemented!()
+        let message_id = Ulid::new();
+
+        sqlx::query!(
+            "insert into sandbox_chat_messages (task_id, message_id, content, message_role, message_index) values ($1, $2, $3, $4, $5)",
+            task_id.as_str(),
+            message_id.to_string(),
+            content,
+            match role {
+                ChatMessageRole::System => PersistedChatMessageRole::System,
+                ChatMessageRole::User => PersistedChatMessageRole::User,
+                ChatMessageRole::Assistant => PersistedChatMessageRole::Assistant,
+            } as PersistedChatMessageRole,
+            index as i32
+        ).execute(&self.pool).await.unwrap();
+
+        MessageId::new(message_id.to_string())
     }
 }
