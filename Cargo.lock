@@ -414,7 +414,7 @@ dependencies = [
 [[package]]
 name = "candle-core"
 version = "0.1.0"
-source = "git+https://github.com/huggingface/candle#c84883ecf2c240792392353175b634f6ec92a011"
+source = "git+https://github.com/huggingface/candle#90374097dc99b14dfc935318a18c21fc5909291f"
 dependencies = [
  "byteorder",
  "candle-gemm",
@@ -559,7 +559,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.1.0"
-source = "git+https://github.com/huggingface/candle#c84883ecf2c240792392353175b634f6ec92a011"
+source = "git+https://github.com/huggingface/candle#90374097dc99b14dfc935318a18c21fc5909291f"
 dependencies = [
  "candle-core",
  "safetensors",
@@ -569,7 +569,7 @@ dependencies = [
 [[package]]
 name = "candle-transformers"
 version = "0.1.0"
-source = "git+https://github.com/huggingface/candle#c84883ecf2c240792392353175b634f6ec92a011"
+source = "git+https://github.com/huggingface/candle#90374097dc99b14dfc935318a18c21fc5909291f"
 dependencies = [
  "candle-core",
  "candle-nn",

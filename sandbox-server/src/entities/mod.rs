@@ -96,3 +96,29 @@ impl Default for TaskParams {
         }
     }
 }
+
+pub struct ChatMessage {
+    pub task_id: TaskId,
+    pub message_id: MessageId,
+    pub content: String,
+    pub role: ChatMessageRole,
+    pub index: u32,
+}
+
+pub struct MessageId {
+    id: String,
+}
+
+impl MessageId {
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+        }
+    }
+}
+
+pub enum ChatMessageRole {
+    System,
+    User,
+    Assistant,
+}

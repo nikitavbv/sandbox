@@ -6,7 +6,17 @@ use {
     s3::{Bucket, creds::Credentials, region::Region, error::S3Error},
     ulid::Ulid,
     chrono::{NaiveDateTime, DateTime, Utc},
-    crate::entities::{TaskId, TaskStatus, Task, UserId, AssetId, TaskParams},
+    crate::entities::{
+        TaskId, 
+        TaskStatus, 
+        Task, 
+        UserId, 
+        AssetId, 
+        TaskParams, 
+        ChatMessage, 
+        MessageId,
+        ChatMessageRole,
+    },
 };
 
 struct PersistedTask {
@@ -37,10 +47,26 @@ struct PersistedAssetId {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PersistedTaskParams {
+struct PersistedTaskParams {
     iterations: u32,
     number_of_images: u32,
     prompt: Option<String>,
+}
+
+struct PersistedChatMessage {
+    task_id: String,
+    message_id: String,
+    content: String,
+    message_role: PersistedChatMessageRole,
+    message_index: i32,
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "message_role")]
+enum PersistedChatMessageRole {
+    System,
+    User,
+    Assistant,
 }
 
 pub struct Database {
@@ -225,11 +251,29 @@ impl Database {
             .collect()
     }
 
-    pub async fn get_chat_messages(&self, task_id: &TaskId) {
-        unimplemented!()
+    pub async fn get_chat_messages(&self, task_id: &TaskId) -> Vec<ChatMessage> {
+        let messages = sqlx::query_as!(PersistedChatMessage, "select task_id, message_id, content, message_role as \"message_role: _\", message_index from sandbox_chat_messages where task_id = $1 order by message_index desc", task_id.as_str())
+            .fetch_all(&self.pool)
+            .await
+            .unwrap();
+
+        messages
+            .into_iter()
+            .map(|v| ChatMessage {
+                task_id: TaskId::new(v.task_id),
+                message_id: MessageId::new(v.message_id),
+                content: v.content,
+                role: match v.message_role {
+                    PersistedChatMessageRole::System => ChatMessageRole::System,
+                    PersistedChatMessageRole::User => ChatMessageRole::User,
+                    PersistedChatMessageRole::Assistant => ChatMessageRole::Assistant,
+                },
+                index: v.message_index as u32,
+            })
+            .collect()
     }
 
-    pub async fn create_chat_message(&self) {
+    pub async fn create_chat_message(&self, task_id: &TaskId, content: String, role: ChatMessageRole, index: u32) -> MessageId {
         unimplemented!()
     }
 }
