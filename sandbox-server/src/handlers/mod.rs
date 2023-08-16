@@ -31,7 +31,7 @@ use {
         AddChatAssistantMessageResponse,
     },
     crate::{
-        entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams},
+        entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams, ChatMessageRole},
         state::database::Database,
     },
 };
@@ -361,6 +361,11 @@ impl SandboxService for SandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
         
+        let req = req.into_inner();
+        let task_id = TaskId::from(req.task_id.unwrap());
+
+        let message_ud = self.database.append_chat_message(&task_id, req.content, ChatMessageRole::Assistant).await;
+
         unimplemented!()
     }
 

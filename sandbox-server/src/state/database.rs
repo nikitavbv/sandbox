@@ -291,4 +291,22 @@ impl Database {
 
         MessageId::new(message_id.to_string())
     }
+
+    pub async fn append_chat_message(&self, task_id: &TaskId, content: String, role: ChatMessageRole) -> MessageId {
+        let message_id = Ulid::new();
+
+        sqlx::query!(
+            "insert into sandbox_chat_messages (task_id, message_id, content, message_role, message_index) values ($1, $2, $3, $4, (select coalesce(max(message_index) + 1, 0) from sandbox_chat_messages where task_id = $1 and message_id = $2))",
+            task_id.as_str(),
+            message_id.to_string(),
+            content,
+            match role {
+                ChatMessageRole::System => PersistedChatMessageRole::System,
+                ChatMessageRole::User => PersistedChatMessageRole::User,
+                ChatMessageRole::Assistant => PersistedChatMessageRole::Assistant,
+            } as PersistedChatMessageRole
+        ).execute(&self.pool).await.unwrap();
+
+        MessageId::new(message_id.to_string())
+    }
 }
