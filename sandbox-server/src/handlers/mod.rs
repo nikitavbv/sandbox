@@ -364,9 +364,9 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
         let task_id = TaskId::from(req.task_id.unwrap());
 
-        let message_ud = self.database.append_chat_message(&task_id, req.content, ChatMessageRole::Assistant).await;
+        self.database.append_chat_message(&task_id, req.content, ChatMessageRole::Assistant).await;
 
-        unimplemented!()
+        Ok(Response::new(AddChatAssistantMessageResponse {}))
     }
 
     async fn update_task_status(&self, req: Request<UpdateTaskStatusRequest>) -> Result<Response<UpdateTaskStatusResponse>, Status> {
