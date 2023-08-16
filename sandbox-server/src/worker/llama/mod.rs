@@ -129,4 +129,12 @@ impl Message {
             text: message
         }
     }
+
+    pub fn role(&self) -> &Role {
+        &self.role
+    }
+
+    pub fn content(&self) -> &str {
+        &self.text
+    }
 }

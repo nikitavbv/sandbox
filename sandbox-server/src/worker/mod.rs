@@ -14,11 +14,13 @@ use {
     rpc::{
         self,
         sandbox_service_client::SandboxServiceClient,
+        task_params::{Params, ImageGenerationParams, ChatMessageGenerationParams},
+        TaskId,
         GetTaskToRunRequest,
         UpdateTaskStatusRequest,
         CreateTaskAssetRequest,
-        task_params::{Params, ImageGenerationParams, ChatMessageGenerationParams},
-        TaskId,
+        GetChatMessagesRequest,
+        AddChatAssistantMessageRequest,
     },
     self::{
         stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
@@ -148,14 +150,34 @@ async fn run_chat_message_generation_task(
     id: TaskId,
     params: &ChatMessageGenerationParams
 ) {
-    let res = chat_model.chat(vec![
-        Message::new(Role::User, "Hi!".to_owned()),
-    ]);
+    let mut messages = client.lock().await.get_chat_messages(GetChatMessagesRequest {
+        task_id: Some(id.clone()),
+    }).await.unwrap().into_inner().messages;
+
+    messages.sort_by_key(|v| v.message_index);
+
+    let messages = messages.into_iter()
+        .map(|v| Message::new(
+            match v.role() {
+                rpc::ChatMessageRole::System => Role::System,
+                rpc::ChatMessageRole::User => Role::User,
+                rpc::ChatMessageRole::Assistant => Role::Assistant,
+            },
+            v.content
+        ))
+        .collect();
+
+    let res = chat_model.chat(messages);
 
     info!("finished running chat message generation: {:?}", res);
 
+    client.lock().await.add_chat_assistant_message(AddChatAssistantMessageRequest {
+        content: res.content().to_owned(),
+        task_id: Some(id.clone()),
+    }).await.unwrap();
+
     client.lock().await.update_task_status(UpdateTaskStatusRequest {
-        id: Some(id.clone()),
+        id: Some(id),
         task_status: Some(rpc::update_task_status_request::TaskStatus::Finished(rpc::FinishedTaskDetails {})),
     }).await.unwrap();
 }
