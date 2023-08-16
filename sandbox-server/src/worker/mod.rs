@@ -75,7 +75,7 @@ pub async fn run_worker(config: &Config) {
 
         match task.params.unwrap().params.unwrap() {
             Params::ImageGeneration(image_generation) => run_image_generation_task(client.clone(), &text_to_image_model, task.id.unwrap(), &image_generation).await,
-            Params::ChatMessageGeneration(chat_message_generation) => run_chat_message_generation_task(client.clone(), &chat_model, task.id.unwrap(), &chat_message_generation).await,
+            Params::ChatMessageGeneration(chat_message_generation) => run_chat_message_generation_task(client.clone(), &chat_model, task.id.unwrap()).await,
         };
 
         info!("finished processing task");
@@ -147,8 +147,7 @@ async fn run_image_generation_task(
 async fn run_chat_message_generation_task(
     client: Arc<Mutex<SandboxServiceClient<InterceptedService<Channel, AuthTokenSetterInterceptor>>>>,
     chat_model: &LlamaChatModel,
-    id: TaskId,
-    params: &ChatMessageGenerationParams
+    id: TaskId
 ) {
     let mut messages = client.lock().await.get_chat_messages(GetChatMessagesRequest {
         task_id: Some(id.clone()),
