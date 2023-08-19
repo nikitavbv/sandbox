@@ -49,4 +49,5 @@ candle-transformers = { git = "https://github.com/huggingface/candle" }
 image = { version = "0.24.7", default-features = false, features = ["png"] }
 tokenizers = "0.13.3"
 indicatif = "0.17.6"
+prometheus = "0.13.3"
 rpc = { path = "../rpc", features = ["server", "client"] }

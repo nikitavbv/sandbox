@@ -10,6 +10,7 @@ use {
         http::{StatusCode, header::{CONTENT_TYPE, HeaderValue}}, 
         body::Body,
     },
+    prometheus::{Registry, TextEncoder},
     crate::{
         entities::TaskId,
         state::database::Database,
@@ -21,11 +22,19 @@ pub struct AssetID {
     pub asset_id: String,
 }
 
-pub fn rest_router(database: Arc<Database>, encoding_key: jsonwebtoken::EncodingKey) -> Router {
+pub fn rest_router(metrics: Registry, database: Arc<Database>, encoding_key: jsonwebtoken::EncodingKey) -> Router {
     Router::new()
         .route("/v1/storage/:asset_id", get(serve_asset))
+        .route("/metrics", get(prometheus_metrics))
         .layer(Extension(database))
+        .layer(Extension(metrics))
         .layer(Extension(encoding_key))
+}
+
+async fn prometheus_metrics(Extension(metrics): Extension<Registry>) -> String {
+    let encoder = TextEncoder::new();
+    let metric_families = metrics.gather();
+    encoder.encode_to_string(&metric_families).unwrap()
 }
 
 async fn serve_asset(Extension(database): Extension<Arc<Database>>, Path(asset_id): Path<AssetID>) -> Response<Body> {

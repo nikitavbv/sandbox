@@ -309,4 +309,13 @@ impl Database {
 
         MessageId::new(message_id.to_string())
     }
+
+    pub async fn total_pending_tasks(&self) -> u64 {
+        sqlx::query!("select count(*) as cnt from sandbox_tasks where is_pending = true")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+            .cnt
+            .unwrap() as u64
+    }
 }
