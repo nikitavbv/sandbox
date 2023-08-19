@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: sandbox
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.385
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.389
         ports:
         - containerPort: 8080
           protocol: TCP
@@ -67,7 +67,7 @@ spec:
     spec:
       containers:
       - name: sandbox-worker
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.385
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.389
         env:
         - name: SANDBOX_CONFIG_PATH
           value: /etc/sandbox/config/config.toml
@@ -95,6 +95,8 @@ metadata:
 spec:
   storageClassName: 'local-storage'
   volumeName: sandbox-worker-data
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
       storage: 100Gi
