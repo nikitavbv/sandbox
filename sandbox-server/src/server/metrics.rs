@@ -23,7 +23,7 @@ impl MetricsPushConfig {
 }
 
 pub async fn collect_metrics(registry: Registry, database: &Database) {
-    let total_tasks_by_state = register_int_gauge_vec_with_registry!("pending_tasks", "total tasks in pending state", &["state"], registry).unwrap();
+    let total_tasks_by_state = register_int_gauge_vec_with_registry!("tasks_state", "total tasks in pending state", &["state"], registry).unwrap();
 
     loop {
         sleep(Duration::from_secs(10)).await;
