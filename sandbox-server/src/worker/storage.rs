@@ -9,6 +9,7 @@ use {
 
 pub struct Storage {
     bucket: s3::Bucket,
+    worker_data_path: String,
 }
 
 impl Storage {
@@ -24,17 +25,27 @@ impl Storage {
                 region,
                 endpoint,
             },
-            Credentials::new(Some(&access_key), Some(&secret_key), None, None, None).unwrap(),
+            Credentials::new(
+                Some(&access_key), 
+                Some(&secret_key), 
+                None, 
+                None, 
+                None
+            ).unwrap(),
         ).unwrap().with_path_style();
+
+        let worker_data_path = config.get_string("worker.data_path").unwrap_or(".".to_owned());
 
         Self {
             bucket,
+            worker_data_path,
         }
     }
 
     pub async fn load_model_file(&self, model_name: &str, file_name: &str) -> String {
         let model_data_dir = format!("data/model/{}", model_name);
         let model_data_dir = Path::new(&model_data_dir);
+        let model_data_dir = Path::new(&self.worker_data_path).join(model_data_dir);
         if !model_data_dir.exists() {
             fs::create_dir_all(&model_data_dir).unwrap();
         }

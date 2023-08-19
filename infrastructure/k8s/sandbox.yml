@@ -48,3 +48,53 @@ spec:
   - name: 'grpc'
     port: 8081
     targetPort: 8082
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sandbox-worker
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: sandbox-worker
+  replicas: 1
+  serviceName: sandbox-worker
+  template:
+    metadata:
+      labels:
+        app: sandbox-worker
+    spec:
+      containers:
+      - name: sandbox-worker
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.385
+        env:
+        - name: SANDBOX_CONFIG_PATH
+          value: /etc/sandbox/config/config.toml
+        volumeMounts:
+        - name: sandbox-config
+          mountPath: /etc/sandbox/config
+        - name: sandbox-worker-data
+          mountPath: /etc/sandbox/data
+      volumes:
+      - name: sandbox-config
+        configMap:
+          name: sandbox-worker-config
+          items:
+          - key: config.toml
+            path: config.toml
+      - name: sandbox-worker-data
+        persistentVolumeClaim:
+          claimName: sandbox-worker-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sandbox-worker-data
+  namespace: default
+spec:
+  storageClassName: 'local-storage'
+  volumeName: sandbox-worker-data
+  resources:
+    requests:
+      storage: 100Gi
