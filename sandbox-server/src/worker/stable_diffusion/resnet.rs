@@ -7,7 +7,7 @@
 //! Denoising Diffusion Implicit Models, K. He and al, 2015.
 //! https://arxiv.org/abs/1512.03385
 use candle::{Result, Tensor, D};
-use candle_nn as nn;
+use candle_nn::{self as nn, Module};
 
 /// Configuration for a ResNet block.
 #[derive(Debug, Clone, Copy)]

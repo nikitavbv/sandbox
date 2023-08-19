@@ -10,7 +10,7 @@ use super::unet_2d_blocks::{
     UpDecoderBlock2D, UpDecoderBlock2DConfig,
 };
 use candle::{Result, Tensor};
-use candle_nn as nn;
+use candle_nn::{self as nn, Module};
 
 #[derive(Debug, Clone)]
 struct EncoderConfig {

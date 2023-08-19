@@ -1,7 +1,7 @@
 // model implementation copied from: https://github.com/huggingface/candle/blob/main/candle-examples/examples/llama/model.rs
 
 use candle::{DType, Device, IndexOp, Result, Tensor, D};
-use candle_nn::{Embedding, VarBuilder};
+use candle_nn::{Embedding, VarBuilder, Module};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

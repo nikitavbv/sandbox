@@ -7,7 +7,7 @@ use super::attention::{
 };
 use super::resnet::{ResnetBlock2D, ResnetBlock2DConfig};
 use candle::{Result, Tensor, D};
-use candle_nn as nn;
+use candle_nn::{self as nn, Module};
 
 #[derive(Debug)]
 struct Downsample2D {

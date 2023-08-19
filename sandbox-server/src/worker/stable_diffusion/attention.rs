@@ -2,7 +2,7 @@
 
 //! Attention Based Building Blocks
 use candle::{IndexOp, Result, Tensor, D};
-use candle_nn as nn;
+use candle_nn::{self as nn, Module};
 
 #[derive(Debug)]
 struct GeGlu {
