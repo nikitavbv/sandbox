@@ -1,5 +1,5 @@
 use {
-    std::sync::Arc,
+    std::{sync::Arc, future},
     tracing::info,
     config::Config,
     axum::Router,
@@ -9,6 +9,7 @@ use {
     tonic::transport::Server,
     jsonwebtoken::{EncodingKey, DecodingKey},
     prometheus::Registry,
+    futures::FutureExt,
     rpc::{
         sandbox_service_server::SandboxServiceServer,
         FILE_DESCRIPTOR_SET,
@@ -17,7 +18,7 @@ use {
         handlers::{SandboxServiceHandler, rest::rest_router},
         state::database::Database,
     },
-    self::metrics::collect_metrics,
+    self::metrics::{MetricsPushConfig, collect_metrics, push_metrics},
 };
 
 pub mod metrics;
@@ -34,9 +35,14 @@ pub async fn run_server(config: &Config) {
     let axum_server = run_axum_server(config, metrics.clone(), database.clone(), encoding_key.clone(), decoding_key.clone(), worker_token.clone());
     let grpc_server = run_grpc_server(config, database.clone(), encoding_key, decoding_key, worker_token, oauth_secret);
     
-    let metrics_collector = collect_metrics(metrics, &database);
+    let metrics_collector = collect_metrics(metrics.clone(), &database);
+    let metrics_pusher = if config.get_bool("metrics_push.enabled").unwrap_or(false) {
+        push_metrics(MetricsPushConfig::from_config(config), metrics).boxed()
+    } else {
+        do_nothing().boxed()
+    };
 
-    join!(axum_server, grpc_server, metrics_collector);
+    join!(axum_server, grpc_server, metrics_collector, metrics_pusher);
 }
 
 pub async fn run_axum_server(config: &Config, metrics: Registry, database: Arc<Database>, encoding_key: EncodingKey, decoding_key: DecodingKey, worker_token: String) {
@@ -89,4 +95,7 @@ async fn grpc_router(database: Arc<Database>, encoding_key: EncodingKey, decodin
                 .unwrap()
         )
         .nest_tonic(tonic_web::enable(SandboxServiceServer::new(SandboxServiceHandler::new(database, encoding_key, decoding_key, worker_token, oauth_secret).await?))))
+}
+
+async fn do_nothing() {
 }
