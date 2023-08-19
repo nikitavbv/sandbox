@@ -25,7 +25,7 @@ pub mod metrics;
 
 pub async fn run_server(config: &Config) {
     let database = Arc::new(Database::new(config, &config.get_string("database.connection_string").unwrap()).await.unwrap());
-    let metrics = Registry::new();
+    let metrics = Registry::new_custom(Some("sandbox".to_owned()), None).unwrap();
 
     let encoding_key = jsonwebtoken::EncodingKey::from_rsa_pem(config.get_string("auth.encoding_key").unwrap().as_bytes()).unwrap();
     let decoding_key = DecodingKey::from_rsa_pem(&config.get_string("token.decoding_key").unwrap().as_bytes()).unwrap();

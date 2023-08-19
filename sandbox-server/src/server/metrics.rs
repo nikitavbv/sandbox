@@ -2,7 +2,7 @@ use {
     std::time::Duration,
     tokio::time::sleep,
     config::Config,
-    prometheus::{Registry, TextEncoder, register_int_gauge_with_registry},
+    prometheus::{Registry, TextEncoder, register_int_gauge_vec_with_registry},
     crate::state::database::Database,
 };
 
@@ -23,12 +23,14 @@ impl MetricsPushConfig {
 }
 
 pub async fn collect_metrics(registry: Registry, database: &Database) {
-    let total_pending_tasks = register_int_gauge_with_registry!("pending_tasks", "total tasks in pending state", registry).unwrap();
+    let total_tasks_by_state = register_int_gauge_vec_with_registry!("pending_tasks", "total tasks in pending state", &["state"], registry).unwrap();
 
     loop {
         sleep(Duration::from_secs(10)).await;
 
-        total_pending_tasks.set(database.total_pending_tasks().await as i64);
+        total_tasks_by_state.with_label_values(&["pending"]).set(database.total_pending_tasks().await as i64);
+        total_tasks_by_state.with_label_values(&["in_progress"]).set(database.total_in_progress_tasks().await as i64);
+        total_tasks_by_state.with_label_values(&["finished"]).set(database.finished_tasks_within_last_day().await as i64);
     }
 }
 

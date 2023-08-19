@@ -318,4 +318,22 @@ impl Database {
             .cnt
             .unwrap() as u64
     }
+
+    pub async fn total_in_progress_tasks(&self) -> u64 {
+        sqlx::query!("select count(*) as cnt from sandbox_tasks where status->'InProgress' is not null")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+            .cnt
+            .unwrap() as u64
+    }
+
+    pub async fn finished_tasks_within_last_day(&self) -> u64 {
+        sqlx::query!("select count(*) as cnt from sandbox_tasks where status::text = '\"Finished\"' and created_at > now() - interval '24' hour")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+            .cnt
+            .unwrap() as u64
+    }
 }
