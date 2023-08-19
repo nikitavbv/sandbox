@@ -21,7 +21,6 @@ This web app is built for learning and fun purposes. All components are written 
 
 # TODOs
 
-- why tonic client fails with invalid frame size error?
 - generate images using controlnet.
 - chat with llama.
 - serve static frontend files from sandbox-server, so that you can run most of the app (without worker) with single `cargo run`.
