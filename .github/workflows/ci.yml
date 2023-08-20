@@ -39,6 +39,11 @@ jobs:
         DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
     - uses: actions-rs/cargo@v1
       with:
+        command: test
+      env:
+        DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
+    - uses: actions-rs/cargo@v1
+      with:
         command: build
         args: -p sandbox-server --release
       env:

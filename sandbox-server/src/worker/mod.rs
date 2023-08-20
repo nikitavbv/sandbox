@@ -201,3 +201,35 @@ impl Interceptor for AuthTokenSetterInterceptor {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use {
+        tonic::Code,
+        super::*,
+    };
+
+    #[tokio::test]
+    async fn worker_can_connect_over_https() {
+        let mut client = SandboxServiceClient::with_interceptor(
+            Channel::from_shared("https://sandbox-api.nikitavbv.com")
+                .unwrap()
+                .connect()
+                .await
+                .unwrap(),
+            AuthTokenSetterInterceptor::new("test-token".to_owned()),
+        );
+
+        let res = match client.get_task_to_run(GetTaskToRunRequest {}).await {
+            Ok(_) => {
+                panic!("Expected to get error");
+            },
+            Err(err) => err,
+        };
+
+        assert_eq!(
+            res.code(), 
+            Code::Unauthenticated, 
+            "Expected code to be unauthenticated because client connected to server successfully, but access token is wrong"
+        );
+    }
+}
