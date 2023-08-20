@@ -14,7 +14,7 @@ use {
     rpc::{
         self,
         sandbox_service_client::SandboxServiceClient,
-        task_params::{Params, ImageGenerationParams, ChatMessageGenerationParams},
+        task_params::{Params, ImageGenerationParams},
         TaskId,
         GetTaskToRunRequest,
         UpdateTaskStatusRequest,
