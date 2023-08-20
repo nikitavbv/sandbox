@@ -6,7 +6,6 @@ use {
 
 pub struct Task {
     pub id: TaskId,
-    pub prompt: String,
     pub status: TaskStatus,
     pub created_at: DateTime<Utc>,
     pub params: TaskParams,
@@ -83,16 +82,36 @@ impl AssetId {
     }
 }
 
-pub struct TaskParams {
-    pub iterations: u32,
-    pub number_of_images: u32,
+pub enum TaskParams {
+    ImageGenerationParams {
+        prompt: String,
+        iterations: u32,
+        number_of_images: u32,
+    }
 }
 
 impl Default for TaskParams {
     fn default() -> Self {
-        Self {
+        Self::ImageGenerationParams {
+            prompt: "cute cat".to_owned(),
             iterations: 20,
             number_of_images: 1,
+        }
+    }
+}
+
+impl From<TaskParams> for rpc::task_params::Params {
+    fn from(value: TaskParams) -> Self {
+        match value {
+            TaskParams::ImageGenerationParams { 
+                prompt, 
+                iterations, 
+                number_of_images,
+            } => rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
+                prompt,
+                iterations,
+                number_of_images,
+            }),
         }
     }
 }

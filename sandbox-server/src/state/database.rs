@@ -106,10 +106,12 @@ impl Database {
             id.as_str(),
             prompt.clone(),
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
-            serde_json::to_value(PersistedTaskParams {
-                iterations: params.iterations,
-                number_of_images: params.number_of_images,
-                prompt: Some(prompt.to_owned()),
+            serde_json::to_value(match params {
+                TaskParams::ImageGenerationParams { iterations, number_of_images, prompt } => PersistedTaskParams {
+                    iterations: *iterations,
+                    number_of_images: *number_of_images,
+                    prompt: Some(prompt.clone()),
+                },
             }).unwrap(),
         )
             .execute(&self.pool)
@@ -167,7 +169,8 @@ impl Database {
 
         let params = task.params
             .map(|v| serde_json::from_value::<PersistedTaskParams>(v).unwrap())
-            .map(|v| TaskParams {
+            .map(|v| TaskParams::ImageGenerationParams {
+                prompt: v.prompt.unwrap_or(task.prompt),
                 iterations: v.iterations,
                 number_of_images: v.number_of_images,
             })
@@ -175,7 +178,6 @@ impl Database {
 
         Task {
             id,
-            prompt: task.prompt,
             status,
             created_at,
             params,

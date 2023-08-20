@@ -128,11 +128,7 @@ impl SandboxServiceHandler {
                 id: v.to_string(),
             }).collect(),
             params: Some(rpc::TaskParams {
-                params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
-                    iterations: task.params.iterations,
-                    number_of_images: task.params.number_of_images,
-                    prompt: task.prompt,
-                })),
+                params: Some(rpc::task_params::Params::from(task.params)),
             }),
         }
     }
@@ -228,7 +224,8 @@ impl SandboxService for SandboxServiceHandler {
             rpc::task_params::Params::ChatMessageGeneration(_) => return Err(Status::unimplemented("chat message tasks are not supported yet")),
         };
 
-        self.database.new_task(user_id, &task_id, &params.prompt, &TaskParams {
+        self.database.new_task(user_id, &task_id, &params.prompt, &TaskParams::ImageGenerationParams {
+            prompt: params.prompt.clone(),
             iterations: params.iterations,
             number_of_images: params.number_of_images,
         }).await;
@@ -294,11 +291,7 @@ impl SandboxService for SandboxServiceHandler {
             task_to_run: task_to_run.map(|v| rpc::get_task_to_run_response::TaskToRun {
                 id: Some(rpc::TaskId::from(v.id)),
                 params: Some(rpc::TaskParams {
-                    params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
-                        iterations: v.params.iterations,
-                        number_of_images: v.params.number_of_images,
-                        prompt: v.prompt,
-                    })),
+                    params: Some(rpc::task_params::Params::from(v.params)),
                 }),
             }),
         }))
