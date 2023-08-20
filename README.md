@@ -30,7 +30,6 @@ This web app is built for learning and fun purposes. All components are written 
 - delete images and tasks.
 - button to generate X more images for task.
 - bidirectional streaming between worker and server.
-- add some metrics to control how many tasks are completed/running/in queue and how much time it takes to process a task.
 - task visibility levels (private/public)
 
 # Acknowledgments
