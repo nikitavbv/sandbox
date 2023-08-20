@@ -2,7 +2,7 @@ use {
     std::time::Duration,
     tokio::time::sleep,
     config::Config,
-    prometheus::{Registry, TextEncoder, register_int_gauge_vec_with_registry},
+    prometheus::{Registry, TextEncoder, register_int_gauge_vec_with_registry, register_int_gauge_with_registry},
     crate::state::database::Database,
 };
 
@@ -24,6 +24,7 @@ impl MetricsPushConfig {
 
 pub async fn collect_metrics(registry: Registry, database: &Database) {
     let total_tasks_by_state = register_int_gauge_vec_with_registry!("tasks_state", "total tasks in pending state", &["state"], registry).unwrap();
+    let task_pending_time_max = register_int_gauge_with_registry!("task_pending_time_max", "max pending time of all tasks in pending state", registry).unwrap();
 
     loop {
         sleep(Duration::from_secs(10)).await;
@@ -31,6 +32,8 @@ pub async fn collect_metrics(registry: Registry, database: &Database) {
         total_tasks_by_state.with_label_values(&["pending"]).set(database.total_pending_tasks().await as i64);
         total_tasks_by_state.with_label_values(&["in_progress"]).set(database.total_in_progress_tasks().await as i64);
         total_tasks_by_state.with_label_values(&["finished"]).set(database.finished_tasks_within_last_day().await as i64);
+
+        task_pending_time_max.set(database.get_max_task_pending_time().await.map(|v| v.as_secs()).unwrap_or(0).try_into().unwrap());
     }
 }
 

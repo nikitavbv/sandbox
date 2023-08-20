@@ -1,4 +1,5 @@
 use {
+    std::time::Duration,
     anyhow::Result,
     sqlx::{postgres::PgPoolOptions,types::time::OffsetDateTime},
     config::Config,
@@ -335,5 +336,14 @@ impl Database {
             .unwrap()
             .cnt
             .unwrap() as u64
+    }
+
+    pub async fn get_max_task_pending_time(&self) -> Option<Duration> {
+        sqlx::query!("select extract(epoch from max(now() - created_at))::int as lag from sandbox_tasks where is_pending = true")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+            .lag
+            .map(|v| Duration::from_secs(v.try_into().unwrap()))
     }
 }
