@@ -56,10 +56,6 @@ message FinishedTaskDetails {
 }
 
 message TaskParams {
-    uint32 iterations = 1;
-    uint32 number_of_images = 2;
-    string prompt = 3;
-
     message ImageGenerationParams {
         uint32 iterations = 1;
         uint32 number_of_images = 2;

@@ -175,10 +175,6 @@ fn home() -> Html {
                 let mut client = client.lock().unwrap();
                 let res = client.create_task(CreateTaskRequest {
                     params: Some(TaskParams {
-                        iterations: 20,
-                        number_of_images: params.number_of_images,
-                        prompt: prompt.clone(),
-
                         params: Some(Params::ImageGeneration(RpcImageGenerationParams {
                             iterations: 20,
                             number_of_images: params.number_of_images,

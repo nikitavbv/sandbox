@@ -57,13 +57,20 @@ pub fn history_page() -> Html {
     let tasks = if state.is_some() {
         let tasks: Vec<_> = state.iter()
             .flat_map(|v| v.iter())
-            .map(|v| html!(<HistoryEntry 
-                id={v.id.as_ref().unwrap().id.clone()} 
-                prompt={v.params.as_ref().unwrap().prompt.clone()}
-                finished={is_finished(v)}
-                time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)}
-                cover_asset_id={v.assets.get(0).map(|v| v.id.clone())} />
-            ))
+            .map(|v| {
+                let prompt = match v.params.as_ref().unwrap().params.as_ref().unwrap() {
+                    rpc::task_params::Params::ImageGeneration(v) => v.prompt.clone(),
+                    rpc::task_params::Params::ChatMessageGeneration(_) => "chat".to_owned(),
+                };
+
+                html!(<HistoryEntry 
+                    id={v.id.as_ref().unwrap().id.clone()} 
+                    prompt={prompt}
+                    finished={is_finished(v)}
+                    time_since={Duration::from_secs(web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_secs() - v.created_at.as_ref().unwrap().seconds as u64)}
+                    cover_asset_id={v.assets.get(0).map(|v| v.id.clone())} />
+                )
+            })
             .collect();
 
         html!(<>{ tasks }</>)

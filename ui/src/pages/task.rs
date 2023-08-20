@@ -6,7 +6,7 @@ use {
     wasm_bindgen_futures::spawn_local,
     gloo_timers::callback::Interval,
     stylist::{style, yew::styled_component},
-    rpc::{TaskId, Task, TaskParams, GetTaskRequest, InProgressTaskDetails},
+    rpc::{TaskId, Task, TaskParams, GetTaskRequest, InProgressTaskDetails, task_params::ImageGenerationParams},
     crate::utils::{client, Route, MultiClass},
 };
 
@@ -242,23 +242,38 @@ pub fn task_page(props: &TaskPageProps) -> Html {
                     <span>{"waiting for image generation task to be picked by worker..."}</span>
                     <span>{"this normally takes a few seconds, but may be longer if multiple tasks are in queue"}</span>
                 </>),
-                rpc::task::Status::InProgressDetails(in_progress) => html!(<>
-                    <div class={progress_bar_style}>
-                        <div class={progress_bar_bar_style} style={format!("width: {}%;", calculate_progress(task.params.as_ref(), in_progress) * 100.0)}>
-                            <div class={progress_bar_text_style}>{progress_text(task.params.as_ref(), in_progress)}</div>
-                        </div>
-                    </div>
-                </>),
-                rpc::task::Status::FinishedDetails(_) => html!(<>
-                    <span class={prompt_info_style}>{ &task.params.as_ref().unwrap().prompt }</span>
-                </>),
+                rpc::task::Status::InProgressDetails(in_progress) => {
+                    match task.params.as_ref().unwrap().params.as_ref().unwrap() {
+                        rpc::task_params::Params::ImageGeneration(params) => html!(<>
+                            <div class={progress_bar_style}>
+                                <div class={progress_bar_bar_style} style={format!("width: {}%;", calculate_progress(&params, in_progress) * 100.0)}>
+                                    <div class={progress_bar_text_style}>{progress_text(&params, in_progress)}</div>
+                                </div>
+                            </div>
+                        </>),
+                        rpc::task_params::Params::ChatMessageGeneration(_) => html!(<>{"chat tasks are not supported yet"}</>)
+                    }
+                },
+                rpc::task::Status::FinishedDetails(_) => {
+                    let prompt = match task.params.as_ref().unwrap().params.as_ref().unwrap() {
+                        rpc::task_params::Params::ImageGeneration(v) => v.prompt.clone(),
+                        rpc::task_params::Params::ChatMessageGeneration(_) => "chat".to_owned(),
+                    };
+                    
+                    html!(<>
+                        <span class={prompt_info_style}>{ prompt }</span>
+                    </>)
+                },
             };
 
             let image = if !task.assets.is_empty() {
                 let focused_asset_id = state.focused_asset.as_ref().cloned().unwrap_or(task.assets.get(0).unwrap().id.clone());
                 html!(<img src={format!("/v1/storage/{}", focused_asset_id)} class={image_style} />)
             } else {
-                html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &task.params.as_ref().unwrap().prompt }</div>)
+                match task.params.as_ref().unwrap().params.as_ref().unwrap() {
+                    rpc::task_params::Params::ImageGeneration(params) => html!(<div class={MultiClass::new().with(&image_style).with(&image_placeholder_style)}>{ &params.prompt }</div>),
+                    rpc::task_params::Params::ChatMessageGeneration(_) => html!(<>{"chat tasks are not supported yet"}</>),
+                }
             };
 
             let all_images = if task.assets.len() > 1 {
@@ -305,15 +320,15 @@ pub fn task_page(props: &TaskPageProps) -> Html {
     )
 }
 
-fn calculate_progress(params: Option<&TaskParams>, in_progress_details: &InProgressTaskDetails) -> f32 {
+fn calculate_progress(params: &ImageGenerationParams, in_progress_details: &InProgressTaskDetails) -> f32 {
     let steps_per_image = in_progress_details.total_steps as f32;
-    let total_steps = steps_per_image * (params.map(|v| v.number_of_images).unwrap_or(1) as f32);
+    let total_steps = steps_per_image * (params.number_of_images as f32);
 
     (steps_per_image * in_progress_details.current_image as f32 + in_progress_details.current_step as f32) / total_steps
 }
 
-fn progress_text(params: Option<&TaskParams>, in_progress_details: &InProgressTaskDetails) -> String {
-    let total_images = params.map(|v| v.number_of_images).unwrap_or(1);
+fn progress_text(params: &ImageGenerationParams, in_progress_details: &InProgressTaskDetails) -> String {
+    let total_images = params.number_of_images;
 
     if total_images == 1 {
         format!("generating image: {}/{} steps", in_progress_details.current_step, in_progress_details.total_steps)

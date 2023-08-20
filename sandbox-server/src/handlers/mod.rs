@@ -128,10 +128,6 @@ impl SandboxServiceHandler {
                 id: v.to_string(),
             }).collect(),
             params: Some(rpc::TaskParams {
-                iterations: task.params.iterations,
-                number_of_images: task.params.number_of_images,
-                prompt: task.prompt.clone(),
-
                 params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
                     iterations: task.params.iterations,
                     number_of_images: task.params.number_of_images,
@@ -227,9 +223,14 @@ impl SandboxService for SandboxServiceHandler {
         let req = req.into_inner();
 
         let task_id = generate_task_id();
-        self.database.new_task(user_id, &task_id, &req.params.as_ref().unwrap().prompt, &TaskParams {
-            iterations: req.params.as_ref().unwrap().iterations,
-            number_of_images: req.params.as_ref().unwrap().number_of_images,
+        let params = match req.params.unwrap().params.unwrap() {
+            rpc::task_params::Params::ImageGeneration(v) => v,
+            rpc::task_params::Params::ChatMessageGeneration(_) => return Err(Status::unimplemented("chat message tasks are not supported yet")),
+        };
+
+        self.database.new_task(user_id, &task_id, &params.prompt, &TaskParams {
+            iterations: params.iterations,
+            number_of_images: params.number_of_images,
         }).await;
 
         Ok(Response::new(CreateTaskResponse {
@@ -293,10 +294,6 @@ impl SandboxService for SandboxServiceHandler {
             task_to_run: task_to_run.map(|v| rpc::get_task_to_run_response::TaskToRun {
                 id: Some(rpc::TaskId::from(v.id)),
                 params: Some(rpc::TaskParams {
-                    iterations: v.params.iterations,
-                    number_of_images: v.params.number_of_images,
-                    prompt: v.prompt.clone(),
-
                     params: Some(rpc::task_params::Params::ImageGeneration(rpc::task_params::ImageGenerationParams {
                         iterations: v.params.iterations,
                         number_of_images: v.params.number_of_images,
