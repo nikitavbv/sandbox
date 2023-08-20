@@ -25,7 +25,8 @@ impl MetricsPushConfig {
 pub async fn collect_metrics(registry: Registry, database: &Database) {
     let total_tasks_by_state = register_int_gauge_vec_with_registry!("tasks_state", "total tasks in pending state", &["state"], registry).unwrap();
     let task_pending_time_max = register_int_gauge_with_registry!("task_pending_time_max", "max pending time of all tasks in pending state", registry).unwrap();
-
+    let workers_total_active = register_int_gauge_with_registry!("workers_active_total", "number of active workers", registry).unwrap();
+    
     loop {
         sleep(Duration::from_secs(10)).await;
 
@@ -34,6 +35,8 @@ pub async fn collect_metrics(registry: Registry, database: &Database) {
         total_tasks_by_state.with_label_values(&["finished"]).set(database.finished_tasks_within_last_day().await as i64);
 
         task_pending_time_max.set(database.get_max_task_pending_time().await.map(|v| v.as_secs()).unwrap_or(0).try_into().unwrap());
+
+        workers_total_active.set(database.total_active_workers().await.try_into().unwrap());
     }
 }
 

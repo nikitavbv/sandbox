@@ -285,6 +285,8 @@ impl SandboxService for SandboxServiceHandler {
             return Err(Status::unauthenticated("wrong_token"));
         }
 
+        self.database.update_worker_last_ping_time().await;
+
         let task_to_run = self.database.get_any_new_task().await;
 
         Ok(Response::new(GetTaskToRunResponse {
@@ -378,6 +380,8 @@ impl SandboxService for SandboxServiceHandler {
         if token != self.worker_token {
             return Err(Status::unauthenticated("wrong_token"));
         }
+
+        self.database.update_worker_last_ping_time().await;
 
         let req = req.into_inner();
         let task_status = match req.task_status.unwrap() {

@@ -346,4 +346,22 @@ impl Database {
             .lag
             .map(|v| Duration::from_secs(v.try_into().unwrap()))
     }
+
+    pub async fn update_worker_last_ping_time(&self) {
+        sqlx::query!("update sandbox_workers set last_ping_at = now()")
+            .execute(&self.pool)
+            .await
+            .unwrap();
+    }
+
+    pub async fn total_active_workers(&self) -> u64 {
+        sqlx::query!("select count(*) as cnt from sandbox_workers where now() - last_ping_at < interval '10' minute")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+            .cnt
+            .unwrap()
+            .try_into()
+            .unwrap()
+    }
 }

@@ -1,5 +1,5 @@
 use {
-    std::{sync::Arc, future},
+    std::sync::Arc,
     tracing::info,
     config::Config,
     axum::Router,
