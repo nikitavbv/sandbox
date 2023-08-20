@@ -75,7 +75,7 @@ pub async fn run_worker(config: &Config) {
 
         match task.params.unwrap().params.unwrap() {
             Params::ImageGeneration(image_generation) => run_image_generation_task(client.clone(), &text_to_image_model, task.id.unwrap(), &image_generation).await,
-            Params::ChatMessageGeneration(chat_message_generation) => run_chat_message_generation_task(client.clone(), &chat_model, task.id.unwrap()).await,
+            Params::ChatMessageGeneration(_) => run_chat_message_generation_task(client.clone(), &chat_model, task.id.unwrap()).await,
         };
 
         info!("finished processing task");
