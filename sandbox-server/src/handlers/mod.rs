@@ -224,7 +224,7 @@ impl SandboxService for SandboxServiceHandler {
             rpc::task_params::Params::ChatMessageGeneration(_) => return Err(Status::unimplemented("chat message tasks are not supported yet")),
         };
 
-        self.database.new_task(user_id, &task_id, &params.prompt, &TaskParams::ImageGenerationParams {
+        self.database.new_task(user_id, &task_id, &TaskParams::ImageGenerationParams {
             prompt: params.prompt.clone(),
             iterations: params.iterations,
             number_of_images: params.number_of_images,
