@@ -31,6 +31,7 @@ This web app is built for learning and fun purposes. All components are written 
 - button to generate X more images for task.
 - bidirectional streaming between worker and server.
 - task visibility levels (private/public)
+- graceful shutdown for worker (pause running task and resume it as soon as new instance of worker is started) - probably need to implement task cancel/pause first.
 
 # Acknowledgments
 

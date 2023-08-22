@@ -109,7 +109,7 @@ impl Database {
 
     pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, params: &TaskParams) {
         sqlx::query!(
-            "insert into sandbox_tasks (user_id, task_id, is_pending, status, params_v2) values ($1, $2, true, $3, $4)", 
+            "insert into sandbox_tasks (user_id, task_id, is_pending, status, params, params_v2) values ($1, $2, true, $3, $4, $4)", 
             user_id, 
             id.as_str(),
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
