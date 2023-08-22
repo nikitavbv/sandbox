@@ -24,7 +24,7 @@ struct PersistedTask {
     id: String,
     status: sqlx::types::JsonValue,
     created_at: OffsetDateTime,
-    params_v2: Option<sqlx::types::JsonValue>,
+    params: Option<sqlx::types::JsonValue>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -109,7 +109,7 @@ impl Database {
 
     pub async fn new_task(&self, user_id: Option<String>, id: &TaskId, params: &TaskParams) {
         sqlx::query!(
-            "insert into sandbox_tasks (user_id, task_id, is_pending, status, params, params_v2) values ($1, $2, true, $3, $4, $4)", 
+            "insert into sandbox_tasks (user_id, task_id, is_pending, status, params) values ($1, $2, true, $3, $4)", 
             user_id, 
             id.as_str(),
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
@@ -127,7 +127,7 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap();
@@ -142,7 +142,7 @@ impl Database {
     }
 
     pub async fn get_task(&self, id: &TaskId) -> Task {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where task_id = $1", id.as_str())
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params from sandbox_tasks where task_id = $1", id.as_str())
             .fetch_one(&self.pool)
             .await
             .unwrap();
@@ -151,7 +151,7 @@ impl Database {
     }
 
     pub async fn get_any_new_task(&self) -> Option<Task> {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where is_pending = true limit 1")
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
             .await
             .unwrap()?;
@@ -174,7 +174,7 @@ impl Database {
         let created_at = NaiveDateTime::from_timestamp_opt(task.created_at.unix_timestamp(), 0).unwrap();
         let created_at = DateTime::from_utc(created_at, Utc);
 
-        let params = match serde_json::from_value::<PersistedTaskParamsV2>(task.params_v2.unwrap()).unwrap() {
+        let params = match serde_json::from_value::<PersistedTaskParamsV2>(task.params.unwrap()).unwrap() {
             PersistedTaskParamsV2::ImageGeneration { 
                 iterations, 
                 number_of_images, 
