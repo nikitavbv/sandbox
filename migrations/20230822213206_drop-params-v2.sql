@@ -1,0 +1,1 @@
+alter table sandbox_tasks drop column params_v2;
