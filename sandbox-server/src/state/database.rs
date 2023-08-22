@@ -24,7 +24,6 @@ struct PersistedTask {
     id: String,
     status: sqlx::types::JsonValue,
     created_at: OffsetDateTime,
-    params: Option<sqlx::types::JsonValue>,
     params_v2: Option<sqlx::types::JsonValue>,
 }
 
@@ -128,7 +127,7 @@ impl Database {
     }
 
     pub async fn get_user_tasks(&self, user_id: &str) -> Vec<Task> {
-        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params, params_v2 from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
+        let tasks = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where user_id = $1 order by created_at desc", user_id)
             .fetch_all(&self.pool)
             .await
             .unwrap();
@@ -143,7 +142,7 @@ impl Database {
     }
 
     pub async fn get_task(&self, id: &TaskId) -> Task {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params, params_v2 from sandbox_tasks where task_id = $1", id.as_str())
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where task_id = $1", id.as_str())
             .fetch_one(&self.pool)
             .await
             .unwrap();
@@ -152,7 +151,7 @@ impl Database {
     }
 
     pub async fn get_any_new_task(&self) -> Option<Task> {
-        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params, params_v2 from sandbox_tasks where is_pending = true limit 1")
+        let task = sqlx::query_as!(PersistedTask, "select task_id as id, status, created_at, params_v2 from sandbox_tasks where is_pending = true limit 1")
             .fetch_optional(&self.pool)
             .await
             .unwrap()?;
@@ -175,27 +174,16 @@ impl Database {
         let created_at = NaiveDateTime::from_timestamp_opt(task.created_at.unix_timestamp(), 0).unwrap();
         let created_at = DateTime::from_utc(created_at, Utc);
 
-        let params = if let Some(params_v2) = task.params_v2 {
-            match serde_json::from_value::<PersistedTaskParamsV2>(params_v2).unwrap() {
-                PersistedTaskParamsV2::ImageGeneration { 
-                    iterations, 
-                    number_of_images, 
-                    prompt
-                } => TaskParams::ImageGenerationParams {
-                    prompt, 
-                    iterations, 
-                    number_of_images
-                },
-            }
-        } else {
-            task.params
-                .map(|v| serde_json::from_value::<PersistedTaskParams>(v).unwrap())
-                .map(|v| TaskParams::ImageGenerationParams {
-                    prompt: v.prompt.unwrap(),
-                    iterations: v.iterations,
-                    number_of_images: v.number_of_images,
-                })
-                .unwrap_or_default()
+        let params = match serde_json::from_value::<PersistedTaskParamsV2>(task.params_v2.unwrap()).unwrap() {
+            PersistedTaskParamsV2::ImageGeneration { 
+                iterations, 
+                number_of_images, 
+                prompt
+            } => TaskParams::ImageGenerationParams {
+                prompt, 
+                iterations, 
+                number_of_images
+            },
         };
 
         Task {

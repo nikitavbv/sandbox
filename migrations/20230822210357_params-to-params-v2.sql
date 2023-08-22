@@ -1,0 +1,1 @@
+update sandbox_tasks set params_v2 = jsonb_set('{}', array['ImageGeneration'], params) where params_v2 is null;
