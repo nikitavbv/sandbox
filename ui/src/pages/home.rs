@@ -2,6 +2,7 @@ use {
     std::{sync::{Arc, Mutex}, rc::Rc},
     yew::prelude::*,
     yew_router::prelude::*,
+    serde::Deserialize,
     gloo_storage::{Storage, LocalStorage},
     web_sys::{EventTarget, HtmlInputElement},
     wasm_bindgen::JsCast,
@@ -10,6 +11,11 @@ use {
     rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ImageGenerationParams as RpcImageGenerationParams}},
     crate::utils::{client_with_token, Route},
 };
+
+#[derive(Deserialize, Debug)]
+struct HomeQuery {
+    enable_chat: Option<bool>,
+}
 
 #[derive(Clone)]
 struct ImageGenerationParams {
@@ -63,6 +69,9 @@ pub fn home() -> Html {
     let params = use_reducer(ImageGenerationParams::default);
     let token: UseStateHandle<Option<String>> = use_state(|| LocalStorage::get("access_token").ok());
     let client = Arc::new(Mutex::new(client_with_token((*token).clone())));
+
+    let location: Option<HomeQuery> = use_location().map(|v| v.query().unwrap());
+    let enable_chat = location.and_then(|v| v.enable_chat).unwrap_or(false);
 
     let on_prompt_change = {
         let params = params.clone();
@@ -238,8 +247,15 @@ pub fn home() -> Html {
         }
     };
 
+    let task_type_switch = if enable_chat {
+        html!("task type switch")
+    } else {
+        html!()
+    };
+
     html!(
         <div class={page_style}>
+            { task_type_switch }
             <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
             <input class={input_style} onchange={on_prompt_change} value={params.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
             <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
