@@ -25,8 +25,10 @@ pub fn chat_task_creation(props: &ChatTaskCreationProps) -> Html {
 
     html!(
         <>
-            <ModelHighlight>{"Provide a text description of an image, and this app will generate it for you!"}</ModelHighlight>
+            <ModelHighlight>{"Enter your message to chat with LLM-powered assistant!"}</ModelHighlight>
             <PromptInput 
+                description={"message, for example: what is chocolate made of?"}
+                action_name={"chat"}
                 value={params.message.clone()}
                 on_change={
                     let params_dispatcher = props.params_dispatcher.clone();

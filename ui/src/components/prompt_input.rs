@@ -7,6 +7,9 @@ use {
 
 #[derive(Properties, PartialEq)]
 pub struct PromptInputProps {
+    pub description: Option<String>,
+    pub action_name: Option<String>,
+
     pub value: String,
 
     pub on_change: Callback<String>,
@@ -70,14 +73,14 @@ pub fn prompt_input(props: &PromptInputProps) -> Html {
                     }
                 } 
                 value={props.value.clone()} 
-                placeholder={"prompt, for example: cute cat"} />
+                placeholder={props.description.as_ref().cloned().unwrap_or("prompt, for example: cute cat".to_string())} />
             <button 
                 class={generate_image_button_style} 
                 onclick={
                     let on_run_inference = props.on_run_inference.clone();
                     move |_| on_run_inference.emit(())
                 }>
-                {"generate image"}
+                {props.action_name.as_ref().cloned().unwrap_or("generate image".to_string())}
                 </button>
         </>
     )
