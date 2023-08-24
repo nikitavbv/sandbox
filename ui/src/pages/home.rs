@@ -18,69 +18,141 @@ struct HomeQuery {
 }
 
 #[derive(Clone)]
+enum TaskCreationParams {
+    ImageGeneration(ImageGenerationParams),
+}
+
+#[derive(Clone, PartialEq)]
 struct ImageGenerationParams {
     prompt: String,
     number_of_images: u32,
     number_of_images_custom: bool,
 }
 
-enum ImageGenerationParamAction {
-    UpdatePrompt(String),
+enum TaskCreationParamsAction {
+    UpdateImageGenerationPrompt(String),
     SelectNumberOfImagesOption(u32),
     SetCustomNumberOfImages(u32),
 }
 
-impl Default for ImageGenerationParams {
+impl Default for TaskCreationParams {
     fn default() -> Self {
-        Self {
+        Self::ImageGeneration(ImageGenerationParams {
             prompt: "".to_owned(),
             number_of_images: 1,
             number_of_images_custom: false,
-        }
+        })
     }
 }
 
-impl Reducible for ImageGenerationParams {
-    type Action = ImageGenerationParamAction;
+impl Reducible for TaskCreationParams {
+    type Action = TaskCreationParamsAction;
 
     fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
         match action {
-            Self::Action::UpdatePrompt(prompt) => Self {
-                prompt,
-                ..(*self).clone()
+            Self::Action::UpdateImageGenerationPrompt(prompt) => match &*self {
+                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
+                    prompt,
+                    ..(params.clone())
+                }),
             },
-            Self::Action::SelectNumberOfImagesOption(number_of_images) => Self {
-                number_of_images,
-                number_of_images_custom: false,
-                ..(*self).clone()
+            Self::Action::SelectNumberOfImagesOption(number_of_images) => match &*self {
+                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
+                    number_of_images,
+                    number_of_images_custom: false,
+                    ..(params.clone())
+                }),
             },
-            Self::Action::SetCustomNumberOfImages(number_of_images) => Self {
-                number_of_images,
-                number_of_images_custom: true,
-                ..(*self).clone()
-            }
+            Self::Action::SetCustomNumberOfImages(number_of_images) => match &*self {
+                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
+                    number_of_images,
+                    number_of_images_custom: true,
+                    ..(params.clone())
+                }),
+            },
         }.into()
     }
 }
 
+#[derive(Properties, PartialEq)]
+pub struct ImageGenerationTaskCreationProps {
+    params: ImageGenerationParams,
+    params_dispatcher: UseReducerDispatcher<TaskCreationParams>,
+    token: Option<String>,
+}
+
 #[styled_component(HomePage)]
 pub fn home() -> Html {
-    let navigator = use_navigator().unwrap();
-    let params = use_reducer(ImageGenerationParams::default);
+    let params = use_reducer(TaskCreationParams::default);
+    let params_dispatcher = params.dispatcher();
+
     let token: UseStateHandle<Option<String>> = use_state(|| LocalStorage::get("access_token").ok());
-    let client = Arc::new(Mutex::new(client_with_token((*token).clone())));
 
     let location: Option<HomeQuery> = use_location().map(|v| v.query().unwrap());
     let enable_chat = location.and_then(|v| v.enable_chat).unwrap_or(false);
 
+    let page_style = style!(r#"
+        margin: 0 auto;
+        width: 600px;
+    "#).unwrap();
+
+    let task_type_switch = if enable_chat {
+        let task_type_switch_style = style!(r#"
+            margin-bottom: 20px;
+
+            .selected {
+                color: black;
+                background-color: white;
+            }
+
+            div {
+                display: inline-block;
+                border: 1px solid white;
+                border-radius: 10px;
+                padding: 8px;
+                margin-right: 8px;
+                cursor: pointer;
+                user-select: none;
+            }
+        "#).unwrap();
+
+        html!(
+            <div class={task_type_switch_style}>
+                <div class={"selected"}>{"image generation"}</div>
+                <div>{"chat"}</div>
+            </div>
+        )
+    } else {
+        html!()
+    };
+
+    let task_creation = match &*params {
+        TaskCreationParams::ImageGeneration(params) => html!(<ImageGenerationTaskCreation params={params.clone()} params_dispatcher={params_dispatcher} token={(*token).clone()} />),
+    };
+
+    html!(
+        <div class={page_style}>
+            { task_type_switch }
+            { task_creation }
+        </div>
+    )
+}
+
+#[styled_component(ImageGenerationTaskCreation)]
+pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) -> Html {
+    let navigator = use_navigator().unwrap();
+    let params = props.params.clone();
+    let params_dispatcher = props.params_dispatcher.clone();
+    let client = Arc::new(Mutex::new(client_with_token((props.token).clone())));
+
     let on_prompt_change = {
-        let params = params.clone();
+        let params_dispatcher = params_dispatcher.clone();
 
         Callback::from(move |e: Event| {
             let target: Option<EventTarget> = e.target();
             let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
             if let Some(input) = input {
-                params.dispatch(ImageGenerationParamAction::UpdatePrompt(input.value()));
+                params_dispatcher.dispatch(TaskCreationParamsAction::UpdateImageGenerationPrompt(input.value()));
             }
         })
     };
@@ -116,11 +188,6 @@ pub fn home() -> Html {
             });
         })
     };
-
-    let page_style = style!(r#"
-        margin: 0 auto;
-        width: 600px;
-    "#).unwrap();
 
     let input_style = style!(r#"
         padding: 8px;
@@ -230,32 +297,25 @@ pub fn home() -> Html {
         .map(|v| html!(<div 
             class={if v == params.number_of_images && !params.number_of_images_custom { "selected" } else { "" }}
             onclick={
-                let params = params.clone();
-                move |_| { params.dispatch(ImageGenerationParamAction::SelectNumberOfImagesOption(v)) }
+                let params_dispatcher = params_dispatcher.clone();
+                move |_| { params_dispatcher.dispatch(TaskCreationParamsAction::SelectNumberOfImagesOption(v)) }
             }>{v.to_string()}</div>))
         .collect::<Vec<_>>();
 
     let on_number_of_images_custom_change = {
-        let params = params.clone();
+        let params_dispatcher = params_dispatcher.clone();
         
         move |e: Event| {
             let target: Option<EventTarget> = e.target();
             let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
             if let Some(input) = input {
-                params.dispatch(ImageGenerationParamAction::SetCustomNumberOfImages(input.value().parse().unwrap()));
+                params_dispatcher.dispatch(TaskCreationParamsAction::SetCustomNumberOfImages(input.value().parse().unwrap()));
             }
         }
     };
 
-    let task_type_switch = if enable_chat {
-        html!("task type switch")
-    } else {
-        html!()
-    };
-
     html!(
-        <div class={page_style}>
-            { task_type_switch }
+        <>
             <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
             <input class={input_style} onchange={on_prompt_change} value={params.prompt.clone()} placeholder={"prompt, for example: cute cat"}/>
             <button class={generate_image_button_style} onclick={run_inference}>{"generate image"}</button>
@@ -266,6 +326,6 @@ pub fn home() -> Html {
                     <input type="number" onchange={on_number_of_images_custom_change} value={if params.number_of_images_custom { Some(params.number_of_images.to_string()) } else { None }} />
                 </div>
             </div>
-        </div>
+        </>
     )
 }
