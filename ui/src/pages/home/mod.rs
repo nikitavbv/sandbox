@@ -11,7 +11,10 @@ use {
     rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ImageGenerationParams as RpcImageGenerationParams}},
     crate::{
         utils::{client_with_token, Route},
-        components::prompt_input::PromptInput,
+        components::{
+            prompt_input::PromptInput,
+            model_highlight::ModelHighlight,
+        },
     },
     self::{
         chat::ChatTaskCreation,
@@ -117,18 +120,6 @@ pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) 
     let params_dispatcher = props.params_dispatcher.clone();
     let client = Arc::new(Mutex::new(client_with_token((props.token).clone())));
 
-    let on_prompt_change = {
-        let params_dispatcher = params_dispatcher.clone();
-
-        Callback::from(move |e: Event| {
-            let target: Option<EventTarget> = e.target();
-            let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
-            if let Some(input) = input {
-                params_dispatcher.dispatch(TaskCreationParamsAction::UpdateImageGenerationPrompt(input.value()));
-            }
-        })
-    };
-
     let run_inference = {
         let params = params.clone();
         let client = client.clone();
@@ -160,17 +151,6 @@ pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) 
             });
         })
     };
-
-    let description_style = style!(r#"
-        width: 100%;
-        text-align: center;
-        user-select: none;
-        padding-bottom: 16px;
-        display: block;
-        font-size: 16pt;
-        line-height: 24pt;
-        color: white;
-    "#).unwrap();
 
     let option_row_style = style!(r#"
         display: flex;
@@ -249,7 +229,7 @@ pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) 
 
     html!(
         <>
-            <span class={description_style}>{"Provide a text description of an image, and this app will generate it for you!"}</span>
+            <ModelHighlight>{"Provide a text description of an image, and this app will generate it for you!"}</ModelHighlight>
             <PromptInput 
                 value={params.prompt.clone()} 
                 on_change={

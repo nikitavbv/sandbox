@@ -2,7 +2,7 @@ use {
     yew::prelude::*,
     tracing::info,
     stylist::{style, yew::styled_component},
-    crate::components::prompt_input::PromptInput,
+    crate::components::{prompt_input::PromptInput, model_highlight::ModelHighlight},
     super::reducer::{ChatParams, TaskCreationParams, TaskCreationParamsAction},
 };
 
@@ -25,6 +25,7 @@ pub fn chat_task_creation(props: &ChatTaskCreationProps) -> Html {
 
     html!(
         <>
+            <ModelHighlight>{"Provide a text description of an image, and this app will generate it for you!"}</ModelHighlight>
             <PromptInput 
                 value={params.message.clone()}
                 on_change={
