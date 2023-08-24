@@ -9,108 +9,27 @@ use {
     stylist::{style, yew::styled_component},
     wasm_bindgen_futures::spawn_local,
     rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ImageGenerationParams as RpcImageGenerationParams}},
-    crate::utils::{client_with_token, Route},
+    crate::{
+        utils::{client_with_token, Route},
+        components::prompt_input::PromptInput,
+    },
+    self::{
+        chat::ChatTaskCreation,
+        reducer::{TaskCreationParams, ImageGenerationParams, TaskCreationParamsAction},
+    },
 };
+
+mod chat;
+mod reducer;
 
 #[derive(Deserialize, Debug)]
 struct HomeQuery {
     enable_chat: Option<bool>,
 }
 
-#[derive(Clone)]
-enum TaskCreationParams {
-    ImageGeneration(ImageGenerationParams),
-    Chat(ChatParams),
-}
-
-#[derive(Clone, PartialEq)]
-struct ImageGenerationParams {
-    prompt: String,
-    number_of_images: u32,
-    number_of_images_custom: bool,
-}
-
-#[derive(Clone, PartialEq)]
-struct ChatParams {
-    prompt: String,
-}
-
-enum TaskCreationParamsAction {
-    SwitchToImageGeneration,
-    SwitchToChat,
-    UpdateImageGenerationPrompt(String),
-    SelectNumberOfImagesOption(u32),
-    SetCustomNumberOfImages(u32),
-}
-
-impl Default for TaskCreationParams {
-    fn default() -> Self {
-        Self::ImageGeneration(ImageGenerationParams::default())
-    }
-}
-
-impl Default for ImageGenerationParams {
-    fn default() -> Self {
-        Self {
-            prompt: "".to_owned(),
-            number_of_images: 1,
-            number_of_images_custom: false,
-        }
-    }
-}
-
-impl Default for ChatParams {
-    fn default() -> Self {
-        Self {
-            prompt: "".to_owned(),
-        }
-    }
-}
-
-impl Reducible for TaskCreationParams {
-    type Action = TaskCreationParamsAction;
-
-    fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
-        match action {
-            Self::Action::SwitchToImageGeneration => Self::ImageGeneration(ImageGenerationParams::default()),
-            Self::Action::SwitchToChat => Self::Chat(ChatParams::default()),
-            Self::Action::UpdateImageGenerationPrompt(prompt) => match &*self {
-                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
-                    prompt,
-                    ..(params.clone())
-                }),
-                other => other.clone(),
-            },
-            Self::Action::SelectNumberOfImagesOption(number_of_images) => match &*self {
-                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
-                    number_of_images,
-                    number_of_images_custom: false,
-                    ..(params.clone())
-                }),
-                other => other.clone(),
-            },
-            Self::Action::SetCustomNumberOfImages(number_of_images) => match &*self {
-                Self::ImageGeneration(params) => Self::ImageGeneration(ImageGenerationParams {
-                    number_of_images,
-                    number_of_images_custom: true,
-                    ..(params.clone())
-                }),
-                other => other.clone(),
-            },
-        }.into()
-    }
-}
-
 #[derive(Properties, PartialEq)]
 pub struct ImageGenerationTaskCreationProps {
     params: ImageGenerationParams,
-    params_dispatcher: UseReducerDispatcher<TaskCreationParams>,
-    token: Option<String>,
-}
-
-#[derive(Properties, PartialEq)]
-pub struct ChatTaskCreationProps {
-    params: ChatParams,
     params_dispatcher: UseReducerDispatcher<TaskCreationParams>,
     token: Option<String>,
 }
@@ -189,11 +108,6 @@ pub fn home() -> Html {
             { task_creation }
         </div>
     )
-}
-
-#[styled_component(ChatTaskCreation)]
-pub fn chat_task_creation(props: &ChatTaskCreationProps) -> Html {
-    html!("nothing here yet")
 }
 
 #[styled_component(ImageGenerationTaskCreation)]
@@ -350,84 +264,6 @@ pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) 
                     <input type="number" onchange={on_number_of_images_custom_change} value={if params.number_of_images_custom { Some(params.number_of_images.to_string()) } else { None }} />
                 </div>
             </div>
-        </>
-    )
-}
-
-#[derive(Properties, PartialEq)]
-struct PromptInputProps {
-    value: String,
-
-    on_change: Callback<String>,
-    on_run_inference: Callback<()>,
-}
-
-#[styled_component(PromptInput)]
-fn prompt_input(props: &PromptInputProps) -> Html {
-    let input_style = style!(r#"
-        padding: 8px;
-        font-size: 14pt;
-        border-radius: 5px;
-        border: 2px solid white;
-        outline: none;
-        width: 400px;
-        font-family: Inter;
-        transition: border-color 0.2s ease-out;
-        background-color: white;
-        color: black;
-  
-        :focus {
-            border: 2px solid #5695DC;
-        }
-    "#).unwrap();
-
-    let generate_image_button_style = style!(r#"
-        margin-left: 8px;
-        padding: 8px 14px;
-        font-size: 14pt;
-        background-color: #5695DC;
-        color: white;
-        border: 2px solid #5695DC;
-        border-radius: 5px;
-        font-family: Inter;
-        cursor: pointer;
-        width: 192px;
-        user-select: none;
-        transition:
-            color 0.2s ease-out, 
-            background-color 0.2s ease-out;
-
-        :hover {
-            background-color: #F6F4F3;
-            color: #5695DC;
-        }
-    "#).unwrap();
-
-    html!(
-        <>
-            <input 
-                class={input_style} 
-                onchange={
-                    let on_change = props.on_change.clone();
-
-                    move |e: Event| {
-                        let target: Option<EventTarget> = e.target();
-                        let input = target.and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
-                        if let Some(input) = input {
-                            on_change.emit(input.value());
-                        }
-                    }
-                } 
-                value={props.value.clone()} 
-                placeholder={"prompt, for example: cute cat"} />
-            <button 
-                class={generate_image_button_style} 
-                onclick={
-                    let on_run_inference = props.on_run_inference.clone();
-                    move |_| on_run_inference.emit(())
-                }>
-                {"generate image"}
-                </button>
         </>
     )
 }
