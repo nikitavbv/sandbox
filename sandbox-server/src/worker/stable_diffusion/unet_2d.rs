@@ -6,8 +6,10 @@
 //! timestep and return a denoised version of the input.
 use super::embeddings::{TimestepEmbedding, Timesteps};
 use super::unet_2d_blocks::*;
-use candle::{DType, Result, Tensor};
-use candle_nn::{self as nn, Module};
+use super::utils::{conv2d, Conv2d};
+use candle::{Result, Tensor};
+use candle_nn as nn;
+use candle_nn::Module;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BlockConfig {
@@ -86,14 +88,15 @@ enum UNetUpBlock {
 
 #[derive(Debug)]
 pub struct UNet2DConditionModel {
-    conv_in: nn::Conv2d,
+    conv_in: Conv2d,
     time_proj: Timesteps,
     time_embedding: TimestepEmbedding,
     down_blocks: Vec<UNetDownBlock>,
     mid_block: UNetMidBlock2DCrossAttn,
     up_blocks: Vec<UNetUpBlock>,
     conv_norm_out: nn::GroupNorm,
-    conv_out: nn::Conv2d,
+    conv_out: Conv2d,
+    span: tracing::Span,
     config: UNet2DConditionModelConfig,
 }
 
@@ -102,6 +105,7 @@ impl UNet2DConditionModel {
         vs: nn::VarBuilder,
         in_channels: usize,
         out_channels: usize,
+        use_flash_attn: bool,
         config: UNet2DConditionModelConfig,
     ) -> Result<Self> {
         let n_blocks = config.blocks.len();
@@ -110,10 +114,10 @@ impl UNet2DConditionModel {
         let bl_attention_head_dim = config.blocks.last().unwrap().attention_head_dim;
         let time_embed_dim = b_channels * 4;
         let conv_cfg = nn::Conv2dConfig {
-            stride: 1,
             padding: 1,
+            ..Default::default()
         };
-        let conv_in = nn::conv2d(in_channels, b_channels, 3, conv_cfg, vs.pp("conv_in"))?;
+        let conv_in = conv2d(in_channels, b_channels, 3, conv_cfg, vs.pp("conv_in"))?;
 
         let time_proj = Timesteps::new(b_channels, config.flip_sin_to_cos, config.freq_shift);
         let time_embedding =
@@ -160,6 +164,7 @@ impl UNet2DConditionModel {
                         in_channels,
                         out_channels,
                         Some(time_embed_dim),
+                        use_flash_attn,
                         config,
                     )?;
                     Ok(UNetDownBlock::CrossAttn(block))
@@ -189,6 +194,7 @@ impl UNet2DConditionModel {
             vs.pp("mid_block"),
             bl_channels,
             Some(time_embed_dim),
+            use_flash_attn,
             mid_cfg,
         )?;
 
@@ -241,6 +247,7 @@ impl UNet2DConditionModel {
                         prev_out_channels,
                         out_channels,
                         Some(time_embed_dim),
+                        use_flash_attn,
                         config,
                     )?;
                     Ok(UNetUpBlock::CrossAttn(block))
@@ -264,7 +271,8 @@ impl UNet2DConditionModel {
             config.norm_eps,
             vs.pp("conv_norm_out"),
         )?;
-        let conv_out = nn::conv2d(b_channels, out_channels, 3, conv_cfg, vs.pp("conv_out"))?;
+        let conv_out = conv2d(b_channels, out_channels, 3, conv_cfg, vs.pp("conv_out"))?;
+        let span = tracing::span!(tracing::Level::TRACE, "unet2d");
         Ok(Self {
             conv_in,
             time_proj,
@@ -274,18 +282,18 @@ impl UNet2DConditionModel {
             up_blocks,
             conv_norm_out,
             conv_out,
+            span,
             config,
         })
     }
-}
 
-impl UNet2DConditionModel {
     pub fn forward(
         &self,
         xs: &Tensor,
         timestep: f64,
         encoder_hidden_states: &Tensor,
     ) -> Result<Tensor> {
+        let _enter = self.span.enter();
         self.forward_with_additional_residuals(xs, timestep, encoder_hidden_states, None, None)
     }
 
@@ -311,7 +319,7 @@ impl UNet2DConditionModel {
             xs.clone()
         };
         // 1. time
-        let emb = (Tensor::ones(bsize, DType::F32, device)? * timestep)?;
+        let emb = (Tensor::ones(bsize, xs.dtype(), device)? * timestep)?;
         let emb = self.time_proj.forward(&emb)?;
         let emb = self.time_embedding.forward(&emb)?;
         // 2. pre-process
@@ -319,18 +327,13 @@ impl UNet2DConditionModel {
         // 3. down
         let mut down_block_res_xs = vec![xs.clone()];
         let mut xs = xs;
-
-        for down_block in self.down_blocks.iter()  {
-
+        for down_block in self.down_blocks.iter() {
             let (_xs, res_xs) = match down_block {
-                UNetDownBlock::Basic(b) => {
-                    b.forward(&xs, Some(&emb))?
-                },
+                UNetDownBlock::Basic(b) => b.forward(&xs, Some(&emb))?,
                 UNetDownBlock::CrossAttn(b) => {
                     b.forward(&xs, Some(&emb), Some(encoder_hidden_states))?
                 }
             };
-
             down_block_res_xs.extend(res_xs);
             xs = _xs;
         }

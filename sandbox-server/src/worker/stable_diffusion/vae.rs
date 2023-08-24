@@ -10,7 +10,8 @@ use super::unet_2d_blocks::{
     UpDecoderBlock2D, UpDecoderBlock2DConfig,
 };
 use candle::{Result, Tensor};
-use candle_nn::{self as nn, Module};
+use candle_nn as nn;
+use candle_nn::Module;
 
 #[derive(Debug, Clone)]
 struct EncoderConfig {
@@ -51,8 +52,8 @@ impl Encoder {
         config: EncoderConfig,
     ) -> Result<Self> {
         let conv_cfg = nn::Conv2dConfig {
-            stride: 1,
             padding: 1,
+            ..Default::default()
         };
         let conv_in = nn::conv2d(
             in_channels,
@@ -182,8 +183,8 @@ impl Decoder {
         let n_block_out_channels = config.block_out_channels.len();
         let last_block_out_channels = *config.block_out_channels.last().unwrap();
         let conv_cfg = nn::Conv2dConfig {
-            stride: 1,
             padding: 1,
+            ..Default::default()
         };
         let conv_in = nn::conv2d(
             in_channels,

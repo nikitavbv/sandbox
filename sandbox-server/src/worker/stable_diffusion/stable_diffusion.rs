@@ -191,7 +191,7 @@ impl StableDiffusionConfig {
         let weights = unsafe { candle::safetensors::MmapedFile::new(unet_weights)? };
         let weights = weights.deserialize()?;
         let vs_unet = nn::VarBuilder::from_safetensors(vec![weights], DType::F32, device);
-        let unet = unet_2d::UNet2DConditionModel::new(vs_unet, in_channels, 4, self.unet.clone())?;
+        let unet = unet_2d::UNet2DConditionModel::new(vs_unet, in_channels, 4, false, self.unet.clone())?;
         Ok(unet)
     }
 
