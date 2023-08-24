@@ -47,18 +47,13 @@ struct PersistedAssetId {
 }
 
 #[derive(Serialize, Deserialize)]
-struct PersistedTaskParams {
-    iterations: u32,
-    number_of_images: u32,
-    prompt: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-enum PersistedTaskParamsV2 {
+enum PersistedTaskParams {
     ImageGeneration {
         iterations: u32,
         number_of_images: u32,
         prompt: String,
+    },
+    ChatMessageGeneration {
     },
 }
 
@@ -114,10 +109,12 @@ impl Database {
             id.as_str(),
             serde_json::to_value(PersistedTaskStatus::Pending).unwrap(),
             serde_json::to_value(match params {
-                TaskParams::ImageGenerationParams { iterations, number_of_images, prompt } => PersistedTaskParamsV2::ImageGeneration {
+                TaskParams::ImageGenerationParams { iterations, number_of_images, prompt } => PersistedTaskParams::ImageGeneration {
                     iterations: *iterations,
                     number_of_images: *number_of_images,
                     prompt: prompt.clone(),
+                },
+                TaskParams::ChatMessageGenerationParams {} => PersistedTaskParams::ChatMessageGeneration {
                 },
             }).unwrap(),
         )
@@ -174,8 +171,8 @@ impl Database {
         let created_at = NaiveDateTime::from_timestamp_opt(task.created_at.unix_timestamp(), 0).unwrap();
         let created_at = DateTime::from_utc(created_at, Utc);
 
-        let params = match serde_json::from_value::<PersistedTaskParamsV2>(task.params.unwrap()).unwrap() {
-            PersistedTaskParamsV2::ImageGeneration { 
+        let params = match serde_json::from_value::<PersistedTaskParams>(task.params.unwrap()).unwrap() {
+            PersistedTaskParams::ImageGeneration { 
                 iterations, 
                 number_of_images, 
                 prompt
@@ -183,6 +180,8 @@ impl Database {
                 prompt, 
                 iterations, 
                 number_of_images
+            },
+            PersistedTaskParams::ChatMessageGeneration {} => TaskParams::ChatMessageGenerationParams {
             },
         };
 

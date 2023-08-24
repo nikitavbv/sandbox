@@ -220,15 +220,16 @@ impl SandboxService for SandboxServiceHandler {
 
         let task_id = generate_task_id();
         let params = match req.params.unwrap().params.unwrap() {
-            rpc::task_params::Params::ImageGeneration(v) => v,
-            rpc::task_params::Params::ChatMessageGeneration(_) => return Err(Status::unimplemented("chat message tasks are not supported yet")),
+            rpc::task_params::Params::ImageGeneration(v) => TaskParams::ImageGenerationParams {
+                prompt: v.prompt,
+                iterations: v.iterations,
+                number_of_images: v.number_of_images,
+            },
+            rpc::task_params::Params::ChatMessageGeneration(_) => TaskParams::ChatMessageGenerationParams {
+            },
         };
 
-        self.database.new_task(user_id, &task_id, &TaskParams::ImageGenerationParams {
-            prompt: params.prompt.clone(),
-            iterations: params.iterations,
-            number_of_images: params.number_of_images,
-        }).await;
+        self.database.new_task(user_id, &task_id, &params).await;
 
         Ok(Response::new(CreateTaskResponse {
             id: Some(rpc::TaskId::from(task_id)),

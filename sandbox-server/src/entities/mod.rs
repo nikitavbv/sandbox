@@ -87,6 +87,8 @@ pub enum TaskParams {
         prompt: String,
         iterations: u32,
         number_of_images: u32,
+    },
+    ChatMessageGenerationParams {
     }
 }
 
@@ -112,6 +114,7 @@ impl From<TaskParams> for rpc::task_params::Params {
                 iterations,
                 number_of_images,
             }),
+            TaskParams::ChatMessageGenerationParams {} => rpc::task_params::Params::ChatMessageGeneration(rpc::task_params::ChatMessageGenerationParams {}),
         }
     }
 }
