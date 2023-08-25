@@ -9,6 +9,7 @@ use {
 pub struct PromptInputProps {
     pub description: Option<String>,
     pub action_name: Option<String>,
+    pub action_button_width: Option<u32>,
 
     pub value: String,
 
@@ -18,13 +19,17 @@ pub struct PromptInputProps {
 
 #[styled_component(PromptInput)]
 pub fn prompt_input(props: &PromptInputProps) -> Html {
+    let total_width = 592;
+
+    let button_width = props.action_button_width.unwrap_or(192);
+    let input_width = total_width - button_width;
+
     let input_style = style!(r#"
         padding: 8px;
         font-size: 14pt;
         border-radius: 5px;
         border: 2px solid white;
         outline: none;
-        width: 400px;
         font-family: Inter;
         transition: border-color 0.2s ease-out;
         background-color: white;
@@ -45,7 +50,6 @@ pub fn prompt_input(props: &PromptInputProps) -> Html {
         border-radius: 5px;
         font-family: Inter;
         cursor: pointer;
-        width: 192px;
         user-select: none;
         transition:
             color 0.2s ease-out, 
@@ -73,13 +77,15 @@ pub fn prompt_input(props: &PromptInputProps) -> Html {
                     }
                 } 
                 value={props.value.clone()} 
-                placeholder={props.description.as_ref().cloned().unwrap_or("prompt, for example: cute cat".to_string())} />
+                placeholder={props.description.as_ref().cloned().unwrap_or("prompt, for example: cute cat".to_string())}
+                style={format!("width: {}px;", input_width)}/>
             <button 
                 class={generate_image_button_style} 
                 onclick={
                     let on_run_inference = props.on_run_inference.clone();
                     move |_| on_run_inference.emit(())
-                }>
+                }
+                style={format!("width: {}px;", button_width)}>
                 {props.action_name.as_ref().cloned().unwrap_or("generate image".to_string())}
                 </button>
         </>
