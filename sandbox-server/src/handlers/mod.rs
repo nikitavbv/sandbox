@@ -273,6 +273,7 @@ impl SandboxService for SandboxServiceHandler {
         let task_id = TaskId::from(req.task_id.unwrap());
 
         self.database.append_chat_message(&task_id, req.content, ChatMessageRole::User).await;
+        self.database.save_task_status(&task_id, &TaskStatus::Pending).await;
 
         Ok(Response::new(AddChatUserMessageResponse {}))
     }
