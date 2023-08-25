@@ -10,6 +10,7 @@ service SandboxService {
     rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {}
     rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
     rpc GetAllTasks(GetAllTasksRequest) returns (GetAllTasksResponse) {}
+    rpc AddChatUserMessage(AddChatUserMessageRequest) returns (AddChatUserMessageResponse) {}
 
     // for workers
     rpc GetTaskToRun(GetTaskToRunRequest) returns (GetTaskToRunResponse) {}
@@ -167,4 +168,12 @@ message AddChatAssistantMessageRequest {
 }
 
 message AddChatAssistantMessageResponse {
+}
+
+message AddChatUserMessageRequest {
+    TaskId task_id = 1;
+    string content = 2;
+}
+
+message AddChatUserMessageResponse {
 }

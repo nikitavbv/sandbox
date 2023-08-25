@@ -29,6 +29,8 @@ use {
         GetChatMessagesResponse,
         AddChatAssistantMessageRequest,
         AddChatAssistantMessageResponse,
+        AddChatUserMessageRequest,
+        AddChatUserMessageResponse,
     },
     crate::{
         entities::{Task, TaskId, TaskStatus, UserId, AssetId, TaskParams, ChatMessageRole},
@@ -106,6 +108,24 @@ impl SandboxServiceHandler {
                 other => TokenDecodeResult::DecodeError(format!("{:?}", other)),   
             }
         }
+    }
+
+    fn user_id_from_request_headers(&self, headers: &http::HeaderMap) -> Result<Option<String>, Status> {
+        let user_id = headers.get("x-access-token")
+            .map(|v| v.to_str().unwrap().to_owned())
+            .map(|v| self.decode_token(&v));
+
+        Ok(match user_id {
+            Some(v) => match v {
+                TokenDecodeResult::Token(t) => Some(t),
+                TokenDecodeResult::DecodeError(err) => {
+                    error!("error while decoding token: {:?}", err);
+                    return Err(Status::internal("internal server error"));
+                },
+                TokenDecodeResult::TokenExpired => return Err(Status::unauthenticated("token expired")),
+            },
+            None => None,
+        })
     }
 
     fn task_to_rpc_task(&self, task: Task, assets: Vec<AssetId>) -> rpc::Task {
@@ -199,22 +219,7 @@ impl SandboxService for SandboxServiceHandler {
     }
 
     async fn create_task(&self, req: Request<CreateTaskRequest>) -> Result<Response<CreateTaskResponse>, Status> {
-        let headers: http::HeaderMap = req.metadata().clone().into_headers();
-        let user_id = headers.get("x-access-token")
-            .map(|v| v.to_str().unwrap().to_owned())
-            .map(|v| self.decode_token(&v));
-
-        let user_id = match user_id {
-            Some(v) => match v {
-                TokenDecodeResult::Token(t) => Some(t),
-                TokenDecodeResult::DecodeError(err) => {
-                    error!("error while decoding token: {:?}", err);
-                    return Err(Status::internal("internal server error"));
-                },
-                TokenDecodeResult::TokenExpired => return Err(Status::unauthenticated("token expired")),
-            },
-            None => None,
-        };
+        let user_id = self.user_id_from_request_headers(&req.metadata().clone().into_headers())?;
 
         let req = req.into_inner();
 
@@ -247,18 +252,8 @@ impl SandboxService for SandboxServiceHandler {
     }
 
     async fn get_all_tasks(&self, req: Request<GetAllTasksRequest>) -> Result<Response<GetAllTasksResponse>, Status> {
-        let headers = req.metadata().clone().into_headers();
-        let user_id = match headers.get("x-access-token")
-            .map(|v| v.to_str().unwrap().to_owned())
-            .map(|v| self.decode_token(&v)) {
-            Some(v) => match v {
-                TokenDecodeResult::Token(t) => t,
-                TokenDecodeResult::DecodeError(err) => {
-                    error!("error while decoding token: {:?}", err);
-                    return Err(Status::internal("internal server error"));
-                },
-                TokenDecodeResult::TokenExpired => return Err(Status::unauthenticated("token expired")),
-            },
+        let user_id = match self.user_id_from_request_headers(&req.metadata().clone().into_headers())? {
+            Some(v) => v,
             None => return Err(Status::unauthenticated("unauthenticated")),
         };
 
@@ -271,6 +266,15 @@ impl SandboxService for SandboxServiceHandler {
         }
         
         Ok(Response::new(GetAllTasksResponse { tasks: rpc_tasks }))
+    }
+
+    async fn add_chat_user_message(&self, req: Request<AddChatUserMessageRequest>) -> Result<Response<AddChatUserMessageResponse>, Status> {
+        let req = req.into_inner();
+        let task_id = TaskId::from(req.task_id.unwrap());
+
+        self.database.append_chat_message(&task_id, req.content, ChatMessageRole::User).await;
+
+        Ok(Response::new(AddChatUserMessageResponse {}))
     }
 
     async fn get_task_to_run(&self, req: Request<GetTaskToRunRequest>) -> Result<Response<GetTaskToRunResponse>, Status> {
