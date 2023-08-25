@@ -5,7 +5,7 @@ use {
     tracing::info,
     stylist::{style, yew::styled_component},
     wasm_bindgen_futures::spawn_local,
-    rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ChatMessageGenerationParams}},
+    rpc::{CreateTaskRequest, TaskParams, task_params::{Params, ChatMessageGenerationParams}, AddChatUserMessageRequest},
     crate::{
         components::{prompt_input::PromptInput, model_highlight::ModelHighlight},
         utils::{client_with_token, Route},
@@ -47,6 +47,11 @@ pub fn chat_task_creation(props: &ChatTaskCreationProps) -> Html {
                 }).await.unwrap().into_inner();
 
                 let task_id = res.id.unwrap();
+
+                client.add_chat_user_message(AddChatUserMessageRequest {
+                    task_id: Some(task_id.clone()),
+                    content: message,
+                }).await.unwrap();
 
                 navigator.push(&Route::Task {
                     id: task_id.id,

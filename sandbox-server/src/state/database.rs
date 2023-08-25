@@ -66,7 +66,7 @@ struct PersistedChatMessage {
 }
 
 #[derive(sqlx::Type)]
-#[sqlx(type_name = "message_role")]
+#[sqlx(type_name = "chat_role")]
 enum PersistedChatMessageRole {
     System,
     User,

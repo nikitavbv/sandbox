@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: sandbox
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.423
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.426
         ports:
         - containerPort: 8080
           protocol: TCP
@@ -67,7 +67,7 @@ spec:
     spec:
       containers:
       - name: sandbox-worker
-        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.423
+        image: ghcr.io/nikitavbv/sandbox/sandbox:0.1.426
         env:
         - name: SANDBOX_CONFIG_PATH
           value: /etc/sandbox/config/config.toml
