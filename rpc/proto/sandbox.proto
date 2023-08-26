@@ -108,7 +108,16 @@ message GetTaskRequest {
 }
 
 message GetTaskResponse {
+    message ChatMessage {
+        MessageId message_id = 1;
+        string content = 2;
+        ChatMessageRole role = 3;
+        uint32 message_index = 4;
+    }
+
     Task task = 1;
+
+    repeated ChatMessage messages = 2;
 }
 
 message GetAllTasksRequest {

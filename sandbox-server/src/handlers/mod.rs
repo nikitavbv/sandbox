@@ -252,6 +252,8 @@ impl SandboxService for SandboxServiceHandler {
 
         Ok(Response::new(GetTaskResponse {
             task: Some(self.task_to_rpc_task(task, assets)),
+            
+            messages: vec![],
         }))
     }
 
