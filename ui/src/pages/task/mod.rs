@@ -8,9 +8,13 @@ use {
     stylist::{style, yew::styled_component},
     rpc::{TaskId, Task, TaskParams, GetTaskRequest, task_params::Params},
     crate::utils::{client, Route, MultiClass},
-    self::image_generation::ImageGenerationTask,
+    self::{
+        image_generation::ImageGenerationTask,
+        chat::ChatMessageGenerationTask,
+    },
 };
 
+mod chat;
 mod image_generation;
 
 #[derive(Properties, PartialEq)]
@@ -151,7 +155,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
             match task.params.clone().unwrap().params.unwrap() {
                 Params::ImageGeneration(v) => html!(<ImageGenerationTask status={task.status.clone().unwrap()} params={v} assets={task.assets.clone()} />),
-                Params::ChatMessageGeneration(_) => html!(<span>{"chat tasks are not supported yet"}</span>),
+                Params::ChatMessageGeneration(_) => html!(<ChatMessageGenerationTask />),
             }
         }
     };

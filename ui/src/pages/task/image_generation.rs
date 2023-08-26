@@ -1,7 +1,6 @@
 use {
     std::rc::Rc,
     yew::prelude::*,
-    yew_router::prelude::*,
     stylist::{style, yew::styled_component},
     rpc::{task::Status, task_params::ImageGenerationParams, TaskAsset, InProgressTaskDetails},
     crate::utils::MultiClass,

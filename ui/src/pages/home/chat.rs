@@ -44,17 +44,12 @@ pub fn chat_task_creation(props: &ChatTaskCreationProps) -> Html {
                     params: Some(TaskParams {
                         params: Some(Params::ChatMessageGeneration(ChatMessageGenerationParams {})),
                     }),
+
+                    user_message: Some(message),
                 }).await.unwrap().into_inner();
 
-                let task_id = res.id.unwrap();
-
-                client.add_chat_user_message(AddChatUserMessageRequest {
-                    task_id: Some(task_id.clone()),
-                    content: message,
-                }).await.unwrap();
-
                 navigator.push(&Route::Task {
-                    id: task_id.id,
+                    id: res.id.unwrap().id,
                 });
             });
         })

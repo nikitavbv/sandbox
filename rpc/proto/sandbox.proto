@@ -94,6 +94,9 @@ message OAuthLoginResponse {
 
 message CreateTaskRequest {
     TaskParams params = 2;
+
+    // for chat tasks
+    optional string user_message = 3;
 }
 
 message CreateTaskResponse {

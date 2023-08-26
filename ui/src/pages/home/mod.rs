@@ -144,6 +144,8 @@ pub fn image_generation_task_creation(props: &ImageGenerationTaskCreationProps) 
                             prompt,
                         })),
                     }),
+
+                    user_message: None,
                 }).await.unwrap().into_inner();
                 navigator.push(&Route::Task {
                     id: res.id.unwrap().id,

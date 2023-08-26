@@ -234,6 +234,10 @@ impl SandboxService for SandboxServiceHandler {
             },
         };
 
+        if let Some(message) = req.user_message.as_ref() {
+            self.database.append_chat_message(&task_id, message.clone(), ChatMessageRole::User).await;
+        }
+
         self.database.new_task(user_id, &task_id, &params).await;
 
         Ok(Response::new(CreateTaskResponse {
