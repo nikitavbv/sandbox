@@ -149,6 +149,11 @@ async fn run_chat_message_generation_task(
     chat_model: &LlamaChatModel,
     id: TaskId
 ) {
+    client.lock().await.update_task_status(UpdateTaskStatusRequest {
+        id: Some(id.clone()),
+        task_status: Some(rpc::update_task_status_request::TaskStatus::InProgress(rpc::InProgressTaskDetails { current_step: 0, total_steps: 0, current_image: 0 })),
+    }).await.unwrap();
+
     let mut messages = client.lock().await.get_chat_messages(GetChatMessagesRequest {
         task_id: Some(id.clone()),
     }).await.unwrap().into_inner().messages;
