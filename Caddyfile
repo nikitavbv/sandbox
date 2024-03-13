@@ -1,0 +1,12 @@
+:8080 {
+    handle /* {
+        root * /srv
+        file_server
+        try_files {path} /index.html
+    }
+
+    log {
+        level info
+        format console
+    }
+}
