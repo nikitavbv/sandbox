@@ -1,7 +1,5 @@
-FROM frolvlad/alpine-glibc:glibc-2.34
+FROM ubuntu:22.04
 WORKDIR /app
-
-RUN apk add libstdc++
 
 COPY target/release/sandbox-server /app/app
 
