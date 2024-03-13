@@ -100,3 +100,36 @@ spec:
   resources:
     requests:
       storage: 100Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-ui
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: sandbox-ui
+  template:
+    metadata:
+      labels:
+        name: sandbox-ui
+    spec:
+      containers:
+      - name: sandbox-ui
+        image: ghcr.io/nikitavbv/sandbox/sandbox-ui:0.1.432
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-ui
+  namespace: default
+spec:
+  selector:
+    name: sandbox-ui
+  ports:
+  - port: 80
+    targetPort: 8080
