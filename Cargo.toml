@@ -3,6 +3,7 @@
 members = [
     "rpc",
     "sandbox-server",
+    "stable-diffusion-inference",
 ]
 
 exclude = [
