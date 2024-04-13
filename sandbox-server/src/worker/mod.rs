@@ -23,13 +23,10 @@ use {
         AddChatAssistantMessageRequest,
     },
     self::{
-        stable_diffusion::{StableDiffusionImageGenerationModel, ImageGenerationStatus},
         llama::{LlamaChatModel, Message, Role},
         storage::Storage,
     },
 };
-
-pub mod stable_diffusion;
 
 pub mod llama;
 pub mod storage;
@@ -45,11 +42,11 @@ pub async fn run_worker(config: &Config) {
             .unwrap(),
         AuthTokenSetterInterceptor::new(config.get_string("token.worker_token").unwrap()),
     )));
-    
+
     let storage = Storage::new(&config);
 
     info!("loading models");
-    let text_to_image_model = StableDiffusionImageGenerationModel::new(&storage).await; 
+    let text_to_image_model = StableDiffusionImageGenerationModel::new(&storage).await;
     info!("text to image model loaded");
     let chat_model = LlamaChatModel::new(&storage).await;
     info!("chat model loaded");
@@ -63,7 +60,7 @@ pub async fn run_worker(config: &Config) {
                 continue;
             }
         };
-    
+
         let task = match res.task_to_run {
             Some(v) => v,
             None => {
@@ -85,7 +82,7 @@ pub async fn run_worker(config: &Config) {
 async fn run_image_generation_task(
     client: Arc<Mutex<SandboxServiceClient<InterceptedService<Channel, AuthTokenSetterInterceptor>>>>,
     text_to_image_model: &StableDiffusionImageGenerationModel,
-    id: TaskId, 
+    id: TaskId,
     params: &ImageGenerationParams
 ) {
     let prompt = params.prompt.clone();
@@ -130,11 +127,11 @@ async fn run_image_generation_task(
 
         let image = text_to_image_model.run(&prompt, tx.clone());
         info!("finished generating image");
-        
+
         client.lock().await.create_task_asset(CreateTaskAssetRequest {
             task_id: Some(id.clone()),
             image,
-        }).await.unwrap();   
+        }).await.unwrap();
     }
 
     tx.send(ImageGenerationStatus::Finished).unwrap();
@@ -232,8 +229,8 @@ mod tests {
         };
 
         assert_eq!(
-            res.code(), 
-            Code::Unauthenticated, 
+            res.code(),
+            Code::Unauthenticated,
             "Expected code to be unauthenticated because client connected to server successfully, but access token is wrong"
         );*/
     }
